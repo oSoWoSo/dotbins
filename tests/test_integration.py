@@ -1,11 +1,16 @@
+"""Integration tests for the dotbins module."""
+
 import os
 import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
+from _pytest.capture import CaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
 # Import the dotbins module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -16,7 +21,11 @@ class TestIntegration:
     """Integration tests for dotbins."""
 
 
-def test_initialization(temp_dir, monkeypatch, capsys):
+def test_initialization(
+    temp_dir: Path,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture[str],
+) -> None:
     """Test the 'init' command."""
     # Set up environment
     monkeypatch.setattr(
@@ -48,7 +57,11 @@ def test_initialization(temp_dir, monkeypatch, capsys):
     assert "Add this to your shell configuration file" in captured.out
 
 
-def test_list_tools(temp_dir, monkeypatch, capsys):
+def test_list_tools(
+    temp_dir: Path,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture[str],
+) -> None:
     """Test the 'list' command."""
     # Set up environment
     monkeypatch.setattr(
@@ -94,7 +107,11 @@ def test_list_tools(temp_dir, monkeypatch, capsys):
     assert "test/tool" in captured.out
 
 
-def test_update_tool(temp_dir, monkeypatch, mock_github_api):
+def test_update_tool(
+    temp_dir: Path,
+    monkeypatch: MonkeyPatch,
+    mock_github_api: Any,  # noqa: ARG001
+) -> None:
     """Test updating a specific tool."""
     # Set up mock environment
     test_tool_config = {
@@ -130,7 +147,7 @@ def test_update_tool(temp_dir, monkeypatch, mock_github_api):
     _create_test_tarball(temp_dir / "test_binary.tar.gz", "test-tool")
 
     # Mock the download_file function to use our test tarball
-    def mock_download_file(url, destination):
+    def mock_download_file(_url: str, destination: str) -> str:
         shutil.copy(temp_dir / "test_binary.tar.gz", destination)
         return destination
 
@@ -144,7 +161,7 @@ def test_update_tool(temp_dir, monkeypatch, mock_github_api):
     assert (bin_dir / "test-tool").exists()
 
 
-def _create_test_tarball(path, binary_name):
+def _create_test_tarball(path: Path, binary_name: str) -> None:
     """Create a test tarball with a binary inside."""
     import tarfile
 
@@ -156,14 +173,17 @@ def _create_test_tarball(path, binary_name):
             f.write("#!/bin/sh\necho 'Hello from test tool'\n")
 
         # Make it executable
-        binary_path.chmod(0o755)
+        binary_path.chmod(0o755)  # nosec: B103
 
         # Create tarball
         with tarfile.open(path, "w:gz") as tar:
             tar.add(binary_path, arcname=binary_name)
 
 
-def test_analyze_tool(monkeypatch, capsys, mock_github_api):
+def test_analyze_tool(
+    capsys: CaptureFixture[str],
+    mock_github_api: Any,  # noqa: ARG001
+) -> None:
     """Test analyzing a GitHub repo for release patterns."""
     # Run analyze command
     with patch.object(sys, "argv", ["dotbins", "analyze", "test/tool"]):
@@ -176,10 +196,7 @@ def test_analyze_tool(monkeypatch, capsys, mock_github_api):
     assert '"repo": "test/tool"' in captured.out
 
 
-# Add to test_integration.py
-
-
-def test_cli_no_command(capsys):
+def test_cli_no_command(capsys: CaptureFixture[str]) -> None:
     """Test running CLI with no command."""
     with patch.object(sys, "argv", ["dotbins"]):
         dotbins.main()
@@ -189,17 +206,19 @@ def test_cli_no_command(capsys):
     assert "usage: dotbins" in captured.out
 
 
-def test_cli_unknown_tool(monkeypatch):
+def test_cli_unknown_tool(monkeypatch: MonkeyPatch) -> None:
     """Test updating an unknown tool."""
     monkeypatch.setattr(dotbins, "TOOLS", {})  # Empty tools dict
 
     # Should exit with error
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", ["dotbins", "update", "unknown-tool"]):
-            dotbins.main()
+    with (
+        pytest.raises(SystemExit),
+        patch.object(sys, "argv", ["dotbins", "update", "unknown-tool"]),
+    ):
+        dotbins.main()
 
 
-def test_cli_tools_dir_override(temp_dir, monkeypatch):
+def test_cli_tools_dir_override(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test overriding tools directory via CLI."""
     custom_dir = temp_dir / "custom_tools"
 

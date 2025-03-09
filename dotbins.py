@@ -57,8 +57,8 @@ def load_config() -> dict[str, Any]:
 
 # Load configuration
 CONFIG = load_config()
-DOTFILES_DIR = Path(CONFIG.get("dotfiles_dir"))
-TOOLS_DIR = Path(CONFIG.get("tools_dir"))
+DOTFILES_DIR = Path(CONFIG.get("dotfiles_dir", "~/.dotfiles"))
+TOOLS_DIR = Path(CONFIG.get("tools_dir", "~/.dotfiles/tools"))
 PLATFORMS = CONFIG.get("platforms", ["linux", "macos"])
 ARCHITECTURES = CONFIG.get("architectures", ["amd64", "arm64"])
 TOOLS = CONFIG.get("tools", {})

@@ -1,16 +1,22 @@
+"""Unit tests for the dotbins module."""
+
 import os
 import sys
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
+from _pytest.capture import CaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from pytest_mock import MockFixture
 
 # Import the dotbins module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import dotbins
 
 
-def test_load_config(temp_dir, monkeypatch):
+def test_load_config(temp_dir: Path) -> None:
     """Test loading configuration from YAML."""
     # Create a sample config file
     config_content = """
@@ -32,12 +38,12 @@ def test_load_config(temp_dir, monkeypatch):
     """
 
     # Mock open to return our config content
-    with patch("builtins.open", mock_open(read_data=config_content)):
-        # Mock the exists check to return True
-        with patch("os.path.isfile", return_value=True):
-            # Mock the dirname to return our temp dir
-            with patch("os.path.dirname", return_value=str(temp_dir)):
-                config = dotbins.load_config()
+    with (
+        patch("builtins.open", mock_open(read_data=config_content)),
+        patch("os.path.isfile", return_value=True),
+        patch("os.path.dirname", return_value=str(temp_dir)),
+    ):
+        config = dotbins.load_config()
 
     # Verify config was loaded correctly
     assert config["dotfiles_dir"] == os.path.expanduser("~/.custom_dotfiles")
@@ -46,7 +52,7 @@ def test_load_config(temp_dir, monkeypatch):
     assert "sample-tool" in config["tools"]
 
 
-def test_load_config_fallback(monkeypatch):
+def test_load_config_fallback() -> None:
     """Test config loading fallback when file not found."""
     # Mock open to raise FileNotFoundError
     with patch("builtins.open", side_effect=FileNotFoundError):
@@ -57,7 +63,7 @@ def test_load_config_fallback(monkeypatch):
     assert config["tools_dir"] == os.path.expanduser("~/.dotfiles/tools")
 
 
-def test_current_platform(monkeypatch):
+def test_current_platform(monkeypatch: MonkeyPatch) -> None:
     """Test platform detection."""
     # Test Linux/amd64
     monkeypatch.setattr(sys, "platform", "linux")
@@ -74,7 +80,7 @@ def test_current_platform(monkeypatch):
     assert arch == "arm64"
 
 
-def test_get_latest_release(requests_mock):
+def test_get_latest_release(requests_mock: MockFixture) -> None:
     """Test fetching latest release from GitHub."""
     # Mock GitHub API response
     response_data = {"tag_name": "v1.0.0", "assets": [{"name": "test-1.0.0.tar.gz"}]}
@@ -91,7 +97,7 @@ def test_get_latest_release(requests_mock):
     assert len(result["assets"]) == 1
 
 
-def test_find_asset():
+def test_find_asset() -> None:
     """Test finding an asset matching a pattern."""
     assets = [
         {"name": "tool-1.0.0-linux_amd64.tar.gz"},
@@ -102,11 +108,13 @@ def test_find_asset():
     # Test finding Linux amd64 asset
     pattern = "tool-{version}-linux_{arch}.tar.gz"
     asset = dotbins.find_asset(assets, pattern)
+    assert asset is not None
     assert asset["name"] == "tool-1.0.0-linux_amd64.tar.gz"
 
     # Test finding macOS asset
     pattern = "tool-{version}-darwin_{arch}.tar.gz"
     asset = dotbins.find_asset(assets, pattern)
+    assert asset is not None
     assert asset["name"] == "tool-1.0.0-darwin_amd64.tar.gz"
 
     # Test pattern with no match
@@ -115,7 +123,7 @@ def test_find_asset():
     assert asset is None
 
 
-def test_download_file(requests_mock, temp_dir):
+def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:
     """Test downloading a file from URL."""
     # Setup mock response
     test_content = b"test file content"
@@ -132,7 +140,7 @@ def test_download_file(requests_mock, temp_dir):
         assert f.read() == test_content
 
 
-def test_extract_from_archive_tar(temp_dir):
+def test_extract_from_archive_tar(temp_dir: Path) -> None:
     """Test extracting binary from tar.gz archive."""
     # Create a test tarball
     import tarfile
@@ -145,7 +153,7 @@ def test_extract_from_archive_tar(temp_dir):
         bin_path = os.path.join(tmpdir, "test-bin")
         with open(bin_path, "wb") as f:
             f.write(bin_content)
-        os.chmod(bin_path, 0o755)
+        os.chmod(bin_path, 0o755)  # noqa: S103
 
         with tarfile.open(archive_path, "w:gz") as tar:
             tar.add(bin_path, arcname="test-bin")
@@ -166,7 +174,7 @@ def test_extract_from_archive_tar(temp_dir):
     assert extracted_bin.stat().st_mode & 0o100  # Check if executable
 
 
-def test_extract_from_archive_zip(temp_dir):
+def test_extract_from_archive_zip(temp_dir: Path) -> None:
     """Test extracting binary from zip archive."""
     # Create a test zip file
     import zipfile
@@ -179,7 +187,7 @@ def test_extract_from_archive_zip(temp_dir):
         bin_path = os.path.join(tmpdir, "test-bin")
         with open(bin_path, "wb") as f:
             f.write(bin_content)
-        os.chmod(bin_path, 0o755)
+        os.chmod(bin_path, 0o755)  # noqa: S103
 
         with zipfile.ZipFile(archive_path, "w") as zip_file:
             zip_file.write(bin_path, arcname="test-bin")
@@ -200,7 +208,7 @@ def test_extract_from_archive_zip(temp_dir):
     assert extracted_bin.stat().st_mode & 0o100  # Check if executable
 
 
-def test_make_binaries_executable(temp_dir, monkeypatch):
+def test_make_binaries_executable(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test making binaries executable."""
     # Setup mock environment
     monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir)
@@ -224,7 +232,7 @@ def test_make_binaries_executable(temp_dir, monkeypatch):
     assert bin_file.stat().st_mode & 0o100
 
 
-def test_print_shell_setup(capsys):
+def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     """Test printing shell setup instructions."""
     dotbins.print_shell_setup()
     captured = capsys.readouterr()
@@ -232,10 +240,7 @@ def test_print_shell_setup(capsys):
     assert 'export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"' in captured.out
 
 
-# Add to test_unit.py
-
-
-def test_download_tool_already_exists(temp_dir, monkeypatch):
+def test_download_tool_already_exists(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test download_tool when binary already exists."""
     # Setup environment
     monkeypatch.setattr(
@@ -259,7 +264,11 @@ def test_download_tool_already_exists(temp_dir, monkeypatch):
     assert result is True
 
 
-def test_download_tool_asset_not_found(temp_dir, monkeypatch, requests_mock):
+def test_download_tool_asset_not_found(
+    temp_dir: Path,
+    monkeypatch: MonkeyPatch,
+    requests_mock: MockFixture,
+) -> None:
     """Test download_tool when asset is not found."""
     # Mock GitHub API response
     response_data = {
@@ -292,7 +301,7 @@ def test_download_tool_asset_not_found(temp_dir, monkeypatch, requests_mock):
     assert result is False
 
 
-def test_extract_from_archive_unknown_type(temp_dir):
+def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
     """Test extract_from_archive with unknown archive type."""
     # Create a dummy file with unknown extension
     archive_path = str(temp_dir / "test.xyz")
@@ -311,7 +320,7 @@ def test_extract_from_archive_unknown_type(temp_dir):
         dotbins.extract_from_archive(archive_path, dest_dir, tool_config, "linux")
 
 
-def test_extract_from_archive_missing_binary(temp_dir):
+def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
     """Test extract_from_archive when binary is not in archive."""
     # Create a test tarball without the binary
     import tarfile
