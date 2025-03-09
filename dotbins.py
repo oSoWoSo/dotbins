@@ -138,10 +138,10 @@ def extract_from_archive(  # noqa: PLR0912, PLR0915
         if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
             logging.info("Processing as tar.gz archive")
             with tarfile.open(archive_path, mode="r:gz") as tar:
-                tar.extractall(path=temp_dir)  # noqa: S202
+                tar.extractall(path=temp_dir)
         elif archive_path.endswith(".zip"):
             with zipfile.ZipFile(archive_path) as zip_file:
-                zip_file.extractall(path=temp_dir)  # noqa: S202
+                zip_file.extractall(path=temp_dir)
         else:
             logging.warning("Unknown archive type: %s", archive_path)
             msg = f"Cannot extract archive: {archive_path}"
@@ -601,16 +601,16 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
 
     if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
         with tarfile.open(archive_path, mode="r:gz") as tar:
-            tar.extractall(path=dest_dir)  # noqa: S202
+            tar.extractall(path=dest_dir)
     elif archive_path.endswith(".zip"):
         with zipfile.ZipFile(archive_path) as zip_file:
-            zip_file.extractall(path=dest_dir)  # noqa: S202
+            zip_file.extractall(path=dest_dir)
     else:
         msg = f"Unsupported archive format: {archive_path}"
         raise ValueError(msg)
 
 
-def find_executables(directory: str) -> list[str]:
+def find_executables(directory: str | Path) -> list[str]:
     """Find executable files in a directory structure."""
     executables = []
     for root, _, files in os.walk(directory):
