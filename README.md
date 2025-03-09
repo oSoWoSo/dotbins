@@ -22,7 +22,6 @@ Whether you work across multiple machines or just want a version-controlled setu
   - [Commands](#commands)
 - [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
 - [:gear: Configuration](#gear-configuration)
-- [:bulb: Examples](#bulb-examples)
 - [:computer: Shell Integration](#computer-shell-integration)
 - [:mag: Finding Tool Patterns](#mag-finding-tool-patterns)
 - [:heart: Support and Contributions](#heart-support-and-contributions)
