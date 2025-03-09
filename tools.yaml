@@ -44,7 +44,7 @@ tools:
     asset_patterns:
       linux: bat-v{version}-{arch}-unknown-linux-gnu.tar.gz
       macos: bat-v{version}-{arch}-apple-darwin.tar.gz
-    
+
   eza:
     repo: eza-community/eza
     extract_binary: true
@@ -53,7 +53,7 @@ tools:
     asset_patterns:
       linux: eza_{arch}-unknown-linux-gnu.tar.gz
       macos: null  # No macOS binaries available as of now
-    
+
   zoxide:
     repo: ajeetdsouza/zoxide
     extract_binary: true

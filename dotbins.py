@@ -9,6 +9,8 @@ This tool helps maintain a consistent set of CLI utilities across all your
 environments, with binaries tracked in your dotfiles git repository.
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import os
@@ -20,14 +22,14 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 
 import requests
 import yaml
 
 
 # Function to load the configuration
-def load_config():
+def load_config() -> dict[str, Any]:
     """Load configuration from YAML file."""
     config_path = os.path.join(os.path.dirname(__file__), "tools.yaml")
     try:
@@ -39,10 +41,8 @@ def load_config():
             config["dotfiles_dir"] = os.path.expanduser(config["dotfiles_dir"])
         if isinstance(config.get("tools_dir"), str):
             config["tools_dir"] = os.path.expanduser(config["tools_dir"])
-
-        return config
-    except Exception as e:
-        logging.exception(f"Error loading configuration: {e}")
+    except Exception:
+        logging.exception("Error loading configuration")
         # Fallback to defaults
         return {
             "dotfiles_dir": os.path.expanduser("~/.dotfiles"),
@@ -51,6 +51,8 @@ def load_config():
             "architectures": ["amd64", "arm64"],
             "tools": {},
         }
+    else:
+        return config
 
 
 # Load configuration
@@ -62,7 +64,7 @@ ARCHITECTURES = CONFIG.get("architectures", ["amd64", "arm64"])
 TOOLS = CONFIG.get("tools", {})
 
 
-def setup_logging(verbose: bool = False) -> None:
+def setup_logging(verbose: bool = False) -> None:  # noqa: FBT001, FBT002
     """Configure logging level based on verbosity."""
     log_level = logging.INFO if verbose else logging.WARNING
     logging.basicConfig(
@@ -75,24 +77,24 @@ def setup_logging(verbose: bool = False) -> None:
 def get_latest_release(repo: str) -> dict:
     """Get the latest release information from GitHub."""
     url = f"https://api.github.com/repos/{repo}/releases/latest"
-    logging.info(f"Fetching latest release from {url}")
-    response = requests.get(url)
+    logging.info("Fetching latest release from %s", url)
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
     return response.json()
 
 
-def find_asset(assets: List[dict], pattern: str) -> Optional[dict]:
+def find_asset(assets: list[dict], pattern: str) -> dict | None:
     """Find an asset that matches the given pattern."""
     regex_pattern = (
         pattern.replace("{version}", ".*")
         .replace("{arch}", ".*")
         .replace("{platform}", ".*")
     )
-    logging.info(f"Looking for asset with pattern: {regex_pattern}")
+    logging.info("Looking for asset with pattern: %s", regex_pattern)
 
     for asset in assets:
         if re.search(regex_pattern, asset["name"]):
-            logging.info(f"Found matching asset: {asset['name']}")
+            logging.info("Found matching asset: %s", asset["name"])
             return asset
 
     return None
@@ -100,8 +102,8 @@ def find_asset(assets: List[dict], pattern: str) -> Optional[dict]:
 
 def download_file(url: str, destination: str) -> str:
     """Download a file from a URL to a destination path."""
-    logging.info(f"Downloading from {url}")
-    response = requests.get(url, stream=True)
+    logging.info("Downloading from %s", url)
+    response = requests.get(url, stream=True, timeout=30)
     response.raise_for_status()
 
     with open(destination, "wb") as f:
@@ -111,14 +113,14 @@ def download_file(url: str, destination: str) -> str:
     return destination
 
 
-def extract_from_archive(
+def extract_from_archive(  # noqa: PLR0912, PLR0915
     archive_path: str,
     destination_dir: Path,
     tool_config: dict,
-    platform: str,
+    platform: str,  # noqa: ARG001
 ) -> None:
     """Extract a binary from an archive using explicit paths."""
-    logging.info(f"Extracting from {archive_path}")
+    logging.info("Extracting from %s", archive_path)
     temp_dir = Path(tempfile.mkdtemp())
 
     # Check for gzip file types
@@ -128,36 +130,36 @@ def extract_from_archive(
             # Check for gzip magic number (1f 8b)
             if f.read(2) == b"\x1f\x8b":
                 is_tarball = True
-    except Exception as e:
-        logging.exception(f"Error checking file type: {e}")
+    except Exception:
+        logging.exception("Error checking file type")
 
     # Extract based on file type
     try:
         if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
             logging.info("Processing as tar.gz archive")
             with tarfile.open(archive_path, mode="r:gz") as tar:
-                tar.extractall(path=temp_dir)
+                tar.extractall(path=temp_dir)  # noqa: S202
         elif archive_path.endswith(".zip"):
             with zipfile.ZipFile(archive_path) as zip_file:
-                zip_file.extractall(path=temp_dir)
+                zip_file.extractall(path=temp_dir)  # noqa: S202
         else:
-            logging.warning(f"Unknown archive type: {archive_path}")
+            logging.warning("Unknown archive type: %s", archive_path)
             msg = f"Cannot extract archive: {archive_path}"
-            raise ValueError(msg)
-    except Exception as e:
-        logging.exception(f"Extraction failed: {e}")
+            raise ValueError(msg)  # noqa: TRY301
+    except Exception:
+        logging.exception("Extraction failed")
         shutil.rmtree(temp_dir)
         raise
 
-    logging.info(f"Archive extracted to {temp_dir}")
+    logging.info("Archive extracted to %s", temp_dir)
 
     # Debug: List the top-level files
     try:
         logging.info("Extracted files:")
         for item in temp_dir.glob("**/*"):
-            logging.info(f"  - {item.relative_to(temp_dir)}")
-    except Exception:
-        pass
+            logging.info("  - %s", item.relative_to(temp_dir))
+    except Exception:  # noqa: BLE001
+        logging.debug("Could not list extracted files")
 
     try:
         # Get the binary path from configuration
@@ -198,23 +200,23 @@ def extract_from_archive(
         # Copy the binary and set permissions
         shutil.copy2(source_path, dest_path)
         dest_path.chmod(dest_path.stat().st_mode | 0o755)
-        logging.info(f"Copied binary to {dest_path}")
+        logging.info("Copied binary to %s", dest_path)
 
     finally:
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
 
 
-def download_tool(
+def download_tool(  # noqa: PLR0912, PLR0915
     tool_name: str,
     platform: str,
     arch: str,
-    force: bool = False,
+    force: bool = False,  # noqa: FBT001, FBT002
 ) -> bool:
     """Download a tool for a specific platform and architecture."""
     tool_config = TOOLS.get(tool_name)
     if not tool_config:
-        logging.error(f"Tool '{tool_name}' not found in configuration")
+        logging.error("Tool '%s' not found in configuration", tool_name)
         return False
 
     destination_dir = TOOLS_DIR / platform / arch / "bin"
@@ -226,7 +228,10 @@ def download_tool(
 
     if binary_path.exists() and not force:
         logging.info(
-            f"✓ {tool_name} for {platform}/{arch} already exists (use --force to update)",
+            "✓ %s for %s/%s already exists (use --force to update)",
+            tool_name,
+            platform,
+            arch,
         )
         return True
 
@@ -259,7 +264,9 @@ def download_tool(
             asset_pattern = tool_config["asset_patterns"].get(platform)
             if asset_pattern is None:
                 logging.warning(
-                    f"⚠️ No asset pattern defined for {tool_name} on {platform}",
+                    "⚠️ No asset pattern defined for %s on %s",
+                    tool_name,
+                    platform,
                 )
                 return False
         else:
@@ -276,7 +283,9 @@ def download_tool(
         asset = find_asset(release["assets"], search_pattern)
         if not asset:
             logging.warning(
-                f"⚠️ No asset matching '{search_pattern}' found for {tool_name}",
+                "⚠️ No asset matching '%s' found for %s",
+                search_pattern,
+                tool_name,
             )
             return False
 
@@ -301,7 +310,10 @@ def download_tool(
                 dest_file.chmod(dest_file.stat().st_mode | 0o755)
 
             logging.info(
-                f"✅ Successfully downloaded {tool_name} for {platform}/{arch}",
+                "✅ Successfully downloaded %s for %s/%s",
+                tool_name,
+                platform,
+                arch,
             )
             return True
 
@@ -310,8 +322,13 @@ def download_tool(
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
 
-    except Exception as e:
-        logging.exception(f"❌ Error processing {tool_name} for {platform}/{arch}: {e}")
+    except Exception:
+        logging.exception(
+            "❌ Error processing %s for %s/%s",
+            tool_name,
+            platform,
+            arch,
+        )
         return False
 
 
@@ -358,14 +375,14 @@ export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"
     )
 
 
-def list_tools(args) -> None:
+def list_tools(_args: Any) -> None:
     """List available tools."""
     print("Available tools:")
     for tool, config in TOOLS.items():
         print(f"  {tool} (from {config['repo']})")
 
 
-def update_tools(args) -> None:
+def update_tools(args: argparse.Namespace) -> None:
     """Update tools based on command line arguments."""
     tools_to_update = args.tools if args.tools else TOOLS.keys()
     platforms_to_update = [args.platform] if args.platform else PLATFORMS
@@ -374,7 +391,7 @@ def update_tools(args) -> None:
     # Validate tools
     for tool in tools_to_update:
         if tool not in TOOLS:
-            logging.error(f"Unknown tool: {tool}")
+            logging.error("Unknown tool: %s", tool)
             sys.exit(1)
 
     # Create the tools directory structure
@@ -401,7 +418,7 @@ def update_tools(args) -> None:
         print_shell_setup()
 
 
-def initialize(_args) -> None:  # noqa: ANN001
+def initialize(_args: Any) -> None:
     """Initialize the tools directory structure."""
     for platform in PLATFORMS:
         for arch in ARCHITECTURES:
@@ -411,7 +428,7 @@ def initialize(_args) -> None:  # noqa: ANN001
     print_shell_setup()
 
 
-def analyze_tool(args) -> None:
+def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
     """Analyze GitHub releases for a tool to help determine patterns."""
     repo = args.repo
     if not repo or "/" not in repo:
