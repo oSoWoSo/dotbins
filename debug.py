@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
-"""
-Debug script for dotbins.py to help diagnose download and extraction issues.
-"""
+"""Debug script for dotbins.py to help diagnose download and extraction issues."""
 
-import os
 import sys
-import requests
-import tempfile
-import shutil
-import magic  # Install with: pip install python-magic
 from pathlib import Path
 
+import magic  # Install with: pip install python-magic
+import requests
+
 # Import the tools configuration from dotbins
-from dotbins import TOOLS, get_latest_release, find_asset
+from dotbins import TOOLS, find_asset, get_latest_release
 
 
-def debug_tool_download(tool_name, platform, architecture):
-    """Debug the download process for a specific tool, platform, and architecture"""
+def debug_tool_download(tool_name, platform, architecture) -> None:
+    """Debug the download process for a specific tool, platform, and architecture."""
     if tool_name not in TOOLS:
         print(f"Error: Tool '{tool_name}' not found in configuration")
         return
@@ -62,7 +58,9 @@ def debug_tool_download(tool_name, platform, architecture):
 
     # Replace variables in pattern
     search_pattern = asset_pattern.format(
-        version=version, platform=tool_platform, arch=tool_arch
+        version=version,
+        platform=tool_platform,
+        arch=tool_arch,
     )
     print(f"Search pattern: {search_pattern}")
 
@@ -131,8 +129,8 @@ def debug_tool_download(tool_name, platform, architecture):
         print(f"Error downloading asset: {e}")
 
 
-def main():
-    """Main function to run the debug script"""
+def main() -> None:
+    """Main function to run the debug script."""
     print("dotbins Debugger")
     print("================")
 
