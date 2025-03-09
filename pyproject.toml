@@ -91,7 +91,6 @@ default-tag = "0.0.0"
 dev = [
     "pytest-cov>=6.0.0",
     "pytest>=8.3.5",
-    "python-magic>=0.4.27",
     "requests-mock>=1.12.1",
     "pytest-mock>=3.14.0",
     "ruff>=0.9.10",
