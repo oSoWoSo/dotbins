@@ -10,19 +10,19 @@ This tool helps maintain a consistent set of CLI utilities across all your
 environments, with binaries tracked in your dotfiles git repository.
 """
 
-import os
-import sys
 import argparse
-import requests
-import tarfile
-import zipfile
-import shutil
-from pathlib import Path
-import json
-import tempfile
-import re
 import logging
-from typing import Dict, List, Optional, Any
+import os
+import re
+import shutil
+import sys
+import tarfile
+import tempfile
+import zipfile
+from pathlib import Path
+from typing import List, Optional
+
+import requests
 
 # Configuration
 DOTFILES_DIR = Path.home() / ".dotfiles"
