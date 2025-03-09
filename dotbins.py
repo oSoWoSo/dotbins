@@ -428,7 +428,11 @@ def initialize(_args: Any) -> None:
     print_shell_setup()
 
 
-def generate_tool_configuration(repo: str, tool_name: str | None = None) -> dict:
+def generate_tool_configuration(
+    repo: str,
+    tool_name: str | None = None,
+    release: dict | None = None,
+) -> dict:
     """Analyze GitHub releases and generate tool configuration.
 
     This is the core functionality of the analyze_tool command,
@@ -440,6 +444,8 @@ def generate_tool_configuration(repo: str, tool_name: str | None = None) -> dict
         GitHub repository in the format 'owner/repo'
     tool_name : str, optional
         Name to use for the tool. If None, uses repo name
+    release : dict, optional
+        Pre-fetched release data. If None, it will be fetched from GitHub
 
     Returns
     -------
@@ -455,8 +461,9 @@ def generate_tool_configuration(repo: str, tool_name: str | None = None) -> dict
     if not tool_name:
         tool_name = repo.split("/")[-1]
 
-    # Get latest release info
-    release = get_latest_release(repo)
+    # Get latest release info if not provided
+    if release is None:
+        release = get_latest_release(repo)
 
     # Find sample asset and determine binary path
     sample_asset = find_sample_asset(release["assets"])
@@ -480,9 +487,12 @@ def analyze_tool(args: argparse.Namespace) -> None:
         print(f"\nLatest release: {release['tag_name']} ({release['name']})")
         print_assets_info(release["assets"])
 
-        # Generate tool configuration using the refactored function
+        # Extract tool name from repo or use provided name
         tool_name = args.name or repo.split("/")[-1]
-        tool_config = generate_tool_configuration(repo, tool_name)
+
+        # Generate tool configuration using the refactored function
+        # Pass the already fetched release to avoid duplicate API calls
+        tool_config = generate_tool_configuration(repo, tool_name, release)
 
         # Output YAML
         print("\nSuggested configuration for YAML tools file:")

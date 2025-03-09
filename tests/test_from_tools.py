@@ -121,7 +121,10 @@ def find_matching_asset(
 def analyze_tool_with_dotbins(repo: str, tool_name: str) -> dict:
     """Run the analyze function and return the suggested configuration."""
     try:
-        return dotbins.generate_tool_configuration(repo, tool_name)
+        # Get the release first
+        release = dotbins.get_latest_release(repo)
+        # Use the release in the configuration generation
+        return dotbins.generate_tool_configuration(repo, tool_name, release)
     except Exception as e:  # noqa: BLE001
         print(f"Error analyzing {tool_name}: {e}")
         return {}
@@ -154,14 +157,12 @@ def compare_configs(existing: dict, suggested: dict) -> list[str]:
             suggested_pattern = suggested["asset_patterns"].get(platform)
             if existing_pattern != suggested_pattern:
                 differences.append(
-                    f"asset_patterns[{platform}]: existing='{existing_pattern}', "
-                    f"suggested='{suggested_pattern}'",
+                    f"asset_patterns[{platform}]: existing='{existing_pattern}', suggested='{suggested_pattern}'",
                 )
     elif "asset_pattern" in existing and "asset_pattern" in suggested:
         if existing["asset_pattern"] != suggested["asset_pattern"]:
             differences.append(
-                f"asset_pattern: existing='{existing['asset_pattern']}', "
-                f"suggested='{suggested['asset_pattern']}'",
+                f"asset_pattern: existing='{existing['asset_pattern']}', suggested='{suggested['asset_pattern']}'",
             )
     elif "asset_pattern" in existing and "asset_patterns" in suggested:
         differences.append(
