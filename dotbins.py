@@ -45,10 +45,8 @@ def load_config() -> dict[str, Any]:
         if isinstance(config.get("tools_dir"), str):
             config["tools_dir"] = os.path.expanduser(config["tools_dir"])
     except Exception:  # noqa: BLE001
-        console.print(
-            "❌ [bold red]Error loading configuration[/bold red]",
-            exc_info=True,
-        )
+        console.print("❌ [bold red]Error loading configuration[/bold red]")
+        console.print_exception()
         # Fallback to defaults
         return {
             "dotfiles_dir": os.path.expanduser("~/.dotfiles"),
@@ -132,7 +130,8 @@ def extract_from_archive(  # noqa: PLR0912, PLR0915
             if f.read(2) == b"\x1f\x8b":
                 is_tarball = True
     except Exception:  # noqa: BLE001
-        console.print("❌ [bold red]Error checking file type[/bold red]", exc_info=True)
+        console.print("❌ [bold red]Error checking file type[/bold red]")
+        console.print_exception()
 
     # Extract based on file type
     try:
@@ -148,7 +147,8 @@ def extract_from_archive(  # noqa: PLR0912, PLR0915
             msg = f"Cannot extract archive: {archive_path}"
             raise ValueError(msg)  # noqa: TRY301
     except Exception:
-        console.print("❌ [bold red]Extraction failed[/bold red]", exc_info=True)
+        console.print("❌ [bold red]Extraction failed[/bold red]")
+        console.print_exception()
         shutil.rmtree(temp_dir)
         raise
 
@@ -324,8 +324,8 @@ def download_tool(  # noqa: PLR0912, PLR0915
     except Exception:  # noqa: BLE001
         console.print(
             f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}[/bold red]",
-            exc_info=True,
         )
+        console.print_exception()
         return False
 
 
@@ -503,7 +503,8 @@ def analyze_tool(args: argparse.Namespace) -> None:
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
 
     except Exception as e:  # noqa: BLE001
-        console.print("❌ [bold red]Error analyzing repo[/bold red]", exc_info=True)
+        console.print("❌ [bold red]Error analyzing repo[/bold red]")
+        console.print_exception()
         console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
         sys.exit(1)
 
