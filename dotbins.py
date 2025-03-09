@@ -428,7 +428,7 @@ def initialize(_args: Any) -> None:
     print_shell_setup()
 
 
-def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
+def analyze_tool(args: argparse.Namespace) -> None:
     """Analyze GitHub releases for a tool to help determine patterns."""
     repo = args.repo
     if not repo or "/" not in repo:
@@ -442,118 +442,323 @@ def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
         release = get_latest_release(repo)
 
         print(f"\nLatest release: {release['tag_name']} ({release['name']})")
-        print("\nAvailable assets:")
+        print_assets_info(release["assets"])
 
-        for asset in release["assets"]:
-            print(f"  - {asset['name']} ({asset['browser_download_url']})")
-
-        # Platform categorization
-        print("\nLinux assets:")
-        linux_assets = [
-            a["name"] for a in release["assets"] if "linux" in a["name"].lower()
-        ]
-        for asset in linux_assets:
-            print(f"  - {asset}")
-
-        print("\nmacOS assets:")
-        macos_assets = [
-            a["name"]
-            for a in release["assets"]
-            if "darwin" in a["name"].lower() or "macos" in a["name"].lower()
-        ]
-        for asset in macos_assets:
-            print(f"  - {asset}")
-
-        # Architecture categorization
-        print("\nAMD64/x86_64 assets:")
-        amd64_assets = [
-            a["name"]
-            for a in release["assets"]
-            if "amd64" in a["name"].lower() or "x86_64" in a["name"].lower()
-        ]
-        for asset in amd64_assets:
-            print(f"  - {asset}")
-
-        print("\nARM64/aarch64 assets:")
-        arm64_assets = [
-            a["name"]
-            for a in release["assets"]
-            if "arm64" in a["name"].lower() or "aarch64" in a["name"].lower()
-        ]
-        for asset in arm64_assets:
-            print(f"  - {asset}")
-
-        # Suggest configuration
+        # Extract tool name from repo or use provided name
         tool_name = args.name or repo.split("/")[-1]
 
-        platform_specific = bool(linux_assets and macos_assets)
+        # Find sample asset and determine binary path
+        sample_asset = find_sample_asset(release["assets"])
+        binary_path = None
 
-        # Determine if architecture conversion is needed
-        arch_conversion = any("x86_64" in a["name"] for a in release["assets"]) or any(
-            "aarch64" in a["name"] for a in release["assets"]
-        )
+        if sample_asset:
+            binary_path = download_and_find_binary(sample_asset, tool_name)
 
-        # Create tool configuration dict
-        tool_config = {
-            "repo": repo,
-            "extract_binary": True,
-            "binary_name": tool_name,
-        }
-
-        # Add arch_map if needed
-        if arch_conversion:
-            tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
-
-        if platform_specific:
-            linux_pattern = "?"
-            macos_pattern = "?"
-
-            if linux_assets and "x86_64" in " ".join(linux_assets):
-                linux_pattern = linux_assets[0].replace("x86_64", "{arch}")
-                linux_pattern = re.sub(
-                    r"[0-9]+\.[0-9]+\.[0-9]+",
-                    "{version}",
-                    linux_pattern,
-                )
-
-            if macos_assets and "x86_64" in " ".join(macos_assets):
-                macos_pattern = macos_assets[0].replace("x86_64", "{arch}")
-                macos_pattern = re.sub(
-                    r"[0-9]+\.[0-9]+\.[0-9]+",
-                    "{version}",
-                    macos_pattern,
-                )
-
-            tool_config["asset_patterns"] = {
-                "linux": linux_pattern,
-                "macos": macos_pattern,
-            }
-        else:
-            # Single pattern
-            pattern = "?"
-            if release["assets"]:
-                pattern = release["assets"][0]["name"]
-                pattern = re.sub(r"[0-9]+\.[0-9]+\.[0-9]+", "{version}", pattern)
-                if "linux" in pattern:
-                    pattern = pattern.replace("linux", "{platform}")
-                elif "darwin" in pattern:
-                    pattern = pattern.replace("darwin", "{platform}")
-
-                if "x86_64" in pattern:
-                    pattern = pattern.replace("x86_64", "{arch}")
-                elif "amd64" in pattern:
-                    pattern = pattern.replace("amd64", "{arch}")
-
-            tool_config["asset_pattern"] = pattern
+        # Generate tool configuration
+        tool_config = generate_tool_config(repo, tool_name, release, binary_path)
 
         # Output YAML
         print("\nSuggested configuration for YAML tools file:")
         yaml_config = {tool_name: tool_config}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
 
-    except Exception:
+    except Exception as e:
         logging.exception("Error analyzing repo")
+        print(f"Error: {e!s}")
         sys.exit(1)
+
+
+def print_assets_info(assets: list[dict]) -> None:
+    """Print detailed information about available assets."""
+    print("\nAvailable assets:")
+    for asset in assets:
+        print(f"  - {asset['name']} ({asset['browser_download_url']})")
+
+    # Platform categorization
+    linux_assets = get_platform_assets(assets, "linux")
+    print("\nLinux assets:")
+    for asset in linux_assets:
+        print(f"  - {asset['name']}")
+
+    macos_assets = get_platform_assets(assets, "macos")
+    print("\nmacOS assets:")
+    for asset in macos_assets:
+        print(f"  - {asset['name']}")
+
+    # Architecture categorization
+    amd64_assets = get_arch_assets(assets, "amd64")
+    print("\nAMD64/x86_64 assets:")
+    for asset in amd64_assets:
+        print(f"  - {asset['name']}")
+
+    arm64_assets = get_arch_assets(assets, "arm64")
+    print("\nARM64/aarch64 assets:")
+    for asset in arm64_assets:
+        print(f"  - {asset['name']}")
+
+
+def get_platform_assets(assets: list[dict], platform: str) -> list[dict]:
+    """Filter assets by platform."""
+    if platform == "linux":
+        return [a for a in assets if "linux" in a["name"].lower()]
+    if platform == "macos":
+        return [
+            a
+            for a in assets
+            if "darwin" in a["name"].lower() or "macos" in a["name"].lower()
+        ]
+    return []
+
+
+def get_arch_assets(assets: list[dict], arch: str) -> list[dict]:
+    """Filter assets by architecture."""
+    if arch == "amd64":
+        return [
+            a
+            for a in assets
+            if "amd64" in a["name"].lower() or "x86_64" in a["name"].lower()
+        ]
+    if arch == "arm64":
+        return [
+            a
+            for a in assets
+            if "arm64" in a["name"].lower() or "aarch64" in a["name"].lower()
+        ]
+    return []
+
+
+def find_sample_asset(assets: list[dict]) -> dict | None:
+    """Find a suitable sample asset for analysis."""
+    # Try to find Linux x86_64 asset first
+    linux_assets = get_platform_assets(assets, "linux")
+    for asset in linux_assets:
+        if "x86_64" in asset["name"] and asset["name"].endswith(
+            (".tar.gz", ".tgz", ".zip"),
+        ):
+            return asset
+
+    # If no Linux asset, try macOS
+    macos_assets = get_platform_assets(assets, "macos")
+    for asset in macos_assets:
+        if "x86_64" in asset["name"] and asset["name"].endswith(
+            (".tar.gz", ".tgz", ".zip"),
+        ):
+            return asset
+
+    return None
+
+
+def download_and_find_binary(asset: dict, tool_name: str) -> str | None:
+    """Download sample asset and find binary path."""
+    print(f"\nDownloading sample archive: {asset['name']} to inspect contents...")
+
+    temp_path = None
+    temp_dir = None
+    binary_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=os.path.splitext(asset["name"])[1],
+        ) as temp_file:
+            temp_path = temp_file.name
+
+        download_file(asset["browser_download_url"], temp_path)
+        temp_dir = tempfile.mkdtemp()
+
+        # Extract the archive
+        extract_archive(temp_path, temp_dir)
+
+        # Find executables
+        executables = find_executables(temp_dir)
+
+        print("\nExecutable files found in the archive:")
+        for exe in executables:
+            print(f"  - {exe}")
+
+        # Determine binary path
+        binary_path = determine_binary_path(executables, tool_name)
+
+        if binary_path:
+            print(f"\nDetected binary path: {binary_path}")
+
+        return binary_path
+
+    finally:
+        # Clean up
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+
+def extract_archive(archive_path: str, dest_dir: str) -> None:
+    """Extract an archive to a destination directory."""
+    is_tarball = False
+    with open(archive_path, "rb") as f:
+        if f.read(2) == b"\x1f\x8b":
+            is_tarball = True
+
+    if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
+        with tarfile.open(archive_path, mode="r:gz") as tar:
+            tar.extractall(path=dest_dir)  # noqa: S202
+    elif archive_path.endswith(".zip"):
+        with zipfile.ZipFile(archive_path) as zip_file:
+            zip_file.extractall(path=dest_dir)  # noqa: S202
+    else:
+        msg = f"Unsupported archive format: {archive_path}"
+        raise ValueError(msg)
+
+
+def find_executables(directory: str) -> list[str]:
+    """Find executable files in a directory structure."""
+    executables = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if os.access(file_path, os.X_OK):
+                rel_path = os.path.relpath(file_path, directory)
+                executables.append(rel_path)
+    return executables
+
+
+def determine_binary_path(executables: list[str], tool_name: str) -> str | None:
+    """Determine the most likely binary path based on executables."""
+    if not executables:
+        return None
+
+    # First try to find an exact name match
+    for exe in executables:
+        base_name = os.path.basename(exe)
+        if base_name.lower() == tool_name.lower():
+            return exe
+
+    # Then try to find executables in bin/
+    for exe in executables:
+        if "/bin/" in exe:
+            return exe
+
+    # Finally, just take the first executable
+    return executables[0]
+
+
+def generate_tool_config(
+    repo: str,
+    tool_name: str,
+    release: dict,
+    binary_path: str | None,
+) -> dict:
+    """Generate tool configuration based on release information."""
+    assets = release["assets"]
+    linux_assets = get_platform_assets(assets, "linux")
+    macos_assets = get_platform_assets(assets, "macos")
+
+    # Determine if we need architecture conversion
+    arch_conversion = any("x86_64" in a["name"] for a in assets) or any(
+        "aarch64" in a["name"] for a in assets
+    )
+
+    # Create tool configuration
+    tool_config = {
+        "repo": repo,
+        "extract_binary": True,
+        "binary_name": tool_name,
+    }
+
+    # Add binary path if found
+    if binary_path:
+        version = release["tag_name"].lstrip("v")
+        # Check if there's a version folder in the path
+        if version in binary_path:
+            binary_path = binary_path.replace(version, "{version}")
+        tool_config["binary_path"] = binary_path
+
+    # Add arch_map if needed
+    if arch_conversion:
+        tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
+
+    # Generate asset patterns
+    platform_specific = bool(linux_assets and macos_assets)
+    if platform_specific:
+        asset_patterns = generate_platform_specific_patterns(release)
+        tool_config["asset_patterns"] = asset_patterns
+    else:
+        # Single pattern for all platforms
+        pattern = generate_single_pattern(release)
+        if pattern != "?":
+            tool_config["asset_pattern"] = pattern
+
+    return tool_config
+
+
+def generate_platform_specific_patterns(release: dict) -> dict:
+    """Generate platform-specific asset patterns."""
+    assets = release["assets"]
+    linux_assets = get_platform_assets(assets, "linux")
+    macos_assets = get_platform_assets(assets, "macos")
+    amd64_assets = get_arch_assets(assets, "amd64")
+
+    patterns = {"linux": "?", "macos": "?"}
+
+    # Find pattern for Linux
+    if linux_assets and amd64_assets:
+        for asset in linux_assets:
+            if "x86_64" in asset["name"] or "amd64" in asset["name"]:
+                pattern = asset["name"]
+                if "x86_64" in pattern:
+                    pattern = pattern.replace("x86_64", "{arch}")
+                elif "amd64" in pattern:
+                    pattern = pattern.replace("amd64", "{arch}")
+                version = release["tag_name"].lstrip("v")
+                if version in pattern:
+                    pattern = pattern.replace(version, "{version}")
+                patterns["linux"] = pattern
+                break
+
+    # Find pattern for macOS
+    if macos_assets and amd64_assets:
+        for asset in macos_assets:
+            if "x86_64" in asset["name"] or "amd64" in asset["name"]:
+                pattern = asset["name"]
+                if "x86_64" in pattern:
+                    pattern = pattern.replace("x86_64", "{arch}")
+                elif "amd64" in pattern:
+                    pattern = pattern.replace("amd64", "{arch}")
+                version = release["tag_name"].lstrip("v")
+                if version in pattern:
+                    pattern = pattern.replace(version, "{version}")
+                patterns["macos"] = pattern
+                break
+
+    return patterns
+
+
+def generate_single_pattern(release: dict) -> str:
+    """Generate a single asset pattern for all platforms."""
+    if not release["assets"]:
+        return "?"
+
+    asset_name = release["assets"][0]["name"]
+    pattern = asset_name
+
+    # Replace version if present
+    version = release["tag_name"].lstrip("v")
+    if version in pattern:
+        pattern = pattern.replace(version, "{version}")
+
+    # Replace platform if present
+    if "linux" in pattern.lower():
+        pattern = re.sub(r"(?i)linux", "{platform}", pattern)
+    elif "darwin" in pattern.lower():
+        pattern = re.sub(r"(?i)darwin", "{platform}", pattern)
+
+    # Replace architecture if present
+    if "x86_64" in pattern:
+        pattern = pattern.replace("x86_64", "{arch}")
+    elif "amd64" in pattern:
+        pattern = pattern.replace("amd64", "{arch}")
+
+    return pattern
 
 
 def main() -> None:
