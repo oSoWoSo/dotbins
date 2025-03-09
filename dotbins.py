@@ -440,7 +440,6 @@ def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
     try:
         print(f"Analyzing releases for {repo}...")
         release = get_latest_release(repo)
-        release["tag_name"].lstrip("v")
 
         print(f"\nLatest release: {release['tag_name']} ({release['name']})")
         print("\nAvailable assets:")
@@ -487,16 +486,23 @@ def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
         # Suggest configuration
         tool_name = args.name or repo.split("/")[-1]
 
-        platform_specific = False
-        if linux_assets and macos_assets:
-            platform_specific = True
+        platform_specific = bool(linux_assets and macos_assets)
 
-        if any("x86_64" in a for a in release["assets"]) or any(
-            "aarch64" in a for a in release["assets"]
-        ):
-            pass
+        # Determine if architecture conversion is needed
+        arch_conversion = any("x86_64" in a["name"] for a in release["assets"]) or any(
+            "aarch64" in a["name"] for a in release["assets"]
+        )
 
-        print("\nSuggested configuration for TOOLS dictionary:")
+        # Create tool configuration dict
+        tool_config = {
+            "repo": repo,
+            "extract_binary": True,
+            "binary_name": tool_name,
+        }
+
+        # Add arch_map if needed
+        if arch_conversion:
+            tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
 
         if platform_specific:
             linux_pattern = "?"
@@ -518,20 +524,10 @@ def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
                     macos_pattern,
                 )
 
-            print(
-                f"""
-    "{tool_name}": {{
-        "repo": "{repo}",
-        "extract_binary": True,  # Set to False for direct download
-        {"arch_map": {"amd64": "x86_64", "arm64": "aarch64"}, # Map our naming to tool naming" if arch_conversion else ""}
-        "binary_name": "{tool_name}",
-        "asset_patterns": {{
-            "linux": "{linux_pattern}",
-            "macos": "{macos_pattern}",
-        }},
-    }},
-            """,
-            )
+            tool_config["asset_patterns"] = {
+                "linux": linux_pattern,
+                "macos": macos_pattern,
+            }
         else:
             # Single pattern
             pattern = "?"
@@ -548,17 +544,12 @@ def analyze_tool(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915
                 elif "amd64" in pattern:
                     pattern = pattern.replace("amd64", "{arch}")
 
-            print(
-                f"""
-    "{tool_name}": {{
-        "repo": "{repo}",
-        "extract_binary": True,  # Set to False for direct download
-        {"arch_map": {"amd64": "x86_64", "arm64": "aarch64"}, # Map our naming to tool naming" if arch_conversion else ""}
-        "binary_name": "{tool_name}",
-        "asset_pattern": "{pattern}",
-    }},
-            """,
-            )
+            tool_config["asset_pattern"] = pattern
+
+        # Output YAML
+        print("\nSuggested configuration for YAML tools file:")
+        yaml_config = {tool_name: tool_config}
+        print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
 
     except Exception:
         logging.exception("Error analyzing repo")

@@ -1,6 +1,5 @@
 """Integration tests for the dotbins module."""
 
-import os
 import shutil
 import sys
 import tempfile
@@ -9,11 +8,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+import yaml
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
-# Import the dotbins module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import dotbins
 
 
@@ -186,14 +184,32 @@ def test_analyze_tool(
 ) -> None:
     """Test analyzing a GitHub repo for release patterns."""
     # Run analyze command
-    with patch.object(sys, "argv", ["dotbins", "analyze", "test/tool"]):
+    # We need to patch sys.exit to prevent it from actually exiting in the test
+    with (
+        patch.object(sys, "argv", ["dotbins", "analyze", "test/tool"]),
+        patch.object(sys, "exit"),
+    ):
         dotbins.main()
 
     # Check output
     captured = capsys.readouterr()
     assert "Analyzing releases for test/tool" in captured.out
-    assert "Suggested configuration for TOOLS dictionary" in captured.out
-    assert '"repo": "test/tool"' in captured.out
+    assert "Suggested configuration for YAML tools file" in captured.out
+
+    # Check for proper YAML format
+    assert "tool:" in captured.out  # The key should be output
+    assert "repo: test/tool" in captured.out
+    assert "extract_binary: true" in captured.out
+
+    # Make sure the output is in valid YAML format
+    yaml_text = captured.out.split("Suggested configuration for YAML tools file:")[
+        1
+    ].strip()
+    try:
+        # This should not raise an exception if the YAML is valid
+        yaml.safe_load(yaml_text)
+    except Exception as e:  # noqa: BLE001
+        pytest.fail(f"Generated YAML is invalid: {e}")
 
 
 def test_cli_no_command(capsys: CaptureFixture[str]) -> None:
