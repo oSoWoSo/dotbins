@@ -1,0 +1,7 @@
+[project]
+name = "dotbins"
+version = "0.1.0"
+description = "Keep updated binaries in your dotfiles"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["requests"]
