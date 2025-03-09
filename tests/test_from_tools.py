@@ -1,9 +1,11 @@
-"""Tests that download real GitHub releases for tools defined in tools.yaml."""
+"""Tests that analyze tools defined in tools.yaml and compare with existing configuration."""
 
-import subprocess
-import tempfile
+from __future__ import annotations
+
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import requests
@@ -13,7 +15,7 @@ import dotbins
 
 
 @pytest.fixture
-def ensure_bin_dir():
+def ensure_bin_dir() -> Path:
     """Ensure the tests/bin directory exists."""
     bin_dir = Path(__file__).parent / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -21,7 +23,7 @@ def ensure_bin_dir():
 
 
 @pytest.fixture
-def tools_config():
+def tools_config() -> dict[str, Any]:
     """Load tools configuration from tools.yaml."""
     script_dir = Path(__file__).parent.parent
     tools_yaml_path = script_dir / "tools.yaml"
@@ -36,7 +38,7 @@ def find_and_download_asset(
     tool_name: str,
     tool_config: dict[str, Any],
     bin_dir: Path,
-) -> tuple[Optional[Path], Optional[dict[str, Any]]]:
+) -> tuple[Path | None, dict[str, Any] | None]:
     """Find and download an appropriate asset for a tool.
 
     Returns
@@ -68,7 +70,7 @@ def find_and_download_asset(
             dotbins.download_file(asset["browser_download_url"], str(tool_path))
             return tool_path, release
         print(f"No suitable asset found for {tool_name}")
-        return None, release
+        return None, release  # noqa: TRY300
 
     except requests.exceptions.RequestException as e:
         print(f"Error downloading {tool_name}: {e}")
@@ -78,7 +80,7 @@ def find_and_download_asset(
 def find_matching_asset(
     tool_config: dict[str, Any],
     release: dict[str, Any],
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Find an asset that matches the tool configuration."""
     asset = None
     version = release["tag_name"].lstrip("v")
@@ -118,128 +120,122 @@ def find_matching_asset(
     return asset
 
 
-def analyze_tool_binary(
-    tool_name: str,
-    tool_config: dict[str, Any],
-    tool_path: Path,
-    release: Optional[dict[str, Any]] = None,
-) -> None:
-    """Extract and analyze a tool binary."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
+def analyze_tool_with_dotbins(repo: str, tool_name: str) -> dict:
+    """Run the analyze_tool function and return the suggested configuration."""
+    # Create a mock args object
+    mock_args = type("Args", (), {"repo": repo, "name": tool_name})
 
-        # Extract archive
+    # Capture the output of analyze_tool
+    with io.StringIO() as buf, redirect_stdout(buf):
         try:
-            dotbins.extract_archive(str(tool_path), str(temp_path))
-        except Exception as e:
-            print(f"Error extracting {tool_name}: {e}")
-            return
+            dotbins.analyze_tool(mock_args)  # type: ignore[arg-type]
+            output = buf.getvalue()
+        except Exception as e:  # noqa: BLE001
+            print(f"Error analyzing {tool_name}: {e}")
+            return {}
 
-        # Find executables
-        executables = dotbins.find_executables(temp_path)
-        if not executables:
-            print(f"No executables found for {tool_name}")
-            return
+    # Extract YAML from output
+    if "Suggested configuration for YAML tools file:" in output:
+        yaml_text = output.split("Suggested configuration for YAML tools file:")[
+            1
+        ].strip()
+        try:
+            suggested_config = yaml.safe_load(yaml_text)
+            return suggested_config.get(tool_name, {})
+        except yaml.YAMLError as e:
+            print(f"Error parsing YAML for {tool_name}: {e}")
+            return {}
 
-        print(f"Executables found for {tool_name}:")
-        for exe in executables:
-            print(f"  - {exe}")
-
-        # Determine binary path
-        binary_path = dotbins.determine_binary_path(executables, tool_name)
-        if not binary_path:
-            print(f"No binary path determined for {tool_name}")
-            return
-
-        print(f"Detected binary path for {tool_name}: {binary_path}")
-
-        # Verify against expected configuration
-        verify_binary_path(tool_name, tool_config, binary_path, release)
-
-        # Test the binary
-        test_binary_execution(tool_name, temp_path / binary_path)
+    return {}
 
 
-def verify_binary_path(
-    tool_name: str,
-    tool_config: dict[str, Any],
-    detected_path: str,
-    release: Optional[dict[str, Any]] = None,
-) -> None:
-    """Verify the detected binary path against the expected configuration."""
-    expected_path = tool_config.get("binary_path", "")
-    if not expected_path:
-        return
+def compare_configs(existing: dict, suggested: dict) -> list[str]:
+    """Compare existing and suggested configurations and return differences."""
+    differences = []
 
-    # Replace variables in expected path
-    version = release["tag_name"].lstrip("v") if release else ""
-    if "{version}" in expected_path and version:
-        expected_path = expected_path.replace("{version}", version)
-    if "{arch}" in expected_path:
-        expected_path = expected_path.replace("{arch}", "x86_64")
+    # Compare basic properties
+    for key in ["repo", "extract_binary", "binary_name"]:
+        if key in existing and key in suggested and existing[key] != suggested[key]:
+            differences.append(  # noqa: PERF401
+                f"{key}: existing='{existing[key]}', suggested='{suggested[key]}'",
+            )
 
-    # Remove globs for comparison
-    expected_path = expected_path.replace("*", "")
+    # Compare binary_path (allowing for some variation)
+    if "binary_path" in existing and "binary_path" in suggested:
+        existing_path = existing["binary_path"]
+        suggested_path = suggested["binary_path"]
+        if existing_path != suggested_path:
+            differences.append(
+                f"binary_path: existing='{existing_path}', suggested='{suggested_path}'",
+            )
 
-    print(f"Expected binary path: {expected_path}")
-
-    # TODO: Add actual assertion here if needed
-    # We could check if the detected path matches the expected pattern
-
-
-def test_binary_execution(tool_name: str, binary_path: Path) -> None:
-    """Test if the binary can be executed."""
-    if not binary_path.exists():
-        print(f"Binary not found at {binary_path}")
-        return
-
-    try:
-        binary_path.chmod(0o755)  # Make executable
-
-        # Try with --help
-        result = subprocess.run(
-            [str(binary_path), "--help"],
-            capture_output=True,
-            timeout=5,
-            text=True,
-            check=False,
+    # Compare asset patterns (this is more complex due to different formats)
+    if "asset_patterns" in existing and "asset_patterns" in suggested:
+        for platform in ["linux", "macos"]:
+            existing_pattern = existing["asset_patterns"].get(platform)
+            suggested_pattern = suggested["asset_patterns"].get(platform)
+            if existing_pattern != suggested_pattern:
+                differences.append(
+                    f"asset_patterns[{platform}]: existing='{existing_pattern}', "
+                    f"suggested='{suggested_pattern}'",
+                )
+    elif "asset_pattern" in existing and "asset_pattern" in suggested:
+        if existing["asset_pattern"] != suggested["asset_pattern"]:
+            differences.append(
+                f"asset_pattern: existing='{existing['asset_pattern']}', "
+                f"suggested='{suggested['asset_pattern']}'",
+            )
+    elif "asset_pattern" in existing and "asset_patterns" in suggested:
+        differences.append(
+            "Config format different: existing uses asset_pattern, suggested uses asset_patterns",
+        )
+    elif "asset_patterns" in existing and "asset_pattern" in suggested:
+        differences.append(
+            "Config format different: existing uses asset_patterns, suggested uses asset_pattern",
         )
 
-        if result.returncode == 0:
-            print(f"Successfully executed {tool_name}")
-            return
-
-        # If --help failed, try --version
-        result = subprocess.run(
-            [str(binary_path), "--version"],
-            capture_output=True,
-            timeout=5,
-            text=True,
-            check=False,
-        )
-
-        if result.returncode == 0:
-            print(f"Successfully executed {tool_name} with --version")
-            return
-
-        print(f"Binary execution failed for {tool_name}")
-
-    except subprocess.TimeoutExpired:
-        print(f"Command timed out for {tool_name}")
-    except Exception as e:
-        print(f"Error running {tool_name}: {e}")
+    return differences
 
 
-def test_analyze_real_tools(ensure_bin_dir: Path, tools_config: dict) -> None:
-    """Test analyzing real tools from tools.yaml by downloading actual releases."""
+def test_analyze_tools_against_config(ensure_bin_dir: Path, tools_config: dict) -> None:
+    """Test analyzing tools and comparing results with existing configuration."""
     bin_dir = ensure_bin_dir
 
-    for tool_name, tool_config in tools_config.items():
-        print(f"\nTesting tool: {tool_name}")
+    for tool_name, existing_config in tools_config.items():
+        print(f"\n=== Testing tool: {tool_name} ===")
 
-        # Find and download asset
-        tool_path, release = find_and_download_asset(tool_name, tool_config, bin_dir)
+        repo = existing_config.get("repo")
+        if not repo:
+            print(f"Skipping {tool_name} - no repo defined")
+            continue
 
-        if tool_path and tool_path.exists():
-            # Analyze the tool binary
-            analyze_tool_binary(tool_name, tool_config, tool_path, release)
+        # Download the asset (for cache purposes)
+        find_and_download_asset(tool_name, existing_config, bin_dir)
+
+        # Run analyze on the tool
+        print(f"Running analyze on {repo}")
+        suggested_config = analyze_tool_with_dotbins(repo, tool_name)
+
+        if not suggested_config:
+            print(f"No configuration generated for {tool_name}, skipping comparison")
+            continue
+
+        # Compare configurations
+        print(f"Comparing configurations for {tool_name}")
+        differences = compare_configs(existing_config, suggested_config)
+
+        if differences:
+            print("Differences found:")
+            for diff in differences:
+                print(f"  - {diff}")
+        else:
+            print("✅ No differences found - configurations match!")
+
+        # Print detailed configurations for reference
+        print("\nExisting configuration:")
+        for key, value in existing_config.items():
+            print(f"  {key}: {value}")
+
+        print("\nSuggested configuration:")
+        for key, value in suggested_config.items():
+            print(f"  {key}: {value}")
