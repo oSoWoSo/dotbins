@@ -1,20 +1,24 @@
+"""Configuration for pytest fixtures used in dotbins tests."""
+
 import os
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 import yaml
+from requests_mock import Mocker
 
 
 @pytest.fixture
-def temp_dir():
+def temp_dir() -> Generator[Path, None, None]:
     """Create a temporary directory for tests."""
     with tempfile.TemporaryDirectory() as tmpdirname:
         yield Path(tmpdirname)
 
 
 @pytest.fixture
-def mock_config_file(temp_dir):
+def mock_config_file(temp_dir: Path) -> Path:
     """Create a mock tools.yaml configuration file."""
     config = {
         "dotfiles_dir": str(temp_dir),
@@ -40,7 +44,7 @@ def mock_config_file(temp_dir):
 
 
 @pytest.fixture
-def mock_github_api(requests_mock):
+def mock_github_api(requests_mock: Mocker) -> Mocker:
     """Mock GitHub API responses."""
     # Mock the latest release endpoint
     release_data = {
