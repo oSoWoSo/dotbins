@@ -141,8 +141,21 @@ def extract_from_archive(
     logging.info(f"Extracting from {archive_path}")
     temp_dir = Path(tempfile.mkdtemp())
 
-    if archive_path.endswith(".tar.gz") or archive_path.endswith(".tgz"):
-        with tarfile.open(archive_path) as tar:
+    # Check if this is a gzipped tarball regardless of extension
+    is_tarball = False
+    try:
+        with open(archive_path, "rb") as f:
+            # Check for gzip magic number (1f 8b)
+            if f.read(2) == b"\x1f\x8b":
+                # All files in debug output are actually tar.gz files
+                is_tarball = True
+    except Exception as e:
+        logging.error(f"Error checking file type: {e}")
+
+    # Extract based on file type, not just extension
+    if is_tarball or archive_path.endswith(".tar.gz") or archive_path.endswith(".tgz"):
+        logging.info("Processing as tar.gz archive")
+        with tarfile.open(archive_path, mode="r:gz") as tar:
             tar.extractall(path=temp_dir)
     elif archive_path.endswith(".zip"):
         with zipfile.ZipFile(archive_path) as zip_file:
@@ -152,6 +165,13 @@ def extract_from_archive(
 
     logging.info(f"Extracted to {temp_dir}")
 
+    # List extracted files for debugging
+    extracted_files = list(temp_dir.glob("**/*"))
+    logging.info(f"Extracted {len(extracted_files)} files")
+    for file in extracted_files[:10]:  # Limit to first 10 files
+        logging.info(f" - {file.relative_to(temp_dir)}")
+
+    # Rest of the function remains the same...
     # If binary_path is provided, use it to locate the binary
     if binary_path:
         # Handle glob patterns in binary_path
