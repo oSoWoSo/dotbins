@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Keep updated binaries in your dotfiles"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["requests"]
+dependencies = [
+    "pyyaml>=6.0.2",
+    "requests",
+]
 
 [dependency-groups]
 dev = [

@@ -23,66 +23,44 @@ from pathlib import Path
 from typing import List, Optional
 
 import requests
+import yaml
+import os.path
 
-# Configuration
-DOTFILES_DIR = Path.home() / ".dotfiles"
-TOOLS_DIR = DOTFILES_DIR / "tools"
 
-# Target platforms and architectures
-PLATFORMS = ["linux", "macos"]
-ARCHITECTURES = ["amd64", "arm64"]
+# Function to load the configuration
+def load_config():
+    """Load configuration from YAML file"""
+    config_path = os.path.join(os.path.dirname(__file__), "tools.yaml")
+    try:
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
 
-# Architecture mapping (our naming -> tool release naming)
-ARCH_MAP = {
-    # Tool: {our-arch: tool-arch}
-    "bat": {"amd64": "x86_64", "arm64": "aarch64"},
-    "eza": {"amd64": "x86_64", "arm64": "aarch64"},
-    "zoxide": {"amd64": "x86_64", "arm64": "aarch64"},
-}
+        # Convert home directory shorthand
+        if isinstance(config.get("dotfiles_dir"), str):
+            config["dotfiles_dir"] = os.path.expanduser(config["dotfiles_dir"])
+        if isinstance(config.get("tools_dir"), str):
+            config["tools_dir"] = os.path.expanduser(config["tools_dir"])
 
-# Platform naming for fzf
-PLATFORM_MAP = {"macos": "darwin"}
+        return config
+    except Exception as e:
+        logging.error(f"Error loading configuration: {e}")
+        # Fallback to defaults
+        return {
+            "dotfiles_dir": os.path.expanduser("~/.dotfiles"),
+            "tools_dir": os.path.expanduser("~/.dotfiles/tools"),
+            "platforms": ["linux", "macos"],
+            "architectures": ["amd64", "arm64"],
+            "tools": {},
+        }
 
-# Tool definitions with release pattern info
-TOOLS = {
-    "fzf": {
-        "repo": "junegunn/fzf",
-        "extract_binary": True,
-        "binary_name": "fzf",
-        "asset_pattern": "fzf-{version}-{platform}_{arch}.tar.gz",
-        "platform_map": PLATFORM_MAP,
-    },
-    "bat": {
-        "repo": "sharkdp/bat",
-        "extract_binary": True,
-        "arch_map": ARCH_MAP["bat"],
-        "asset_patterns": {
-            "linux": "bat-v{version}-{arch}-unknown-linux-gnu.tar.gz",
-            "macos": "bat-v{version}-{arch}-apple-darwin.tar.gz",
-        },
-        "binary_path": {"linux": "bat-*/bat", "macos": "bat-*/bat"},
-    },
-    "eza": {
-        "repo": "eza-community/eza",
-        "extract_binary": True,
-        "arch_map": ARCH_MAP["eza"],
-        "binary_name": "eza",
-        "asset_patterns": {
-            "linux": "eza_{arch}-unknown-linux-gnu.tar.gz",
-            "macos": None,  # No macOS binaries available as of now
-        },
-    },
-    "zoxide": {
-        "repo": "ajeetdsouza/zoxide",
-        "extract_binary": True,
-        "arch_map": ARCH_MAP["zoxide"],
-        "binary_name": "zoxide",
-        "asset_patterns": {
-            "linux": "zoxide-{version}-{arch}-unknown-linux-musl.tar.gz",
-            "macos": "zoxide-{version}-{arch}-apple-darwin.tar.gz",
-        },
-    },
-}
+
+# Load configuration
+CONFIG = load_config()
+DOTFILES_DIR = Path(CONFIG.get("dotfiles_dir"))
+TOOLS_DIR = Path(CONFIG.get("tools_dir"))
+PLATFORMS = CONFIG.get("platforms", ["linux", "macos"])
+ARCHITECTURES = CONFIG.get("architectures", ["amd64", "arm64"])
+TOOLS = CONFIG.get("tools", {})
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -135,167 +113,103 @@ def download_file(url: str, destination: str) -> str:
 
 
 def extract_from_archive(
-    archive_path: str, destination_dir: Path, binary_path: Optional[str] = None
+    archive_path: str, destination_dir: Path, tool_config: dict, platform: str
 ) -> None:
-    """Extract a binary from an archive"""
+    """Extract a binary from an archive using explicit paths"""
     logging.info(f"Extracting from {archive_path}")
     temp_dir = Path(tempfile.mkdtemp())
 
-    # Check if this is a gzipped tarball regardless of extension
+    # Check for gzip file types
     is_tarball = False
     try:
         with open(archive_path, "rb") as f:
             # Check for gzip magic number (1f 8b)
             if f.read(2) == b"\x1f\x8b":
-                # All files in debug output are actually tar.gz files
                 is_tarball = True
     except Exception as e:
         logging.error(f"Error checking file type: {e}")
 
-    # Extract based on file type, not just extension
-    if is_tarball or archive_path.endswith(".tar.gz") or archive_path.endswith(".tgz"):
-        logging.info("Processing as tar.gz archive")
-        with tarfile.open(archive_path, mode="r:gz") as tar:
-            tar.extractall(path=temp_dir)
-    elif archive_path.endswith(".zip"):
-        with zipfile.ZipFile(archive_path) as zip_file:
-            zip_file.extractall(path=temp_dir)
-    else:
-        logging.warning(f"Unknown archive type: {archive_path}")
+    # Extract based on file type
+    try:
+        if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
+            logging.info("Processing as tar.gz archive")
+            with tarfile.open(archive_path, mode="r:gz") as tar:
+                tar.extractall(path=temp_dir)
+        elif archive_path.endswith(".zip"):
+            with zipfile.ZipFile(archive_path) as zip_file:
+                zip_file.extractall(path=temp_dir)
+        else:
+            logging.warning(f"Unknown archive type: {archive_path}")
+            raise ValueError(f"Cannot extract archive: {archive_path}")
+    except Exception as e:
+        logging.error(f"Extraction failed: {e}")
+        shutil.rmtree(temp_dir)
+        raise
 
-    logging.info(f"Extracted to {temp_dir}")
+    logging.info(f"Archive extracted to {temp_dir}")
 
-    # List extracted files for debugging
-    extracted_files = list(temp_dir.glob("**/*"))
-    logging.info(f"Extracted {len(extracted_files)} files")
-    for file in extracted_files[:10]:  # Limit to first 10 files
-        logging.info(f" - {file.relative_to(temp_dir)}")
+    # Debug: List the top-level files
+    try:
+        logging.info("Extracted files:")
+        for item in temp_dir.glob("**/*"):
+            logging.info(f"  - {item.relative_to(temp_dir)}")
+    except Exception:
+        pass
 
-    # Rest of the function remains the same...
-    # If binary_path is provided, use it to locate the binary
-    if binary_path:
-        # Handle glob patterns in binary_path
+    try:
+        # Get the binary path from configuration
+        binary_path = tool_config.get("binary_path")
+        if not binary_path:
+            raise ValueError(f"No binary path specified in configuration")
+
+        # Replace variables in the binary path
+        if "{version}" in binary_path:
+            version = tool_config.get("version", "")
+            binary_path = binary_path.replace("{version}", version)
+
+        if "{arch}" in binary_path:
+            arch = tool_config.get("arch", "")
+            binary_path = binary_path.replace("{arch}", arch)
+
+        # Handle glob patterns in binary path
         if "*" in binary_path:
-            import glob
-
             matches = list(temp_dir.glob(binary_path))
-            if matches:
-                source = matches[0]
-                logging.info(f"Found binary at {source}")
-            else:
-                raise FileNotFoundError(f"Could not find binary matching {binary_path}")
+            if not matches:
+                raise FileNotFoundError(f"No files matching {binary_path} in archive")
+            source_path = matches[0]
         else:
-            source = temp_dir / binary_path
-    else:
-        # Default: assume the binary has the same name as the tool and is in the root
-        binaries = list(temp_dir.glob("*"))
-        source = None
+            source_path = temp_dir / binary_path
+            if not source_path.exists():
+                raise FileNotFoundError(f"Binary not found at {source_path}")
 
-        # Check if there's a single file in the root
-        executable_files = [
-            f for f in binaries if f.is_file() and os.access(f, os.X_OK)
-        ]
-        if len(executable_files) == 1:
-            source = executable_files[0]
-            logging.info(f"Found single executable: {source}")
-        elif len(binaries) == 1 and binaries[0].is_file():
-            source = binaries[0]
-            logging.info(f"Found single file: {source}")
-        else:
-            # Try to find binary in subdirectories
-            logging.info("Searching subdirectories for binary")
-            for subdir in [d for d in binaries if d.is_dir()]:
-                subdir_files = list(subdir.glob("*"))
-                executable_files = [
-                    f for f in subdir_files if f.is_file() and os.access(f, os.X_OK)
-                ]
-                if len(executable_files) == 1:
-                    source = executable_files[0]
-                    logging.info(f"Found executable in subdirectory: {source}")
-                    break
+        # Create the destination directory if needed
+        destination_dir.mkdir(parents=True, exist_ok=True)
 
-        if not source:
-            # List all files in the temp dir for debugging
-            all_files = list(temp_dir.glob("**/*"))
-            file_list = "\n".join([str(f) for f in all_files])
-            logging.error(
-                f"Could not determine binary to extract. Files in archive:\n{file_list}"
-            )
-            raise ValueError(f"Could not determine binary path in {archive_path}")
-
-    # Create the destination directory if it doesn't exist
-    destination_dir.mkdir(parents=True, exist_ok=True)
-
-    # Copy the binary to the destination
-    if source.is_file():
-        binary_name = source.name
+        # Determine destination filename
+        binary_name = tool_config.get("binary_name", source_path.name)
         dest_path = destination_dir / binary_name
-        shutil.copy2(source, dest_path)
-        logging.info(f"Copied {source} to {dest_path}")
-        # Make executable
-        dest_path.chmod(dest_path.stat().st_mode | 0o755)
-    else:
-        # If source is a directory, copy everything in it
-        for item in source.iterdir():
-            if item.is_file():
-                dest_path = destination_dir / item.name
-                shutil.copy2(item, dest_path)
-                logging.info(f"Copied {item} to {dest_path}")
-                # Make executable if it looks like a binary
-                if (
-                    not item.name.endswith((".txt", ".md", ".conf"))
-                    and "." not in item.name
-                ):
-                    dest_path.chmod(dest_path.stat().st_mode | 0o755)
 
-    # Cleanup
-    shutil.rmtree(temp_dir)
+        # Copy the binary and set permissions
+        shutil.copy2(source_path, dest_path)
+        dest_path.chmod(dest_path.stat().st_mode | 0o755)
+        logging.info(f"Copied binary to {dest_path}")
+
+    finally:
+        # Clean up temporary directory
+        shutil.rmtree(temp_dir)
 
 
 def download_tool(
-    tool_name: str, tool_config: dict, platform: str, arch: str, force: bool = False
+    tool_name: str, platform: str, arch: str, force: bool = False
 ) -> bool:
     """Download a tool for a specific platform and architecture"""
+    tool_config = TOOLS.get(tool_name)
+    if not tool_config:
+        logging.error(f"Tool '{tool_name}' not found in configuration")
+        return False
+
     destination_dir = TOOLS_DIR / platform / arch / "bin"
     destination_dir.mkdir(parents=True, exist_ok=True)
-
-    release = get_latest_release(tool_config["repo"])
-    version = release["tag_name"].lstrip("v")
-
-    logging.info(f"Processing {tool_name} {version} for {platform}/{arch}...")
-
-    # Map our arch/platform naming to the tool's naming if needed
-    tool_arch = arch
-    if "arch_map" in tool_config and arch in tool_config["arch_map"]:
-        tool_arch = tool_config["arch_map"][arch]
-        logging.info(f"Mapped arch {arch} -> {tool_arch}")
-
-    tool_platform = platform
-    if "platform_map" in tool_config and platform in tool_config["platform_map"]:
-        tool_platform = tool_config["platform_map"][platform]
-        logging.info(f"Mapped platform {platform} -> {tool_platform}")
-
-    # Determine the asset pattern for this platform
-    if "asset_patterns" in tool_config:
-        asset_pattern = tool_config["asset_patterns"].get(platform)
-        if asset_pattern is None:
-            logging.warning(f"⚠️ No asset pattern defined for {tool_name} on {platform}")
-            return False
-    else:
-        asset_pattern = tool_config["asset_pattern"]
-
-    # Replace variables in the pattern
-    search_pattern = asset_pattern.format(
-        version=version, platform=tool_platform, arch=tool_arch
-    )
-
-    # Find the matching asset
-    asset = find_asset(release["assets"], search_pattern)
-    if not asset:
-        logging.warning(
-            f"⚠️ Could not find asset matching '{search_pattern}' for {tool_name}"
-        )
-        return False
 
     # Check if we should skip this download
     binary_name = tool_config.get("binary_name", tool_name)
@@ -307,44 +221,86 @@ def download_tool(
         )
         return True
 
-    # Download the asset
-    with tempfile.NamedTemporaryFile(
-        delete=False, suffix=os.path.splitext(asset["name"])[1]
-    ) as temp_file:
-        temp_path = temp_file.name
-
     try:
-        download_file(asset["browser_download_url"], temp_path)
+        # Get latest release info
+        repo = tool_config.get("repo")
+        release = get_latest_release(repo)
+        version = release["tag_name"].lstrip("v")
+        tool_config["version"] = version  # Store for later use
 
-        if tool_config.get("extract_binary", False):
-            # Get the binary path if specified
-            binary_path = None
-            if "binary_path" in tool_config:
-                binary_path = tool_config["binary_path"].get(platform)
+        # Map architecture if needed
+        tool_arch = arch
+        arch_maps = CONFIG.get("arch_maps", {}).get(tool_name, {})
+        if arch in arch_maps:
+            tool_arch = arch_maps[arch]
+        tool_config["arch"] = tool_arch  # Store for later use
 
-            # Extract the binary from the archive
-            extract_from_archive(temp_path, destination_dir, binary_path)
+        # Map platform if needed
+        tool_platform = platform
+        platform_map = tool_config.get("platform_map", "")
+        if platform_map:
+            for platform_pair in platform_map.split(","):
+                src, dst = platform_pair.split(":")
+                if platform == src:
+                    tool_platform = dst
+                    break
+
+        # Determine asset pattern
+        if "asset_patterns" in tool_config:
+            asset_pattern = tool_config["asset_patterns"].get(platform)
+            if asset_pattern is None:
+                logging.warning(
+                    f"⚠️ No asset pattern defined for {tool_name} on {platform}"
+                )
+                return False
         else:
-            # Just copy the file directly
-            shutil.copy2(
-                temp_path,
-                destination_dir / tool_config.get("binary_name", asset["name"]),
-            )
-            # Make executable
-            dest_file = destination_dir / tool_config.get("binary_name", asset["name"])
-            dest_file.chmod(dest_file.stat().st_mode | 0o755)
+            asset_pattern = tool_config.get("asset_pattern")
 
-        logging.info(f"✅ Successfully downloaded {tool_name} for {platform}/{arch}")
-        return True
+        # Replace variables in pattern
+        search_pattern = asset_pattern.format(
+            version=version, platform=tool_platform, arch=tool_arch
+        )
+
+        # Find matching asset
+        asset = find_asset(release["assets"], search_pattern)
+        if not asset:
+            logging.warning(
+                f"⚠️ No asset matching '{search_pattern}' found for {tool_name}"
+            )
+            return False
+
+        # Download the asset
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=os.path.splitext(asset["name"])[1]
+        ) as temp_file:
+            temp_path = temp_file.name
+
+        try:
+            download_file(asset["browser_download_url"], temp_path)
+
+            if tool_config.get("extract_binary", False):
+                # Extract the binary using the explicit path
+                extract_from_archive(temp_path, destination_dir, tool_config, platform)
+            else:
+                # Just copy the file directly
+                shutil.copy2(temp_path, destination_dir / binary_name)
+                # Make executable
+                dest_file = destination_dir / binary_name
+                dest_file.chmod(dest_file.stat().st_mode | 0o755)
+
+            logging.info(
+                f"✅ Successfully downloaded {tool_name} for {platform}/{arch}"
+            )
+            return True
+
+        finally:
+            # Cleanup
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
 
     except Exception as e:
         logging.error(f"❌ Error processing {tool_name} for {platform}/{arch}: {e}")
         return False
-
-    finally:
-        # Cleanup
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
 
 
 def make_binaries_executable() -> None:
@@ -416,11 +372,10 @@ def update_tools(args) -> None:
     total_count = 0
 
     for tool_name in tools_to_update:
-        tool_config = TOOLS[tool_name]
         for platform in platforms_to_update:
             for arch in archs_to_update:
                 total_count += 1
-                if download_tool(tool_name, tool_config, platform, arch, args.force):
+                if download_tool(tool_name, platform, arch, args.force):
                     success_count += 1
 
     make_binaries_executable()
