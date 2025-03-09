@@ -22,7 +22,7 @@ test = ["pytest", "pre-commit", "coverage", "pytest-cov"]
 docs = []
 
 [project.scripts]
-rsync-time-machine = "dotbins:main"
+dotbins = "dotbins:main"
 
 [tool.setuptools]
 py-modules = ["dotbins"]
@@ -82,3 +82,10 @@ python_version = "3.7"
 method = "git"
 match = ["v*"]
 default-tag = "0.0.0"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.0.0",
+    "pytest>=8.3.5",
+    "python-magic>=0.4.27",
+]
