@@ -187,7 +187,8 @@ def extract_from_archive(  # noqa: PLR0912, PLR0915
         else:
             source_path = temp_dir / binary_path
             if not source_path.exists():
-                msg = f"Binary not found at {source_path}"
+                found = list(temp_dir.glob("**"))
+                msg = f"Binary not found at {source_path}, found: {found}"
                 raise FileNotFoundError(msg)
 
         # Create the destination directory if needed
@@ -244,9 +245,14 @@ def download_tool(  # noqa: PLR0912, PLR0915
 
         # Map architecture if needed
         tool_arch = arch
+        # First check global arch_maps
         arch_maps = CONFIG.get("arch_maps", {}).get(tool_name, {})
         if arch in arch_maps:
             tool_arch = arch_maps[arch]
+        # Then check tool-specific arch_map (this has priority)
+        tool_arch_map = tool_config.get("arch_map", {})
+        if arch in tool_arch_map:
+            tool_arch = tool_arch_map[arch]
         tool_config["arch"] = tool_arch  # Store for later use
 
         # Map platform if needed
