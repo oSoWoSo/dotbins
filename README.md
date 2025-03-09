@@ -19,6 +19,7 @@ Whether you work across multiple machines or just want a version-controlled setu
 
 - [:star2: Features](#star2-features)
 - [:books: Usage](#books-usage)
+  - [Commands](#commands)
 - [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
 - [:gear: Configuration](#gear-configuration)
 - [:bulb: Examples](#bulb-examples)
