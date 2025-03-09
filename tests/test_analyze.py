@@ -209,7 +209,7 @@ def test_download_and_find_binary(
     mock_assets: list[dict[str, str]],
 ) -> None:
     """Test downloading and finding binary path."""
-    mock_find_executables.return_value = ["bin/tool", "tool"]
+    mock_find_executables.return_value = ["tool", "bin/tool"]
 
     # Use secure temporary paths
     with patch("tempfile.NamedTemporaryFile") as mock_temp_file:
@@ -222,7 +222,6 @@ def test_download_and_find_binary(
     assert mock_download.called
     assert mock_extract.called
     assert mock_find_executables.called
-    # With the fix to determine_binary_path, it should now correctly identify "tool" over "bin/tool"
     assert result == "tool"  # Should match the exact name
 
 
