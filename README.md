@@ -104,6 +104,22 @@ architectures:
   - amd64
   - arm64
 
+# Architecture mappings (our naming -> tool release naming)
+arch_maps:
+  bat:
+    amd64: x86_64
+    arm64: aarch64
+  eza:
+    amd64: x86_64
+    arm64: aarch64
+  zoxide:
+    amd64: x86_64
+    arm64: aarch64
+
+# Platform naming conversions
+platform_maps:
+  macos: darwin
+
 # Tool definitions
 tools:
   fzf:
@@ -113,7 +129,34 @@ tools:
     binary_path: fzf  # The binary is directly in the root of the archive
     asset_pattern: fzf-{version}-{platform}_{arch}.tar.gz
     platform_map: macos:darwin
-```
+
+  bat:
+    repo: sharkdp/bat
+    extract_binary: true
+    binary_name: bat
+    binary_path: bat-v{version}-{arch}-*/bat  # The actual path in the archive
+    asset_patterns:
+      linux: bat-v{version}-{arch}-unknown-linux-gnu.tar.gz
+      macos: bat-v{version}-{arch}-apple-darwin.tar.gz
+    
+  eza:
+    repo: eza-community/eza
+    extract_binary: true
+    binary_name: eza
+    binary_path: eza  # The binary is directly in the root of the archive
+    asset_patterns:
+      linux: eza_{arch}-unknown-linux-gnu.tar.gz
+      macos: null  # No macOS binaries available as of now
+    
+  zoxide:
+    repo: ajeetdsouza/zoxide
+    extract_binary: true
+    binary_name: zoxide
+    binary_path: zoxide  # The binary is directly in the root of the archive
+    asset_patterns:
+      linux: zoxide-{version}-{arch}-unknown-linux-musl.tar.gz
+      macos: zoxide-{version}-{arch}-apple-darwin.tar.gz```
+
 <!-- OUTPUT:END -->
 
 Each tool definition includes:
