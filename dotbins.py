@@ -428,14 +428,50 @@ def initialize(_args: Any) -> None:
     print_shell_setup()
 
 
+def generate_tool_configuration(repo: str, tool_name: str | None = None) -> dict:
+    """Analyze GitHub releases and generate tool configuration.
+
+    This is the core functionality of the analyze_tool command,
+    without the output formatting.
+
+    Parameters
+    ----------
+    repo : str
+        GitHub repository in the format 'owner/repo'
+    tool_name : str, optional
+        Name to use for the tool. If None, uses repo name
+
+    Returns
+    -------
+    dict
+        Tool configuration dictionary
+
+    """
+    if not repo or "/" not in repo:
+        msg = "Please provide a valid GitHub repository in the format 'owner/repo'"
+        raise ValueError(msg)
+
+    # Extract tool name from repo if not provided
+    if not tool_name:
+        tool_name = repo.split("/")[-1]
+
+    # Get latest release info
+    release = get_latest_release(repo)
+
+    # Find sample asset and determine binary path
+    sample_asset = find_sample_asset(release["assets"])
+    binary_path = None
+
+    if sample_asset:
+        binary_path = download_and_find_binary(sample_asset, tool_name)
+
+    # Generate and return tool configuration
+    return generate_tool_config(repo, tool_name, release, binary_path)
+
+
 def analyze_tool(args: argparse.Namespace) -> None:
     """Analyze GitHub releases for a tool to help determine patterns."""
     repo = args.repo
-    if not repo or "/" not in repo:
-        logging.error(
-            "Please provide a valid GitHub repository in the format 'owner/repo'",
-        )
-        sys.exit(1)
 
     try:
         print(f"Analyzing releases for {repo}...")
@@ -444,18 +480,9 @@ def analyze_tool(args: argparse.Namespace) -> None:
         print(f"\nLatest release: {release['tag_name']} ({release['name']})")
         print_assets_info(release["assets"])
 
-        # Extract tool name from repo or use provided name
+        # Generate tool configuration using the refactored function
         tool_name = args.name or repo.split("/")[-1]
-
-        # Find sample asset and determine binary path
-        sample_asset = find_sample_asset(release["assets"])
-        binary_path = None
-
-        if sample_asset:
-            binary_path = download_and_find_binary(sample_asset, tool_name)
-
-        # Generate tool configuration
-        tool_config = generate_tool_config(repo, tool_name, release, binary_path)
+        tool_config = generate_tool_configuration(repo, tool_name)
 
         # Output YAML
         print("\nSuggested configuration for YAML tools file:")

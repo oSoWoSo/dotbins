@@ -67,6 +67,7 @@ ignore = [
     "PLR0913", # Too many arguments to function call
     "S602",    # `subprocess` call with `shell=True` identified, security issue
     "S603",    # `subprocess` call: check for execution of untrusted input
+    "S202",    # Uses of `tarfile.extractall()`
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -93,4 +94,5 @@ dev = [
     "python-magic>=0.4.27",
     "requests-mock>=1.12.1",
     "pytest-mock>=3.14.0",
+    "ruff>=0.9.10",
 ]

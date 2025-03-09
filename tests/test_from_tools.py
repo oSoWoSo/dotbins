@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import io
-from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
 
@@ -121,32 +119,12 @@ def find_matching_asset(
 
 
 def analyze_tool_with_dotbins(repo: str, tool_name: str) -> dict:
-    """Run the analyze_tool function and return the suggested configuration."""
-    # Create a mock args object
-    mock_args = type("Args", (), {"repo": repo, "name": tool_name})
-
-    # Capture the output of analyze_tool
-    with io.StringIO() as buf, redirect_stdout(buf):
-        try:
-            dotbins.analyze_tool(mock_args)  # type: ignore[arg-type]
-            output = buf.getvalue()
-        except Exception as e:  # noqa: BLE001
-            print(f"Error analyzing {tool_name}: {e}")
-            return {}
-
-    # Extract YAML from output
-    if "Suggested configuration for YAML tools file:" in output:
-        yaml_text = output.split("Suggested configuration for YAML tools file:")[
-            1
-        ].strip()
-        try:
-            suggested_config = yaml.safe_load(yaml_text)
-            return suggested_config.get(tool_name, {})
-        except yaml.YAMLError as e:
-            print(f"Error parsing YAML for {tool_name}: {e}")
-            return {}
-
-    return {}
+    """Run the analyze function and return the suggested configuration."""
+    try:
+        return dotbins.generate_tool_configuration(repo, tool_name)
+    except Exception as e:  # noqa: BLE001
+        print(f"Error analyzing {tool_name}: {e}")
+        return {}
 
 
 def compare_configs(existing: dict, suggested: dict) -> list[str]:
