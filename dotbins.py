@@ -635,7 +635,7 @@ def determine_binary_path(executables: list[str], tool_name: str) -> str | None:
 
     # Then try to find executables in bin/
     for exe in executables:
-        if "/bin/" in exe:
+        if "bin/" in exe:
             return exe
 
     # Finally, just take the first executable
@@ -746,10 +746,7 @@ def generate_single_pattern(release: dict) -> str:
     if version in pattern:
         pattern = pattern.replace(version, "{version}")
 
-    # Replace platform if present
-    if "linux" in pattern.lower():
-        pattern = re.sub(r"(?i)linux", "{platform}", pattern)
-    elif "darwin" in pattern.lower():
+    if "darwin" in pattern.lower():
         pattern = re.sub(r"(?i)darwin", "{platform}", pattern)
 
     # Replace architecture if present
