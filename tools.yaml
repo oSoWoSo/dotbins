@@ -69,8 +69,8 @@ tools:
   uv:
     repo: astral-sh/uv
     extract_binary: true
-    binary_name: uv
-    binary_path: uv-*/uv
+    binary_name: [uv, uvx]
+    binary_path: [uv-*/uv, uv-*/uvx]
     arch_map:
       amd64: x86_64
       arm64: aarch64
