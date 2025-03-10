@@ -164,7 +164,7 @@ def create_parser() -> argparse.ArgumentParser:
     # version command
     version_parser = subparsers.add_parser("version", help="Print version information")
     version_parser.set_defaults(
-        func=lambda _, __: console.print(f"dotbins v{__version__}"),
+        func=lambda _, __: console.print(f"[yellow]dotbins[/] [bold]v{__version__}[/]"),
     )
 
     return parser
