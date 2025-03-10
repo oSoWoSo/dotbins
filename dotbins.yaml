@@ -2,13 +2,12 @@
 dotfiles_dir: ~/.dotfiles
 tools_dir: ~/.dotfiles/tools
 
-# Target platforms and architectures
 platforms:
-  - linux
-  - macos
-architectures:
-  - amd64
-  - arm64
+  linux:
+    - amd64
+    - arm64
+  macos:
+    - arm64
 
 # Tool definitions
 tools:

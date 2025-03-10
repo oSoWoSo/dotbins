@@ -25,8 +25,10 @@ def mock_config_file(temp_dir: Path) -> Path:
     config = {
         "dotfiles_dir": str(temp_dir),
         "tools_dir": str(temp_dir / "tools"),
-        "platforms": ["linux", "macos"],
-        "architectures": ["amd64", "arm64"],
+        "platforms": {
+            "linux": ["amd64", "arm64"],
+            "macos": ["arm64"],
+        },
         "tools": {
             "test-tool": {
                 "repo": "test/tool",

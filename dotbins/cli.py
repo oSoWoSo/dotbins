@@ -28,11 +28,15 @@ def list_tools(_args: Any, config: DotbinsConfig) -> None:
         console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
 
 
-def update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
+def update_tools(  # noqa: PLR0912
+    args: argparse.Namespace,
+    config: DotbinsConfig,
+) -> None:
     """Update tools based on command line arguments."""
     tools_to_update = args.tools if args.tools else list(config.tools.keys())
-    platforms_to_update = [args.platform] if args.platform else config.platforms
-    archs_to_update = [args.architecture] if args.architecture else config.architectures
+
+    # Handle specific platform filtering
+    platforms_to_update = [args.platform] if args.platform else config.platform_names
 
     # Validate tools
     for tool in tools_to_update:
@@ -48,6 +52,25 @@ def update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
 
     for tool_name in tools_to_update:
         for platform in platforms_to_update:
+            if platform not in config.platforms:
+                console.print(
+                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
+                )
+                continue
+
+            # Get architectures to update
+            if args.architecture:
+                # Filter to only include the specified architecture if it's supported for this platform
+                if args.architecture in config.platforms[platform]:
+                    archs_to_update = [args.architecture]
+                else:
+                    console.print(
+                        f"⚠️ [yellow]Architecture {args.architecture} not configured for platform {platform}, skipping[/yellow]",
+                    )
+                    continue
+            else:
+                archs_to_update = config.platforms[platform]
+
             for arch in archs_to_update:
                 total_count += 1
                 if download_tool(tool_name, platform, arch, config, args.force):
@@ -73,8 +96,8 @@ def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
     if config is None:
         config = DotbinsConfig.load_from_file()
 
-    for platform in config.platforms:
-        for arch in config.architectures:
+    for platform, architectures in config.platforms.items():
+        for arch in architectures:
             (config.tools_dir / platform / arch / "bin").mkdir(
                 parents=True,
                 exist_ok=True,

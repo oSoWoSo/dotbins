@@ -23,9 +23,22 @@ class DotbinsConfig:
     tools_dir: Path = field(
         default_factory=lambda: Path(os.path.expanduser("~/.dotfiles/tools")),
     )
-    platforms: list[str] = field(default_factory=lambda: ["linux", "macos"])
-    architectures: list[str] = field(default_factory=lambda: ["amd64", "arm64"])
+    platforms: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            "linux": ["amd64", "arm64"],
+            "macos": ["amd64", "arm64"],
+        },
+    )
     tools: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def platform_names(self) -> list[str]:
+        """Return list of platform names."""
+        return list(self.platforms.keys())
+
+    def get_architectures(self, platform: str) -> list[str]:
+        """Get architectures for a specific platform."""
+        return self.platforms.get(platform, [])
 
     def validate(self) -> None:
         """Validate the configuration."""
@@ -152,8 +165,10 @@ class DotbinsConfig:
                         f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'[/yellow]",
                     )
                 if isinstance(platform_patterns, dict):
+                    # Get architectures for this platform
+                    valid_architectures = self.get_architectures(platform)
                     for arch in platform_patterns:
-                        if arch not in self.architectures and arch != "default":
+                        if arch not in valid_architectures and arch != "default":
                             console.print(
                                 f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'[/yellow]",
                             )

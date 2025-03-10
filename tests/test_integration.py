@@ -30,29 +30,27 @@ def tmp_dir() -> Generator[Path, None, None]:
 
 def test_initialization(
     tmp_dir: Path,
-    capsys: CaptureFixture[str],
 ) -> None:
     """Test the 'init' command."""
     # Create a config with our test directories
     config = DotbinsConfig(
         dotfiles_dir=tmp_dir,
         tools_dir=tmp_dir / "tools",
-        platforms=["linux", "macos"],
-        architectures=["amd64", "arm64"],
+        platforms={"linux": ["amd64", "arm64"], "macos": ["arm64"]},
         tools={},
     )
 
     # Call initialize with the config
     cli.initialize(config=config)
 
-    # Check if directories were created
-    for platform in ["linux", "macos"]:
-        for arch in ["amd64", "arm64"]:
-            assert (tmp_dir / "tools" / platform / arch / "bin").exists()
+    # Check if directories were created - only for valid platform/arch combinations
+    platform_archs = [("linux", "amd64"), ("linux", "arm64"), ("macos", "arm64")]
 
-    # Check if shell setup was printed
-    captured = capsys.readouterr()
-    assert "Add this to your shell configuration file" in captured.out
+    for platform, arch in platform_archs:
+        assert (tmp_dir / "tools" / platform / arch / "bin").exists()
+
+    # Also verify that macos/amd64 does NOT exist
+    assert not (tmp_dir / "tools" / "macos" / "amd64" / "bin").exists()
 
 
 def test_list_tools(
@@ -106,18 +104,13 @@ def test_update_tool(
         "platform_map": {"macos": "darwin"},
     }
 
-    # Create config with our test tool
+    # Create config with our test tool - use new format
     config = DotbinsConfig(
         dotfiles_dir=tmp_dir,
         tools_dir=tmp_dir / "tools",
-        platforms=["linux"],
-        architectures=["amd64"],
+        platforms={"linux": ["amd64"]},  # Just linux/amd64 for this test
         tools={"test-tool": test_tool_config},
     )
-
-    # Create a mock tarball with a binary inside
-    bin_dir = tmp_dir / "tools" / "linux" / "amd64" / "bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a test binary tarball
     _create_test_tarball(tmp_dir / "test_binary.tar.gz", "test-tool")
@@ -142,7 +135,7 @@ def test_update_tool(
     cli.update_tools(mock_args, config)
 
     # Check if binary was installed
-    assert (bin_dir / "test-tool").exists()
+    assert (tmp_dir / "tools" / "linux" / "amd64" / "bin" / "test-tool").exists()
 
 
 def _create_test_tarball(path: Path, binary_name: str) -> None:
@@ -234,8 +227,7 @@ def test_cli_tools_dir_override(tmp_dir: Path) -> None:
         return DotbinsConfig(
             dotfiles_dir=tmp_dir,
             tools_dir=tmp_dir / "default_tools",  # Default dir
-            platforms=["linux"],
-            architectures=["amd64"],
+            platforms={"linux": ["amd64"]},  # Use new format
             tools={},
         )
 

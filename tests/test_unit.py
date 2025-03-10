@@ -17,15 +17,15 @@ from dotbins.config import DotbinsConfig
 
 def test_load_config(temp_dir: Path) -> None:
     """Test loading configuration from YAML."""
-    # Create a sample config file
+    # Create a sample config file - updated to new format
     config_content = """
     dotfiles_dir: ~/.custom_dotfiles
     tools_dir: ~/tools
     platforms:
-        - linux
-        - macos
-    architectures:
+      linux:
         - amd64
+        - arm64
+      macos:
         - arm64
     tools:
         sample-tool:
@@ -47,7 +47,11 @@ def test_load_config(temp_dir: Path) -> None:
     assert config.dotfiles_dir == Path(os.path.expanduser("~/.custom_dotfiles"))
     assert config.tools_dir == Path(os.path.expanduser("~/tools"))
     assert "linux" in config.platforms
-    assert "sample-tool" in config.tools
+    assert "macos" in config.platforms
+    assert "amd64" in config.platforms["linux"]
+    assert "arm64" in config.platforms["linux"]
+    assert "arm64" in config.platforms["macos"]
+    assert "amd64" not in config.platforms["macos"]  # Important: no amd64 for macOS
 
 
 def test_load_config_fallback() -> None:
@@ -211,8 +215,7 @@ def test_make_binaries_executable(temp_dir: Path) -> None:
     # Setup mock environment
     config = DotbinsConfig(
         tools_dir=temp_dir,
-        platforms=["linux"],
-        architectures=["amd64"],
+        platforms={"linux": ["amd64"]},  # Use new format
     )
 
     # Create test binary

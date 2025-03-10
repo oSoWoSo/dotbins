@@ -155,11 +155,11 @@ tools_dir: ~/.dotfiles/tools
 
 # Target platforms and architectures
 platforms:
-  - linux
-  - macos
-architectures:
-  - amd64
-  - arm64
+  linux:
+    - amd64
+    - arm64
+  macos:
+    - arm64  # Only arm64 for macOS
 
 # Tool definitions
 tools:

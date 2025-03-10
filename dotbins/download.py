@@ -522,8 +522,8 @@ def download_and_install_asset(
 
 def make_binaries_executable(config: DotbinsConfig) -> None:
     """Make all binaries executable."""
-    for platform in config.platforms:
-        for arch in config.architectures:
+    for platform, architectures in config.platforms.items():
+        for arch in architectures:
             bin_dir = config.tools_dir / platform / arch / "bin"
             if bin_dir.exists():
                 for binary in bin_dir.iterdir():
