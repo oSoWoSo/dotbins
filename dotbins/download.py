@@ -291,6 +291,7 @@ def download_tool(
             release,
             version,
             platform,
+            arch,
             tool_platform,
             tool_arch,
         )
@@ -393,15 +394,16 @@ def find_matching_asset(
     release: dict,
     version: str,
     platform: str,
+    arch: str,
     tool_platform: str,
     tool_arch: str,
 ) -> dict | None:
     """Find a matching asset for the tool."""
     # Determine asset pattern
-    asset_pattern = get_asset_pattern(tool_config, platform, tool_arch)
+    asset_pattern = get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
         console.print(
-            f"⚠️ [yellow]No asset pattern found for {platform}/{tool_arch}[/yellow]",
+            f"⚠️ [yellow]No asset pattern found for {platform}/{arch}[/yellow]",
         )
         return None
 
