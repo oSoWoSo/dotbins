@@ -1,4 +1,4 @@
-"""Tests that analyze tools defined in tools.yaml and compare with existing configuration."""
+"""Tests that analyze tools defined in dotbins.yaml and compare with existing configuration."""
 
 from __future__ import annotations
 
@@ -29,9 +29,9 @@ def ensure_bin_dir() -> Path:
 
 @pytest.fixture
 def tools_config() -> dict[str, Any]:
-    """Load tools configuration from tools.yaml."""
+    """Load tools configuration from dotbins.yaml."""
     script_dir = Path(__file__).parent.parent
-    tools_yaml_path = script_dir / "tools.yaml"
+    tools_yaml_path = script_dir / "dotbins.yaml"
 
     with open(tools_yaml_path) as f:
         config = yaml.safe_load(f)

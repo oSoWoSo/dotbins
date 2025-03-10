@@ -36,7 +36,7 @@ def test_load_config(temp_dir: Path) -> None:
             asset_patterns: sample-{version}-{platform}_{arch}.tar.gz
     """
 
-    config_path = temp_dir / "tools.yaml"
+    config_path = temp_dir / "dotbins.yaml"
     with open(config_path, "w") as f:
         f.write(config_content)
 

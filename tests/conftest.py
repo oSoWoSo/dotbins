@@ -21,7 +21,7 @@ def temp_dir() -> Generator[Path, None, None]:
 
 @pytest.fixture
 def mock_config_file(temp_dir: Path) -> Path:
-    """Create a mock tools.yaml configuration file."""
+    """Create a mock dotbins.yaml configuration file."""
     config = {
         "dotfiles_dir": str(temp_dir),
         "tools_dir": str(temp_dir / "tools"),
@@ -41,7 +41,7 @@ def mock_config_file(temp_dir: Path) -> Path:
         },
     }
 
-    config_path = temp_dir / "tools.yaml"
+    config_path = temp_dir / "dotbins.yaml"
     with open(config_path, "w") as f:
         yaml.dump(config, f)
 

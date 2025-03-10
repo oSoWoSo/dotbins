@@ -127,11 +127,11 @@ To install `dotbins`, simply use pip:
 pip install dotbins
 ```
 
-You'll also need to create or update your `tools.yaml` configuration file either in the same directory as the script or at a custom location specified with `--tools-dir`.
+You'll also need to create or update your `dotbins.yaml` configuration file either in the same directory as the script or at a custom location specified with `--tools-dir`.
 
 ## :gear: Configuration
 
-dotbins uses a YAML configuration file (`tools.yaml`) to define the tools and settings.
+dotbins uses a YAML configuration file (`dotbins.yaml`) to define the tools and settings.
 
 ### Basic Configuration
 
@@ -254,7 +254,7 @@ linux-only-tool:
 
 <!-- CODE:BASH:START -->
 <!-- echo '```yaml' -->
-<!-- cat tools.yaml -->
+<!-- cat dotbins.yaml -->
 <!-- echo '```' -->
 <!-- CODE:END -->
 
