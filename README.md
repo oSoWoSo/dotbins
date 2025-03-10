@@ -41,6 +41,20 @@ Whether you work across multiple machines or just want a version-controlled setu
 
 </details>
 
+## :bulb: Why I Created dotbins
+
+As a developer who frequently works across multiple environments, I faced a common frustration: I'd carefully maintain my dotfiles repository with all my preferred configurations, only to find myself unable to use my favorite CLI tools when working on remote systems where I lacked admin permissions.
+
+The scenario was always the same - I'd SSH into a server, clone my dotfiles, and then... hit a wall. My aliases and configurations were there, but the actual tools they relied on (`fzf`, `bat`, `delta`, etc.) weren't available, and I couldn't install them without sudo access.
+
+dotbins was born out of this frustration. It allows me to:
+
+1. Track pre-compiled binaries in a separate Git repository (using Git LFS for efficient storage)
+2. Include this repository as a submodule in my dotfiles
+3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
+
+Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity. No package manager, no sudo, no problem.
+
 ## :star2: Features
 
 * 🌐 Supports multiple platforms (macOS, Linux) and architectures (amd64, arm64)
