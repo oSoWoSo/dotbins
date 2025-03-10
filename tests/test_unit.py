@@ -371,3 +371,55 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
             tool_config,
             "linux",
         )
+
+
+def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
+    """Test extracting multiple binaries from an archive."""
+    # Create a test tarball with multiple binaries
+    import tarfile
+
+    archive_path = str(temp_dir / "test.tar.gz")
+    bin_content = b"#!/bin/sh\necho test"
+
+    # Create a tarball with two binaries inside
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create subdirectory for first binary
+        primary_dir = os.path.join(tmpdir, "test-1.0.0")
+        os.makedirs(primary_dir)
+
+        # Add two binaries
+        bin1_path = os.path.join(primary_dir, "primary-bin")
+        bin2_path = os.path.join(primary_dir, "secondary-bin")
+
+        for path in [bin1_path, bin2_path]:
+            with open(path, "wb") as f:
+                f.write(bin_content)
+            os.chmod(path, 0o755)  # noqa: S103
+
+        with tarfile.open(archive_path, "w:gz") as tar:
+            tar.add(primary_dir, arcname="test-1.0.0")
+
+    # Setup tool config with multiple binaries
+    tool_config = {
+        "binary_name": ["primary-tool", "secondary-tool"],
+        "binary_path": ["test-1.0.0/primary-bin", "test-1.0.0/secondary-bin"],
+    }
+
+    # Create destination directory
+    dest_dir = temp_dir / "bin"
+    dest_dir.mkdir()
+
+    # Call the function
+    dotbins.download.extract_from_archive(archive_path, dest_dir, tool_config, "linux")
+
+    # Verify both binaries were extracted and renamed correctly
+    for bin_name in ["primary-tool", "secondary-tool"]:
+        extracted_bin = dest_dir / bin_name
+        assert extracted_bin.exists(), f"Binary {bin_name} not found"
+        assert extracted_bin.stat().st_mode & 0o100, f"Binary {bin_name} not executable"
+
+    # Verify the contents of both extracted files
+    for bin_name in ["primary-tool", "secondary-tool"]:
+        with open(dest_dir / bin_name, "rb") as f:
+            content = f.read()
+        assert content == bin_content
