@@ -221,14 +221,12 @@ def test_download_and_find_binary(
 ) -> None:
     """Test downloading and finding binary path."""
     mock_find_executables.return_value = ["tool", "bin/tool"]
-    mock_download.return_value = (
-        "/secure/temp/file.tar.gz"  # Add this line to make mock work
-    )
+    mock_download.return_value = "/secure/temp/file.tar.gz"
 
     # Create an actual mock asset that we'll use
     mock_asset = {
         "name": "tool-1.0.0-linux_x86_64.tar.gz",
-        "browser_download_url": "https://mocked-example.com/tool.tar.gz",
+        "browser_download_url": "https://example.com/tool.tar.gz",  # Change URL to something requests_mock can handle
     }
 
     # Use secure temporary paths
@@ -245,7 +243,7 @@ def test_download_and_find_binary(
     assert result == "tool"  # Should match the exact name
 
 
-@patch("dotbins.utils.get_latest_release")
+@patch("dotbins.analyze.get_latest_release")
 @patch("dotbins.analyze.find_sample_asset")
 @patch("dotbins.analyze.download_and_find_binary")
 @patch("dotbins.analyze.generate_tool_config")
