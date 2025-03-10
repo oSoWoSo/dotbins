@@ -10,7 +10,9 @@ environments, with binaries tracked in your dotfiles git repository.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+from importlib.metadata import version
+
+__version__ = version("dotbins")
 
 # Re-export commonly used functions
 from . import analyze, cli, config, download, utils
