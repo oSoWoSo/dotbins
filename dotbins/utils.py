@@ -83,9 +83,13 @@ def get_platform_map(platform: str, platform_map: dict) -> str:
 
 def print_shell_setup() -> None:
     """Print shell setup instructions."""
+    from .config import DotbinsConfig
+
+    tools_path = DotbinsConfig.load_from_file().tools_dir.resolve()
+    tools_dir = str(tools_path).replace(str(os.path.expanduser("~")), "$HOME")
     print("\n# Add this to your shell configuration file (e.g., .bashrc, .zshrc):")
     print(
-        """
+        f"""
 # dotbins - Add platform-specific binaries to PATH
 _os=$(uname -s | tr '[:upper:]' '[:lower:]')
 [[ "$_os" == "darwin" ]] && _os="macos"
@@ -94,6 +98,6 @@ _arch=$(uname -m)
 [[ "$_arch" == "x86_64" ]] && _arch="amd64"
 [[ "$_arch" == "aarch64" || "$_arch" == "arm64" ]] && _arch="arm64"
 
-export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"
+export PATH="{tools_dir}/$_os/$_arch/bin:$PATH"
 """,
     )
