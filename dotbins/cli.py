@@ -88,7 +88,7 @@ def update_tools(  # noqa: PLR0912
         )
 
     if args.shell_setup:
-        print_shell_setup()
+        print_shell_setup(config)
 
 
 def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
@@ -104,7 +104,7 @@ def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
             )
 
     console.print("# 🛠️ [green]dotbins initialized tools directory structure[/green]")
-    print_shell_setup()
+    print_shell_setup(config)
 
 
 def create_parser() -> argparse.ArgumentParser:

@@ -6,9 +6,13 @@ import functools
 import logging
 import os
 import sys
+from typing import TYPE_CHECKING
 
 import requests
 from rich.console import Console
+
+if TYPE_CHECKING:
+    from .config import DotbinsConfig
 
 # Initialize rich console
 console = Console()
@@ -81,11 +85,9 @@ def get_platform_map(platform: str, platform_map: dict) -> str:
     return platform_map.get(platform, platform)
 
 
-def print_shell_setup() -> None:
+def print_shell_setup(config: DotbinsConfig) -> None:
     """Print shell setup instructions."""
-    from .config import DotbinsConfig
-
-    tools_path = DotbinsConfig.load_from_file().tools_dir.resolve()
+    tools_path = config.tools_dir.resolve()
     tools_dir = str(tools_path).replace(str(os.path.expanduser("~")), "$HOME")
     print("\n# Add this to your shell configuration file (e.g., .bashrc, .zshrc):")
     print(

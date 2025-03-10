@@ -235,7 +235,8 @@ def test_make_binaries_executable(temp_dir: Path) -> None:
 
 def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     """Test printing shell setup instructions."""
-    dotbins.utils.print_shell_setup()
+    config = DotbinsConfig()
+    dotbins.utils.print_shell_setup(config)
     captured = capsys.readouterr()
     assert "Add this to your shell configuration file" in captured.out
     assert 'export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"' in captured.out
