@@ -377,6 +377,27 @@ tools:
       macos:
         amd64: micromamba-osx-64.tar.bz2
         arm64: micromamba-osx-arm64.tar.bz2
+
+  atuin:
+    repo: atuinsh/atuin
+    extract_binary: true
+    binary_name: atuin
+    binary_path: atuin-{arch}-*/atuin
+    arch_map:
+      amd64: x86_64
+      arm64: aarch64
+    asset_patterns:
+      linux: atuin-{arch}-unknown-linux-gnu.tar.gz
+      macos: atuin-{arch}-apple-darwin.tar.gz
+
+  git-lfs:
+    repo: git-lfs/git-lfs
+    extract_binary: true
+    binary_name: git-lfs
+    binary_path: git-lfs-{version}/git-lfs
+    asset_patterns:
+      linux: git-lfs-linux-{arch}-v{version}.tar.gz
+      macos: git-lfs-darwin-{arch}-v{version}.zip
 ```
 
 <!-- OUTPUT:END -->
