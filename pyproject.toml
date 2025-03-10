@@ -26,10 +26,13 @@ test = ["pytest", "pre-commit", "coverage", "pytest-cov"]
 docs = []
 
 [project.scripts]
-dotbins = "dotbins:main"
+dotbins = "dotbins.cli:main"
 
-[tool.setuptools]
-py-modules = ["dotbins"]
+[tool.setuptools.packages.find]
+include = ["unidep.*", "unidep"]
+
+[tool.setuptools.package-data]
+"unidep" = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = """
