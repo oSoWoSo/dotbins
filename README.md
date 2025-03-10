@@ -131,7 +131,16 @@ You'll also need to create or update your `dotbins.yaml` configuration file eith
 
 ## :gear: Configuration
 
-dotbins uses a YAML configuration file (`dotbins.yaml`) to define the tools and settings.
+dotbins uses a YAML configuration file to define the tools and settings. The configuration file is searched in the following locations (in order):
+
+1. Explicitly provided path (using `--config-file` option)
+2. `./dotbins.yaml` (current directory)
+3. `~/.config/dotbins/config.yaml` (XDG config directory)
+4. `~/.config/dotbins.yaml` (XDG config directory, flat)
+5. `~/.dotbins.yaml` (home directory)
+6. `~/.dotfiles/dotbins.yaml` (default dotfiles location)
+
+The first valid configuration file found will be used. If no configuration file is found, default settings will be used.
 
 ### Basic Configuration
 

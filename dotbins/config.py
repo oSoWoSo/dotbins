@@ -106,12 +106,48 @@ class DotbinsConfig:
 
     @classmethod
     def load_from_file(cls, config_path: str | Path | None = None) -> DotbinsConfig:
-        """Load configuration from YAML file."""
-        if not config_path:
-            config_path = Path.cwd() / "dotbins.yaml"
+        """Load configuration from YAML file.
 
+        Checks the following locations in order:
+        1. Explicitly provided config_path (if specified)
+        2. ./dotbins.yaml (current directory)
+        3. ~/.config/dotbins/config.yaml (XDG config directory)
+        4. ~/.config/dotbins.yaml (XDG config directory, flat)
+        5. ~/.dotbins.yaml (home directory)
+        6. ~/.dotfiles/dotbins.yaml (default dotfiles location)
+        """
+        if config_path:
+            config_paths = [Path(config_path)]
+        else:
+            # Define common configuration file locations
+            home = Path.home()
+            config_paths = [
+                Path.cwd() / "dotbins.yaml",
+                home / ".config" / "dotbins" / "config.yaml",
+                home / ".config" / "dotbins.yaml",
+                home / ".dotbins.yaml",
+                home / ".dotfiles" / "dotbins.yaml",
+            ]
+            # Find the first existing config file
+            for path in config_paths:
+                if path.exists():
+                    console.print(
+                        f"📝 [green]Loading configuration from: {path}[/green]",
+                    )
+                    config_paths = [path]
+                    break
+            else:
+                # No config file found
+                console.print(
+                    "⚠️ [yellow]No configuration file found, using default settings[/yellow]",
+                )
+                return cls()
+
+        # At this point, config_paths only contains one path that's either:
+        # - the explicitly provided path, or
+        # - the first existing path from the common locations
         try:
-            with open(config_path) as file:
+            with open(config_paths[0]) as file:
                 config_data = yaml.safe_load(file)
 
             # Expand paths
@@ -130,12 +166,12 @@ class DotbinsConfig:
 
         except FileNotFoundError:
             console.print(
-                f"⚠️ [yellow]Configuration file not found: {config_path}[/yellow]",
+                f"⚠️ [yellow]Configuration file not found: {config_paths[0]}[/yellow]",
             )
             return cls()
         except yaml.YAMLError:
             console.print(
-                f"❌ [bold red]Invalid YAML in configuration file: {config_path}[/bold red]",
+                f"❌ [bold red]Invalid YAML in configuration file: {config_paths[0]}[/bold red]",
             )
             console.print_exception()
             return cls()
