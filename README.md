@@ -112,7 +112,7 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         Enable verbose output (default: False)
   --tools-dir TOOLS_DIR
-                        Tools directory (default: None)
+                        Tools directory (default: ~/.dotfiles/tools)
   --config-file CONFIG_FILE
                         Path to configuration file (default: None)
 ```
@@ -482,7 +482,7 @@ _arch=$(uname -m)
 [[ "$_arch" == "x86_64" ]] && _arch="amd64"
 [[ "$_arch" == "aarch64" || "$_arch" == "arm64" ]] && _arch="arm64"
 
-export PATH="$HOME/.mydotbins/tools/$_os/$_arch/bin:$PATH"
+export PATH="$HOME/work/dotbins/dotbins/~/.dotfiles/tools/$_os/$_arch/bin:$PATH"
 
 ```
 
