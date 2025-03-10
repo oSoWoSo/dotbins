@@ -107,19 +107,19 @@ def test_find_asset() -> None:
 
     # Test finding Linux amd64 asset
     pattern = "tool-{version}-linux_{arch}.tar.gz"
-    asset = dotbins.find_asset(assets, pattern)
+    asset = dotbins.download.find_asset(assets, pattern)
     assert asset is not None
     assert asset["name"] == "tool-1.0.0-linux_amd64.tar.gz"
 
     # Test finding macOS asset
     pattern = "tool-{version}-darwin_{arch}.tar.gz"
-    asset = dotbins.find_asset(assets, pattern)
+    asset = dotbins.download.find_asset(assets, pattern)
     assert asset is not None
     assert asset["name"] == "tool-1.0.0-darwin_amd64.tar.gz"
 
     # Test pattern with no match
     pattern = "tool-{version}-windows_{arch}.zip"
-    asset = dotbins.find_asset(assets, pattern)
+    asset = dotbins.download.find_asset(assets, pattern)
     assert asset is None
 
 
@@ -132,7 +132,7 @@ def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:
 
     # Call the function
     dest_path = str(temp_dir / "downloaded.tar.gz")
-    result = dotbins.download_file(url, dest_path)
+    result = dotbins.download.download_file(url, dest_path)
 
     # Verify the file was downloaded correctly
     assert result == dest_path
@@ -211,9 +211,9 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
 def test_make_binaries_executable(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test making binaries executable."""
     # Setup mock environment
-    monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir)
-    monkeypatch.setattr(dotbins, "PLATFORMS", ["linux"])
-    monkeypatch.setattr(dotbins, "ARCHITECTURES", ["amd64"])
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir)
+    monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux"])
+    monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64"])
 
     # Create test binary
     bin_dir = temp_dir / "linux" / "amd64" / "bin"
@@ -234,7 +234,7 @@ def test_make_binaries_executable(temp_dir: Path, monkeypatch: MonkeyPatch) -> N
 
 def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     """Test printing shell setup instructions."""
-    dotbins.print_shell_setup()
+    dotbins.utils.print_shell_setup()
     captured = capsys.readouterr()
     assert "Add this to your shell configuration file" in captured.out
     assert 'export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"' in captured.out
@@ -244,11 +244,11 @@ def test_download_tool_already_exists(temp_dir: Path, monkeypatch: MonkeyPatch) 
     """Test download_tool when binary already exists."""
     # Setup environment
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "TOOLS",
         {"test-tool": {"repo": "test/tool", "binary_name": "test-tool"}},
     )
-    monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir)
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir)
 
     # Create the binary directory and file
     bin_dir = temp_dir / "linux" / "amd64" / "bin"
@@ -282,7 +282,7 @@ def test_download_tool_asset_not_found(
 
     # Setup environment
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "TOOLS",
         {
             "test-tool": {
@@ -292,7 +292,7 @@ def test_download_tool_asset_not_found(
             },
         },
     )
-    monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir)
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir)
 
     # Call the function
     result = dotbins.download_tool("test-tool", "linux", "amd64")

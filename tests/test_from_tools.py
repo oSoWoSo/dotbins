@@ -97,7 +97,7 @@ def find_matching_asset(
                 platform="linux",
                 arch="x86_64",
             )
-            asset = dotbins.find_asset(release["assets"], search_pattern)
+            asset = dotbins.download.find_asset(release["assets"], search_pattern)
 
     # Try asset_pattern if patterns didn't work
     if not asset and "asset_pattern" in tool_config:
@@ -107,7 +107,7 @@ def find_matching_asset(
             platform="linux",
             arch="x86_64",
         )
-        asset = dotbins.find_asset(release["assets"], search_pattern)
+        asset = dotbins.download.find_asset(release["assets"], search_pattern)
 
     # Fallback to generic Linux asset
     if not asset:

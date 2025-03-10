@@ -57,15 +57,15 @@ def test_get_platform_assets(mock_assets: list[dict[str, str]]) -> None:
     expected_linux_assets = 2
     expected_macos_assets = 2
 
-    linux_assets = dotbins.get_platform_assets(mock_assets, "linux")
+    linux_assets = dotbins.analyze.get_platform_assets(mock_assets, "linux")
     assert len(linux_assets) == expected_linux_assets
     assert all("linux" in a["name"] for a in linux_assets)
 
-    macos_assets = dotbins.get_platform_assets(mock_assets, "macos")
+    macos_assets = dotbins.analyze.get_platform_assets(mock_assets, "macos")
     assert len(macos_assets) == expected_macos_assets
     assert all("darwin" in a["name"] for a in macos_assets)
 
-    unknown_assets = dotbins.get_platform_assets(mock_assets, "unknown")
+    unknown_assets = dotbins.analyze.get_platform_assets(mock_assets, "unknown")
     assert len(unknown_assets) == 0
 
 
@@ -75,27 +75,27 @@ def test_get_arch_assets(mock_assets: list[dict[str, str]]) -> None:
     expected_amd64_assets = 3
     expected_arm64_assets = 2  # Includes both arm64 and aarch64 assets
 
-    amd64_assets = dotbins.get_arch_assets(mock_assets, "amd64")
+    amd64_assets = dotbins.analyze.get_arch_assets(mock_assets, "amd64")
     assert len(amd64_assets) == expected_amd64_assets
     assert all("x86_64" in a["name"] for a in amd64_assets)
 
-    arm64_assets = dotbins.get_arch_assets(mock_assets, "arm64")
+    arm64_assets = dotbins.analyze.get_arch_assets(mock_assets, "arm64")
     assert len(arm64_assets) == expected_arm64_assets
     # Check for either arm64 or aarch64 in name
     assert all("arm64" in a["name"] or "aarch64" in a["name"] for a in arm64_assets)
 
-    unknown_assets = dotbins.get_arch_assets(mock_assets, "unknown")
+    unknown_assets = dotbins.analyze.get_arch_assets(mock_assets, "unknown")
     assert len(unknown_assets) == 0
 
 
 def test_find_sample_asset(mock_assets: list[dict[str, str]]) -> None:
     """Test finding a suitable sample asset."""
-    sample = dotbins.find_sample_asset(mock_assets)
+    sample = dotbins.analyze.find_sample_asset(mock_assets)
     assert sample is not None
     assert sample["name"] == "tool-1.0.0-linux_x86_64.tar.gz"
 
     # Test with no suitable assets
-    no_sample = dotbins.find_sample_asset([{"name": "checksums.txt"}])
+    no_sample = dotbins.analyze.find_sample_asset([{"name": "checksums.txt"}])
     assert no_sample is None
 
 
@@ -123,7 +123,7 @@ def test_find_executables(temp_dir: Path) -> None:
     # Constants for expected counts
     expected_executables = 2
 
-    executables = dotbins.find_executables(temp_dir)
+    executables = dotbins.analyze.find_executables(temp_dir)
     assert len(executables) == expected_executables
     assert "tool" in executables
     assert os.path.join("bin", "tool-helper") in executables
@@ -133,28 +133,33 @@ def test_determine_binary_path() -> None:
     """Test determining the binary path from executables."""
     # Case 1: Exact name match
     executables = ["bin/other", "tool", "lib/helper"]
-    path = dotbins.determine_binary_path(executables, "tool")
+    path = dotbins.analyze.determine_binary_path(executables, "tool")
     assert path == "tool"
 
     # Case 2: Executable in bin/ directory
     executables = ["lib/helper", "bin/tool", "other"]
-    path = dotbins.determine_binary_path(executables, "different-name")
+    path = dotbins.analyze.determine_binary_path(executables, "different-name")
     assert path == "bin/tool"  # Should be fixed by our update to determine_binary_path
 
     # Case 3: Fallback to first executable
     executables = ["lib/some-exe", "other-exe"]
-    path = dotbins.determine_binary_path(executables, "different-name")
+    path = dotbins.analyze.determine_binary_path(executables, "different-name")
     assert path == "lib/some-exe"
 
     # Case 4: No executables
-    path = dotbins.determine_binary_path([], "tool")
+    path = dotbins.analyze.determine_binary_path([], "tool")
     assert path is None
 
 
 def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     """Test generating tool configuration."""
     # Test with binary path
-    config = dotbins.generate_tool_config("test/repo", "tool", mock_release, "bin/tool")
+    config = dotbins.analyze.generate_tool_config(
+        "test/repo",
+        "tool",
+        mock_release,
+        "bin/tool",
+    )
     assert config["repo"] == "test/repo"
     assert config["extract_binary"] is True
     assert config["binary_name"] == "tool"
@@ -165,11 +170,16 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert config["asset_patterns"]["macos"] != "?"
 
     # Test without binary path
-    config = dotbins.generate_tool_config("test/repo", "tool", mock_release, None)
+    config = dotbins.analyze.generate_tool_config(
+        "test/repo",
+        "tool",
+        mock_release,
+        None,
+    )
     assert "binary_path" not in config
 
     # Test with binary path containing version
-    config = dotbins.generate_tool_config(
+    config = dotbins.analyze.generate_tool_config(
         "test/repo",
         "tool",
         mock_release,
@@ -180,7 +190,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
 
 def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> None:
     """Test generating platform-specific asset patterns."""
-    patterns = dotbins.generate_platform_specific_patterns(mock_release)
+    patterns = dotbins.analyze.generate_platform_specific_patterns(mock_release)
     assert "linux" in patterns
     assert "macos" in patterns
     assert patterns["linux"] == "tool-{version}-linux_{arch}.tar.gz"
@@ -189,19 +199,19 @@ def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> No
 
 def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:
     """Test generating a single asset pattern."""
-    pattern = dotbins.generate_single_pattern(mock_release)
+    pattern = dotbins.analyze.generate_single_pattern(mock_release)
     # The function should not replace "linux" with "{platform}" for our test
     assert pattern == "tool-{version}-linux_{arch}.tar.gz"
 
     # Test with empty assets
     empty_release = {"tag_name": "v1.0.0", "assets": []}
-    pattern = dotbins.generate_single_pattern(empty_release)
+    pattern = dotbins.analyze.generate_single_pattern(empty_release)
     assert pattern == "?"
 
 
-@patch("dotbins.download_file")
-@patch("dotbins.extract_archive")
-@patch("dotbins.find_executables")
+@patch("dotbins.download.download_file")
+@patch("dotbins.download.extract_archive")
+@patch("dotbins.analyze.find_executables")
 def test_download_and_find_binary(
     mock_find_executables: MagicMock,
     mock_extract: MagicMock,
@@ -210,6 +220,9 @@ def test_download_and_find_binary(
 ) -> None:
     """Test downloading and finding binary path."""
     mock_find_executables.return_value = ["tool", "bin/tool"]
+    mock_download.return_value = (
+        "/secure/temp/file.tar.gz"  # Add this line to make mock work
+    )
 
     # Use secure temporary paths
     with patch("tempfile.NamedTemporaryFile") as mock_temp_file:
@@ -217,7 +230,7 @@ def test_download_and_find_binary(
             "/secure/temp/file.tar.gz"
         )
         with patch("tempfile.mkdtemp", return_value="/secure/temp/extracted"):
-            result = dotbins.download_and_find_binary(mock_assets[0], "tool")
+            result = dotbins.analyze.download_and_find_binary(mock_assets[0], "tool")
 
     assert mock_download.called
     assert mock_extract.called
@@ -225,12 +238,14 @@ def test_download_and_find_binary(
     assert result == "tool"  # Should match the exact name
 
 
-@patch("dotbins.get_latest_release")
-@patch("dotbins.find_sample_asset")
-@patch("dotbins.download_and_find_binary")
-@patch("dotbins.generate_tool_config")
-@patch("dotbins.print_assets_info")
+@patch("dotbins.utils.get_latest_release")
+@patch("dotbins.analyze.find_sample_asset")
+@patch("dotbins.analyze.download_and_find_binary")
+@patch("dotbins.analyze.generate_tool_config")
+@patch("dotbins.analyze.print_assets_info")
+@patch("sys.exit")  # Add this patch to prevent actual exit
 def test_analyze_tool(
+    mock_exit: MagicMock,  # Add this parameter
     mock_print_assets: MagicMock,
     mock_gen_config: MagicMock,
     mock_download_find: MagicMock,
@@ -300,7 +315,7 @@ def test_extract_archive(temp_dir: Path) -> None:
 
     extract_dir = os.path.join(temp_dir, "extract_zip")
     os.makedirs(extract_dir)
-    dotbins.extract_archive(zip_path, extract_dir)
+    dotbins.download.extract_archive(zip_path, extract_dir)
     assert os.path.exists(os.path.join(extract_dir, "test.txt"))
 
     # Test with unsupported format
@@ -311,4 +326,4 @@ def test_extract_archive(temp_dir: Path) -> None:
     extract_dir = os.path.join(temp_dir, "extract_unsupported")
     os.makedirs(extract_dir)
     with pytest.raises(ValueError, match="Unsupported archive format"):
-        dotbins.extract_archive(unsupported_path, extract_dir)
+        dotbins.download.extract_archive(unsupported_path, extract_dir)

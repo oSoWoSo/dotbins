@@ -27,7 +27,7 @@ def test_initialization(
     """Test the 'init' command."""
     # Set up environment
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "CONFIG",
         {
             "dotfiles_dir": str(temp_dir),
@@ -37,9 +37,9 @@ def test_initialization(
             "tools": {},
         },
     )
-    monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir / "tools")
-    monkeypatch.setattr(dotbins, "PLATFORMS", ["linux", "macos"])
-    monkeypatch.setattr(dotbins, "ARCHITECTURES", ["amd64", "arm64"])
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir / "tools")
+    monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux", "macos"])
+    monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64", "arm64"])
 
     # Run init command
     with patch.object(sys, "argv", ["dotbins", "init"]):
@@ -63,7 +63,7 @@ def test_list_tools(
     """Test the 'list' command."""
     # Set up environment
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "CONFIG",
         {
             "dotfiles_dir": str(temp_dir),
@@ -82,7 +82,7 @@ def test_list_tools(
         },
     )
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "TOOLS",
         {
             "test-tool": {
@@ -122,7 +122,7 @@ def test_update_tool(
     }
 
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "CONFIG",
         {
             "dotfiles_dir": str(temp_dir),
@@ -132,10 +132,10 @@ def test_update_tool(
             "tools": {"test-tool": test_tool_config},
         },
     )
-    monkeypatch.setattr(dotbins, "TOOLS_DIR", temp_dir / "tools")
-    monkeypatch.setattr(dotbins, "PLATFORMS", ["linux"])
-    monkeypatch.setattr(dotbins, "ARCHITECTURES", ["amd64"])
-    monkeypatch.setattr(dotbins, "TOOLS", {"test-tool": test_tool_config})
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir / "tools")
+    monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux"])
+    monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64"])
+    monkeypatch.setattr(dotbins.config, "TOOLS", {"test-tool": test_tool_config})
 
     # Create a mock tarball with a binary inside
     bin_dir = temp_dir / "tools" / "linux" / "amd64" / "bin"
@@ -149,7 +149,7 @@ def test_update_tool(
         shutil.copy(temp_dir / "test_binary.tar.gz", destination)
         return destination
 
-    monkeypatch.setattr(dotbins, "download_file", mock_download_file)
+    monkeypatch.setattr(dotbins.download, "download_file", mock_download_file)
 
     # Run update command
     with patch.object(sys, "argv", ["dotbins", "update", "test-tool"]):
@@ -224,7 +224,7 @@ def test_cli_no_command(capsys: CaptureFixture[str]) -> None:
 
 def test_cli_unknown_tool(monkeypatch: MonkeyPatch) -> None:
     """Test updating an unknown tool."""
-    monkeypatch.setattr(dotbins, "TOOLS", {})  # Empty tools dict
+    monkeypatch.setattr(dotbins.config, "TOOLS", {})  # Empty tools dict
 
     # Should exit with error
     with (
@@ -240,7 +240,7 @@ def test_cli_tools_dir_override(temp_dir: Path, monkeypatch: MonkeyPatch) -> Non
 
     # Mock necessary components
     monkeypatch.setattr(
-        dotbins,
+        dotbins.config,
         "CONFIG",
         {
             "dotfiles_dir": str(temp_dir),
