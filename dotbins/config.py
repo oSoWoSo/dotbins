@@ -105,10 +105,10 @@ class DotbinsConfig:
             )
 
     @classmethod
-    def load_from_file(cls, config_path: str | None = None) -> DotbinsConfig:
+    def load_from_file(cls, config_path: str | Path | None = None) -> DotbinsConfig:
         """Load configuration from YAML file."""
         if not config_path:
-            config_path = os.path.join(os.path.dirname(__file__), "..", "tools.yaml")
+            config_path = Path.cwd() / "tools.yaml"
 
         try:
             with open(config_path) as file:
