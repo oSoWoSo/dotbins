@@ -90,7 +90,6 @@ tools:
         amd64: micromamba-linux-64.tar.bz2
         arm64: micromamba-linux-aarch64.tar.bz2
       macos:
-        amd64: micromamba-osx-64.tar.bz2
         arm64: micromamba-osx-arm64.tar.bz2
 
   atuin:
