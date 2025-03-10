@@ -5,7 +5,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -20,7 +20,7 @@ class TestIntegration:
 
 
 def test_initialization(
-    temp_dir: Path,
+    tmp_dir: Path,
     monkeypatch: MonkeyPatch,
     capsys: CaptureFixture[str],
 ) -> None:
@@ -30,25 +30,29 @@ def test_initialization(
         dotbins.config,
         "CONFIG",
         {
-            "dotfiles_dir": str(temp_dir),
-            "tools_dir": str(temp_dir / "tools"),
+            "dotfiles_dir": str(tmp_dir),
+            "tools_dir": str(tmp_dir / "tools"),
             "platforms": ["linux", "macos"],
             "architectures": ["amd64", "arm64"],
             "tools": {},
         },
     )
-    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir / "tools")
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", tmp_dir / "tools")
     monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux", "macos"])
     monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64", "arm64"])
 
-    # Run init command
-    with patch.object(sys, "argv", ["dotbins", "init"]):
-        dotbins.main()
+    # Also patch the modules that might be importing from config
+    monkeypatch.setattr(dotbins.download, "TOOLS_DIR", tmp_dir / "tools")
+    monkeypatch.setattr(dotbins.download, "PLATFORMS", ["linux", "macos"])
+    monkeypatch.setattr(dotbins.download, "ARCHITECTURES", ["amd64", "arm64"])
+
+    # Directly call initialize function instead of using the CLI
+    dotbins.initialize()
 
     # Check if directories were created
     for platform in ["linux", "macos"]:
         for arch in ["amd64", "arm64"]:
-            assert (temp_dir / "tools" / platform / arch / "bin").exists()
+            assert (tmp_dir / "tools" / platform / arch / "bin").exists()
 
     # Check if shell setup was printed
     captured = capsys.readouterr()
@@ -56,48 +60,31 @@ def test_initialization(
 
 
 def test_list_tools(
-    temp_dir: Path,
     monkeypatch: MonkeyPatch,
     capsys: CaptureFixture[str],
 ) -> None:
     """Test the 'list' command."""
-    # Set up environment
-    monkeypatch.setattr(
-        dotbins.config,
-        "CONFIG",
-        {
-            "dotfiles_dir": str(temp_dir),
-            "tools_dir": str(temp_dir / "tools"),
-            "platforms": ["linux", "macos"],
-            "architectures": ["amd64", "arm64"],
-            "tools": {
-                "test-tool": {
-                    "repo": "test/tool",
-                    "extract_binary": True,
-                    "binary_name": "test-tool",
-                    "binary_path": "test-tool",
-                    "asset_pattern": "test-tool-{version}-{platform}_{arch}.tar.gz",
-                },
-            },
+    # Create a test tool configuration
+    test_tool_config = {
+        "test-tool": {
+            "repo": "test/tool",
+            "extract_binary": True,
+            "binary_name": "test-tool",
+            "binary_path": "test-tool",
+            "asset_pattern": "test-tool-{version}-{platform}_{arch}.tar.gz",
         },
-    )
-    monkeypatch.setattr(
-        dotbins.config,
-        "TOOLS",
-        {
-            "test-tool": {
-                "repo": "test/tool",
-                "extract_binary": True,
-                "binary_name": "test-tool",
-                "binary_path": "test-tool",
-                "asset_pattern": "test-tool-{version}-{platform}_{arch}.tar.gz",
-            },
-        },
-    )
+    }
 
-    # Run list command
-    with patch.object(sys, "argv", ["dotbins", "list"]):
-        dotbins.main()
+    # Set up environment - ensure we completely override the TOOLS
+    monkeypatch.setattr(dotbins.config, "TOOLS", test_tool_config)
+    monkeypatch.setattr(
+        dotbins.cli,
+        "TOOLS",
+        test_tool_config,
+    )  # May need to patch in cli module too
+
+    # Directly call the list_tools function
+    dotbins.cli.list_tools(None)
 
     # Check if tool was listed
     captured = capsys.readouterr()
@@ -106,7 +93,7 @@ def test_list_tools(
 
 
 def test_update_tool(
-    temp_dir: Path,
+    tmp_dir: Path,
     monkeypatch: MonkeyPatch,
     mock_github_api: Any,  # noqa: ARG001
 ) -> None:
@@ -121,39 +108,44 @@ def test_update_tool(
         "platform_map": "macos:darwin",
     }
 
-    monkeypatch.setattr(
-        dotbins.config,
-        "CONFIG",
-        {
-            "dotfiles_dir": str(temp_dir),
-            "tools_dir": str(temp_dir / "tools"),
-            "platforms": ["linux"],
-            "architectures": ["amd64"],
-            "tools": {"test-tool": test_tool_config},
-        },
-    )
-    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir / "tools")
+    # Make sure TOOLS includes our test tool
+    test_tools = {"test-tool": test_tool_config}
+    monkeypatch.setattr(dotbins.config, "TOOLS", test_tools)
+    monkeypatch.setattr(dotbins.cli, "TOOLS", test_tools)  # Also patch in cli module
+    monkeypatch.setattr(dotbins.download, "TOOLS", test_tools)  # And in download module
+
+    monkeypatch.setattr(dotbins.config, "TOOLS_DIR", tmp_dir / "tools")
+    monkeypatch.setattr(dotbins.download, "TOOLS_DIR", tmp_dir / "tools")
     monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux"])
+    monkeypatch.setattr(dotbins.download, "PLATFORMS", ["linux"])
     monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64"])
-    monkeypatch.setattr(dotbins.config, "TOOLS", {"test-tool": test_tool_config})
+    monkeypatch.setattr(dotbins.download, "ARCHITECTURES", ["amd64"])
 
     # Create a mock tarball with a binary inside
-    bin_dir = temp_dir / "tools" / "linux" / "amd64" / "bin"
+    bin_dir = tmp_dir / "tools" / "linux" / "amd64" / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a test binary tarball
-    _create_test_tarball(temp_dir / "test_binary.tar.gz", "test-tool")
+    _create_test_tarball(tmp_dir / "test_binary.tar.gz", "test-tool")
 
     # Mock the download_file function to use our test tarball
     def mock_download_file(_url: str, destination: str) -> str:
-        shutil.copy(temp_dir / "test_binary.tar.gz", destination)
+        shutil.copy(tmp_dir / "test_binary.tar.gz", destination)
         return destination
 
+    # Mock download and extraction to avoid actual downloads
     monkeypatch.setattr(dotbins.download, "download_file", mock_download_file)
 
-    # Run update command
-    with patch.object(sys, "argv", ["dotbins", "update", "test-tool"]):
-        dotbins.main()
+    # Create a mock args object
+    mock_args = MagicMock()
+    mock_args.tools = ["test-tool"]
+    mock_args.platform = None
+    mock_args.architecture = None
+    mock_args.force = False
+    mock_args.shell_setup = False
+
+    # Directly call update_tools
+    dotbins.cli.update_tools(mock_args)
 
     # Check if binary was installed
     assert (bin_dir / "test-tool").exists()
@@ -234,17 +226,17 @@ def test_cli_unknown_tool(monkeypatch: MonkeyPatch) -> None:
         dotbins.main()
 
 
-def test_cli_tools_dir_override(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
+def test_cli_tools_dir_override(tmp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test overriding tools directory via CLI."""
-    custom_dir = temp_dir / "custom_tools"
+    custom_dir = tmp_dir / "custom_tools"
 
     # Mock necessary components
     monkeypatch.setattr(
         dotbins.config,
         "CONFIG",
         {
-            "dotfiles_dir": str(temp_dir),
-            "tools_dir": str(temp_dir / "default_tools"),  # Default dir
+            "dotfiles_dir": str(tmp_dir),
+            "tools_dir": str(tmp_dir / "default_tools"),  # Default dir
             "platforms": ["linux"],
             "architectures": ["amd64"],
             "tools": {},

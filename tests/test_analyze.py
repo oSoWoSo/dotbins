@@ -243,9 +243,9 @@ def test_download_and_find_binary(
 @patch("dotbins.analyze.download_and_find_binary")
 @patch("dotbins.analyze.generate_tool_config")
 @patch("dotbins.analyze.print_assets_info")
-@patch("sys.exit")  # Add this patch to prevent actual exit
+@patch("sys.exit")
 def test_analyze_tool(
-    mock_exit: MagicMock,  # Add this parameter
+    mock_exit: MagicMock,
     mock_print_assets: MagicMock,
     mock_gen_config: MagicMock,
     mock_download_find: MagicMock,

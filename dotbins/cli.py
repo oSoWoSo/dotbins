@@ -64,7 +64,7 @@ def update_tools(args: argparse.Namespace) -> None:
         print_shell_setup()
 
 
-def initialize(_args: Any) -> None:
+def initialize(_args: Any = None) -> None:
     """Initialize the tools directory structure."""
     for platform in PLATFORMS:
         for arch in ARCHITECTURES:

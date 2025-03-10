@@ -212,8 +212,23 @@ def test_make_binaries_executable(temp_dir: Path, monkeypatch: MonkeyPatch) -> N
     """Test making binaries executable."""
     # Setup mock environment
     monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir)
+    monkeypatch.setattr(
+        dotbins.download,
+        "TOOLS_DIR",
+        temp_dir,
+    )  # Also patch in download module
     monkeypatch.setattr(dotbins.config, "PLATFORMS", ["linux"])
+    monkeypatch.setattr(
+        dotbins.download,
+        "PLATFORMS",
+        ["linux"],
+    )  # Also patch in download module
     monkeypatch.setattr(dotbins.config, "ARCHITECTURES", ["amd64"])
+    monkeypatch.setattr(
+        dotbins.download,
+        "ARCHITECTURES",
+        ["amd64"],
+    )  # Also patch in download module
 
     # Create test binary
     bin_dir = temp_dir / "linux" / "amd64" / "bin"
@@ -226,10 +241,11 @@ def test_make_binaries_executable(temp_dir: Path, monkeypatch: MonkeyPatch) -> N
     bin_file.chmod(0o644)
 
     # Call the function
-    dotbins.make_binaries_executable()
+    dotbins.download.make_binaries_executable()
 
-    # Verify the binary is now executable
-    assert bin_file.stat().st_mode & 0o100
+    # Verify the binary is now executable - use platform-independent check
+    mode = bin_file.stat().st_mode
+    assert mode & 0o100 != 0, f"File should be executable, mode={mode:o}"
 
 
 def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
@@ -242,13 +258,23 @@ def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
 
 def test_download_tool_already_exists(temp_dir: Path, monkeypatch: MonkeyPatch) -> None:
     """Test download_tool when binary already exists."""
-    # Setup environment
+    # Setup environment with complete tool config
+    test_tool_config = {
+        "repo": "test/tool",
+        "extract_binary": True,
+        "binary_name": "test-tool",
+        "binary_path": "test-tool",
+        "asset_pattern": "test-tool-{version}-{platform}_{arch}.tar.gz",
+    }
+
     monkeypatch.setattr(
         dotbins.config,
         "TOOLS",
-        {"test-tool": {"repo": "test/tool", "binary_name": "test-tool"}},
+        {"test-tool": test_tool_config},
     )
+    monkeypatch.setattr(dotbins.download, "TOOLS", {"test-tool": test_tool_config})
     monkeypatch.setattr(dotbins.config, "TOOLS_DIR", temp_dir)
+    monkeypatch.setattr(dotbins.download, "TOOLS_DIR", temp_dir)
 
     # Create the binary directory and file
     bin_dir = temp_dir / "linux" / "amd64" / "bin"
@@ -257,8 +283,12 @@ def test_download_tool_already_exists(temp_dir: Path, monkeypatch: MonkeyPatch) 
     with open(bin_file, "w") as f:
         f.write("#!/bin/sh\necho test")
 
-    # Call the function with force=False
-    result = dotbins.download_tool("test-tool", "linux", "amd64", force=False)
+    # Mock the get_latest_release function to avoid HTTP requests
+    with patch("dotbins.utils.get_latest_release") as mock_release:
+        mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
+
+        # Call the function with force=False
+        result = dotbins.download_tool("test-tool", "linux", "amd64", force=False)
 
     # Should return True (skip download) since file exists
     assert result is True
