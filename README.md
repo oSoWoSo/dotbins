@@ -362,12 +362,13 @@ tools:
     extract_binary: true
     binary_name: micromamba
     binary_path: bin/micromamba
-    arch_map:
-      amd64: "64"
-      arm64: arm64
     asset_patterns:
-      linux: micromamba-linux-64.tar.bz2
-      macos: micromamba-osx-arm64.tar.bz2
+      linux:
+        amd64: micromamba-linux-64.tar.bz2
+        arm64: micromamba-linux-aarch64.tar.bz2
+      macos:
+        amd64: micromamba-osx-64.tar.bz2
+        arm64: micromamba-osx-arm64.tar.bz2
 ```
 
 <!-- OUTPUT:END -->
