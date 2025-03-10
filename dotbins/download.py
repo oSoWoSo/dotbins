@@ -64,13 +64,17 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
     """Extract an archive to a destination directory."""
     try:
         # Check file type
-        is_tarball = False
+        is_gzip = False
         with open(archive_path, "rb") as f:
-            if f.read(2) == b"\x1f\x8b":
-                is_tarball = True
+            header = f.read(3)
+            if header.startswith(b"\x1f\x8b"):
+                is_gzip = True
 
-        if is_tarball or archive_path.endswith((".tar.gz", ".tgz")):
+        if is_gzip or archive_path.endswith((".tar.gz", ".tgz")):
             with tarfile.open(archive_path, mode="r:gz") as tar:
+                tar.extractall(path=dest_dir)
+        elif archive_path.endswith((".tar.bz2", ".tbz2")):
+            with tarfile.open(archive_path, mode="r:bz2") as tar:
                 tar.extractall(path=dest_dir)
         elif archive_path.endswith(".zip"):
             with zipfile.ZipFile(archive_path) as zip_file:
@@ -96,7 +100,7 @@ def extract_from_archive(
 
     try:
         # Extract the archive
-        extract_archive(archive_path, str(temp_dir))
+        extract_archive(str(archive_path), str(temp_dir))
         console.print(f"📦 [green]Archive extracted to {temp_dir}[/green]")
 
         # Debug: List the extracted files
@@ -398,11 +402,8 @@ def download_and_install_asset(
         binary_names = [binary_names]
 
     # Create a temporary file for download
-    with tempfile.NamedTemporaryFile(
-        delete=False,
-        suffix=os.path.splitext(asset["name"])[1],
-    ) as temp_file:
-        temp_path = temp_file.name
+    tmp_dir = Path(tempfile.gettempdir())
+    temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
 
     try:
         # Download the asset

@@ -80,3 +80,15 @@ tools:
     asset_patterns:
       linux: uv-{arch}-unknown-linux-gnu.tar.gz
       macos: uv-{arch}-apple-darwin.tar.gz
+
+  micromamba:
+    repo: mamba-org/micromamba-releases
+    extract_binary: true
+    binary_name: micromamba
+    binary_path: bin/micromamba
+    arch_map:
+      amd64: "64"
+      arm64: arm64
+    asset_patterns:
+      linux: micromamba-linux-64.tar.bz2
+      macos: micromamba-osx-arm64.tar.bz2
