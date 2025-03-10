@@ -13,6 +13,8 @@ It downloads and organizes binaries for popular tools across multiple platforms 
 
 Whether you work across multiple machines or just want a version-controlled setup for your essential command-line tools, dotbins makes it easy to keep everything synchronized and updated. 🚀
 
+**See it in action:**
+
 [![asciicast](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z.svg)](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z)
 
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
@@ -55,7 +57,7 @@ My aliases and configurations were there, but the actual tools they relied on (`
 `dotbins` was born out of this frustration.
 It allows me to:
 
-1. Track pre-compiled binaries in a separate Git repository (using Git LFS for efficient storage)
+1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/mydotbins) (using Git LFS for efficient storage)
 2. Include this repository as a submodule in my dotfiles
 3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
 
