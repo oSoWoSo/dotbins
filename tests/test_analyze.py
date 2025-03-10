@@ -210,14 +210,13 @@ def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:
     assert pattern == "?"
 
 
-@patch("dotbins.download.download_file")
-@patch("dotbins.download.extract_archive")
+@patch("dotbins.analyze.download_file")
+@patch("dotbins.analyze.extract_archive")
 @patch("dotbins.analyze.find_executables")
 def test_download_and_find_binary(
     mock_find_executables: MagicMock,
     mock_extract: MagicMock,
     mock_download: MagicMock,
-    mock_assets: list[dict[str, str]],
 ) -> None:
     """Test downloading and finding binary path."""
     mock_find_executables.return_value = ["tool", "bin/tool"]
@@ -248,9 +247,7 @@ def test_download_and_find_binary(
 @patch("dotbins.analyze.download_and_find_binary")
 @patch("dotbins.analyze.generate_tool_config")
 @patch("dotbins.analyze.print_assets_info")
-@patch("sys.exit")
 def test_analyze_tool(
-    mock_exit: MagicMock,
     mock_print_assets: MagicMock,
     mock_gen_config: MagicMock,
     mock_download_find: MagicMock,
