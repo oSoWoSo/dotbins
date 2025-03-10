@@ -34,7 +34,6 @@ def test_initialization(
     """Test the 'init' command."""
     # Create a config with our test directories
     config = DotbinsConfig(
-        dotfiles_dir=tmp_dir,
         tools_dir=tmp_dir / "tools",
         platforms={"linux": ["amd64", "arm64"], "macos": ["arm64"]},
         tools={},
@@ -72,7 +71,6 @@ def test_list_tools(
     # Create config with our test tools
     config = DotbinsConfig(
         tools=test_tool_config,
-        dotfiles_dir=tmp_path,
         tools_dir=tmp_path / "tools",
     )
 
@@ -106,7 +104,6 @@ def test_update_tool(
 
     # Create config with our test tool - use new format
     config = DotbinsConfig(
-        dotfiles_dir=tmp_dir,
         tools_dir=tmp_dir / "tools",
         platforms={"linux": ["amd64"]},  # Just linux/amd64 for this test
         tools={"test-tool": test_tool_config},
@@ -225,7 +222,6 @@ def test_cli_tools_dir_override(tmp_dir: Path) -> None:
         **kwargs: Any,  # noqa: ARG001
     ) -> DotbinsConfig:
         return DotbinsConfig(
-            dotfiles_dir=tmp_dir,
             tools_dir=tmp_dir / "default_tools",  # Default dir
             platforms={"linux": ["amd64"]},  # Use new format
             tools={},

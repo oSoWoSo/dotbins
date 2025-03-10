@@ -23,7 +23,6 @@ def temp_dir() -> Generator[Path, None, None]:
 def mock_config_file(temp_dir: Path) -> Path:
     """Create a mock dotbins.yaml configuration file."""
     config = {
-        "dotfiles_dir": str(temp_dir),
         "tools_dir": str(temp_dir / "tools"),
         "platforms": {
             "linux": ["amd64", "arm64"],

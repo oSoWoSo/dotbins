@@ -17,9 +17,6 @@ console = Console()
 class DotbinsConfig:
     """Configuration for dotbins."""
 
-    dotfiles_dir: Path = field(
-        default_factory=lambda: Path(os.path.expanduser("~/.dotfiles")),
-    )
     tools_dir: Path = field(
         default_factory=lambda: Path(os.path.expanduser("~/.dotfiles/tools")),
     )
@@ -220,10 +217,6 @@ class DotbinsConfig:
                 config_data = yaml.safe_load(file)
 
             # Expand paths
-            if isinstance(config_data.get("dotfiles_dir"), str):
-                config_data["dotfiles_dir"] = Path(
-                    os.path.expanduser(config_data["dotfiles_dir"]),
-                )
             if isinstance(config_data.get("tools_dir"), str):
                 config_data["tools_dir"] = Path(
                     os.path.expanduser(config_data["tools_dir"]),

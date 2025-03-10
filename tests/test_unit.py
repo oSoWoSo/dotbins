@@ -19,7 +19,6 @@ def test_load_config(temp_dir: Path) -> None:
     """Test loading configuration from YAML."""
     # Create a sample config file - updated to new format
     config_content = """
-    dotfiles_dir: ~/.custom_dotfiles
     tools_dir: ~/tools
     platforms:
       linux:
@@ -44,7 +43,6 @@ def test_load_config(temp_dir: Path) -> None:
     config = DotbinsConfig.load_from_file(str(config_path))
 
     # Verify config was loaded correctly
-    assert config.dotfiles_dir == Path(os.path.expanduser("~/.custom_dotfiles"))
     assert config.tools_dir == Path(os.path.expanduser("~/tools"))
     assert "linux" in config.platforms
     assert "macos" in config.platforms
@@ -61,7 +59,6 @@ def test_load_config_fallback() -> None:
         config = DotbinsConfig.load_from_file("nonexistent.yaml")
 
     # Verify default config is returned
-    assert config.dotfiles_dir == Path(os.path.expanduser("~/.dotfiles"))
     assert config.tools_dir == Path(os.path.expanduser("~/.dotfiles/tools"))
 
 

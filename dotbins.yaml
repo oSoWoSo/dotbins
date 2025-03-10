@@ -1,5 +1,4 @@
 # Configuration
-dotfiles_dir: ~/.dotfiles
 tools_dir: ~/.dotfiles/tools
 
 platforms:
