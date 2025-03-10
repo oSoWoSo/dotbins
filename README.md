@@ -182,6 +182,14 @@ tool-name:
     macos: pattern-for-macos.tar.gz
   # Option 2: Single pattern for all platforms
   asset_patterns: pattern-for-all-platforms.tar.gz  # Global pattern for all platforms
+  # Option 3: Explicit platform patterns for different architectures
+  asset_patterns:
+    linux:
+      amd64: pattern-for-linux-amd64.tar.gz
+      arm64: pattern-for-linux-arm64.tar.gz
+    macos:
+      amd64: pattern-for-macos-amd64.tar.gz
+      arm64: pattern-for-macos-arm64.tar.gz
 ```
 
 ### Platform and Architecture Mapping
