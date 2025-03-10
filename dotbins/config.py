@@ -12,20 +12,21 @@ from rich.console import Console
 
 console = Console()
 
+DEFAULT_TOOLS_DIR = "~/.dotfiles/tools"
+DEFAULT_PLATFORMS = {
+    "linux": ["amd64", "arm64"],
+    "macos": ["amd64", "arm64"],
+}
+
 
 @dataclass
 class DotbinsConfig:
     """Configuration for dotbins."""
 
     tools_dir: Path = field(
-        default_factory=lambda: Path(os.path.expanduser("~/.dotfiles/tools")),
+        default_factory=lambda: Path(os.path.expanduser(DEFAULT_TOOLS_DIR)),
     )
-    platforms: dict[str, list[str]] = field(
-        default_factory=lambda: {
-            "linux": ["amd64", "arm64"],
-            "macos": ["amd64", "arm64"],
-        },
-    )
+    platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
     tools: dict[str, Any] = field(default_factory=dict)
 
     @property

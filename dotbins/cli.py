@@ -12,7 +12,7 @@ from rich.console import Console
 
 from . import __version__
 from .analyze import analyze_tool
-from .config import DotbinsConfig
+from .config import DEFAULT_TOOLS_DIR, DotbinsConfig
 from .download import download_tool, make_binaries_executable
 from .utils import print_shell_setup, setup_logging
 
@@ -124,6 +124,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--tools-dir",
         type=str,
         help="Tools directory",
+        default=DEFAULT_TOOLS_DIR,
     )
     parser.add_argument(
         "--config-file",
