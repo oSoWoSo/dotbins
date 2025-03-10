@@ -343,10 +343,10 @@ def find_matching_asset(
 ) -> dict | None:
     """Find a matching asset for the tool."""
     # Determine asset pattern
-    asset_pattern = get_asset_pattern(tool_config, platform)
+    asset_pattern = get_asset_pattern(tool_config, platform, tool_arch)
     if not asset_pattern:
         console.print(
-            f"⚠️ [yellow]No asset pattern found for platform {tool_platform}[/yellow]",
+            f"⚠️ [yellow]No asset pattern found for {platform}/{tool_arch}[/yellow]",
         )
         return None
 
@@ -368,19 +368,51 @@ def find_matching_asset(
     return asset
 
 
-def get_asset_pattern(tool_config: dict, platform: str) -> str | None:
-    """Get the asset pattern for a tool and platform."""
-    # Check if asset_patterns is a string (global pattern)
-    if "asset_patterns" in tool_config:
-        if isinstance(tool_config["asset_patterns"], str):
-            return tool_config["asset_patterns"]
-        if isinstance(tool_config["asset_patterns"], dict):
-            return tool_config["asset_patterns"].get(platform)
+def get_asset_pattern(  # noqa: PLR0911
+    tool_config: dict,
+    platform: str,
+    arch: str,
+) -> str | None:
+    """Get the asset pattern for a tool, platform, and architecture."""
+    # No asset patterns defined
+    if "asset_patterns" not in tool_config:
+        console.print("⚠️ [yellow]No asset patterns defined[/yellow]")
+        return None
 
-    # No pattern found
-    console.print(
-        f"⚠️ [yellow]No asset pattern defined for platform {platform}[/yellow]",
-    )
+    patterns = tool_config["asset_patterns"]
+
+    # Case 1: String pattern (global pattern for all platforms/architectures)
+    if isinstance(patterns, str):
+        return patterns
+
+    # Case 2: Dict of patterns by platform
+    if isinstance(patterns, dict):
+        # If platform not in dict or explicitly set to null, no pattern for this platform
+        if platform not in patterns or patterns[platform] is None:
+            console.print(
+                f"⚠️ [yellow]No asset pattern defined for platform {platform}[/yellow]",
+            )
+            return None
+
+        platform_patterns = patterns[platform]
+
+        # Case 2a: String pattern for this platform
+        if isinstance(platform_patterns, str):
+            return platform_patterns
+
+        # Case 3: Dict of patterns by platform and architecture
+        if isinstance(platform_patterns, dict):
+            # If arch not in dict or explicitly set to null, no pattern for this arch
+            if arch not in platform_patterns or platform_patterns[arch] is None:
+                console.print(
+                    f"⚠️ [yellow]No asset pattern defined for {platform}/{arch}[/yellow]",
+                )
+                return None
+
+            return platform_patterns[arch]
+
+    # No valid pattern found
+    console.print(f"⚠️ [yellow]No asset pattern found for {platform}/{arch}[/yellow]")
     return None
 
 

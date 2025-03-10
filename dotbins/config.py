@@ -35,7 +35,7 @@ class DotbinsConfig:
         for tool_name, tool_config in self.tools.items():
             self._validate_tool_config(tool_name, tool_config)
 
-    def _validate_tool_config(
+    def _validate_tool_config(  # noqa: PLR0912
         self,
         tool_name: str,
         tool_config: dict[str, Any],
@@ -95,14 +95,21 @@ class DotbinsConfig:
                     f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a dictionary[/yellow]",
                 )
 
-        # Validate asset_patterns is a string or dictionary
-        if "asset_patterns" in tool_config and not isinstance(
-            tool_config["asset_patterns"],
-            (str, dict),
-        ):
-            console.print(
-                f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' must be a string or dictionary[/yellow]",
-            )
+        # Validate asset_patterns structure
+        if "asset_patterns" in tool_config:
+            patterns = tool_config["asset_patterns"]
+            if isinstance(patterns, dict):
+                for platform, platform_patterns in patterns.items():
+                    if platform not in self.platforms and platform != "default":
+                        console.print(
+                            f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'[/yellow]",
+                        )
+                    if isinstance(platform_patterns, dict):
+                        for arch in platform_patterns:
+                            if arch not in self.architectures and arch != "default":
+                                console.print(
+                                    f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'[/yellow]",
+                                )
 
     @classmethod
     def load_from_file(cls, config_path: str | Path | None = None) -> DotbinsConfig:
