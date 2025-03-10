@@ -10,6 +10,7 @@ from typing import Any
 
 from rich.console import Console
 
+from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
 from .download import download_tool, make_binaries_executable
@@ -160,6 +161,12 @@ def create_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--name", help="Name to use for the tool")
     analyze_parser.set_defaults(func=analyze_tool)
 
+    # version command
+    version_parser = subparsers.add_parser("version", help="Print version information")
+    version_parser.set_defaults(
+        func=lambda _, __: console.print(f"dotbins v{__version__}"),
+    )
+
     return parser
 
 
@@ -181,11 +188,7 @@ def main() -> None:
 
         # Execute command or show help
         if hasattr(args, "func"):
-            if args.func == analyze_tool:
-                # analyze_tool doesn't need the config
-                args.func(args)
-            else:
-                args.func(args, config)
+            args.func(args, config)
         else:
             parser.print_help()
 

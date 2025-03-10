@@ -68,7 +68,7 @@ def generate_tool_configuration(
     return generate_tool_config(repo, tool_name, release, binary_path)
 
 
-def analyze_tool(args: Any) -> None:
+def analyze_tool(args: Any, _config: Any = None) -> None:
     """Analyze GitHub releases for a tool to help determine patterns."""
     repo = args.repo
 
