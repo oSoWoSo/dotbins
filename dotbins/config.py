@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,7 +11,6 @@ import yaml
 from rich.console import Console
 
 console = Console()
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,12 +33,26 @@ class DotbinsConfig:
         for tool_name, tool_config in self.tools.items():
             self._validate_tool_config(tool_name, tool_config)
 
-    def _validate_tool_config(  # noqa: PLR0912
+    def _validate_tool_config(
         self,
         tool_name: str,
         tool_config: dict[str, Any],
     ) -> None:
         """Validate a single tool configuration."""
+        self._validate_required_fields(tool_name, tool_config)
+        self._validate_unknown_fields(tool_name, tool_config)
+        self._validate_asset_patterns_presence(tool_name, tool_config)
+        self._validate_binary_fields(tool_name, tool_config)
+        self._validate_binary_lists_length(tool_name, tool_config)
+        self._validate_map_fields(tool_name, tool_config)
+        self._validate_asset_patterns_structure(tool_name, tool_config)
+
+    def _validate_required_fields(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate required fields are present."""
         required_fields = ["repo", "binary_name", "binary_path"]
         for _field in required_fields:
             if _field not in tool_config:
@@ -48,9 +60,16 @@ class DotbinsConfig:
                     f"⚠️ [yellow]Tool {tool_name} is missing required field '{_field}'[/yellow]",
                 )
 
-        # Check for unknown fields
+    def _validate_unknown_fields(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate there are no unknown fields."""
         known_fields = {
-            *required_fields,
+            "repo",
+            "binary_name",
+            "binary_path",
             "extract_binary",
             "asset_patterns",
             "platform_map",
@@ -62,13 +81,23 @@ class DotbinsConfig:
                 f"⚠️ [yellow]Tool {tool_name} has unknown field '{_field}' that will be ignored[/yellow]",
             )
 
-        # Check for asset_patterns
+    def _validate_asset_patterns_presence(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate asset_patterns field is present."""
         if "asset_patterns" not in tool_config:
             console.print(
                 f"⚠️ [yellow]Tool {tool_name} is missing required field 'asset_patterns'[/yellow]",
             )
 
-        # Validate binary_name and binary_path are either strings or lists
+    def _validate_binary_fields(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate binary_name and binary_path fields."""
         for _field in ["binary_name", "binary_path"]:
             if _field in tool_config and not isinstance(
                 tool_config[_field],
@@ -78,7 +107,12 @@ class DotbinsConfig:
                     f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a string or a list of strings[/yellow]",
                 )
 
-        # Validate binary_path and binary_name have the same length if both are lists
+    def _validate_binary_lists_length(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate binary_name and binary_path lists have the same length."""
         if (
             isinstance(tool_config.get("binary_name"), list)
             and isinstance(tool_config.get("binary_path"), list)
@@ -88,28 +122,36 @@ class DotbinsConfig:
                 f"⚠️ [yellow]Tool {tool_name}: 'binary_name' and 'binary_path' lists must have the same length[/yellow]",
             )
 
-        # Validate platform_map and arch_map are dictionaries if present
+    def _validate_map_fields(self, tool_name: str, tool_config: dict[str, Any]) -> None:
+        """Validate platform_map and arch_map fields."""
         for _field in ["platform_map", "arch_map"]:
             if _field in tool_config and not isinstance(tool_config[_field], dict):
                 console.print(
                     f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a dictionary[/yellow]",
                 )
 
-        # Validate asset_patterns structure
-        if "asset_patterns" in tool_config:
-            patterns = tool_config["asset_patterns"]
-            if isinstance(patterns, dict):
-                for platform, platform_patterns in patterns.items():
-                    if platform not in self.platforms and platform != "default":
-                        console.print(
-                            f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'[/yellow]",
-                        )
-                    if isinstance(platform_patterns, dict):
-                        for arch in platform_patterns:
-                            if arch not in self.architectures and arch != "default":
-                                console.print(
-                                    f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'[/yellow]",
-                                )
+    def _validate_asset_patterns_structure(
+        self,
+        tool_name: str,
+        tool_config: dict[str, Any],
+    ) -> None:
+        """Validate asset_patterns structure."""
+        if "asset_patterns" not in tool_config:
+            return
+
+        patterns = tool_config["asset_patterns"]
+        if isinstance(patterns, dict):
+            for platform, platform_patterns in patterns.items():
+                if platform not in self.platforms and platform != "default":
+                    console.print(
+                        f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'[/yellow]",
+                    )
+                if isinstance(platform_patterns, dict):
+                    for arch in platform_patterns:
+                        if arch not in self.architectures and arch != "default":
+                            console.print(
+                                f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'[/yellow]",
+                            )
 
     @classmethod
     def load_from_file(cls, config_path: str | Path | None = None) -> DotbinsConfig:
