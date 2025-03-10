@@ -10,7 +10,8 @@ import pytest
 import yaml
 from _pytest.capture import CaptureFixture
 
-import dotbins
+from dotbins import analyze
+from dotbins.download import extract_archive
 
 
 @pytest.fixture
@@ -57,15 +58,15 @@ def test_get_platform_assets(mock_assets: list[dict[str, str]]) -> None:
     expected_linux_assets = 2
     expected_macos_assets = 2
 
-    linux_assets = dotbins.analyze.get_platform_assets(mock_assets, "linux")
+    linux_assets = analyze.get_platform_assets(mock_assets, "linux")
     assert len(linux_assets) == expected_linux_assets
     assert all("linux" in a["name"] for a in linux_assets)
 
-    macos_assets = dotbins.analyze.get_platform_assets(mock_assets, "macos")
+    macos_assets = analyze.get_platform_assets(mock_assets, "macos")
     assert len(macos_assets) == expected_macos_assets
     assert all("darwin" in a["name"] for a in macos_assets)
 
-    unknown_assets = dotbins.analyze.get_platform_assets(mock_assets, "unknown")
+    unknown_assets = analyze.get_platform_assets(mock_assets, "unknown")
     assert len(unknown_assets) == 0
 
 
@@ -75,27 +76,27 @@ def test_get_arch_assets(mock_assets: list[dict[str, str]]) -> None:
     expected_amd64_assets = 3
     expected_arm64_assets = 2  # Includes both arm64 and aarch64 assets
 
-    amd64_assets = dotbins.analyze.get_arch_assets(mock_assets, "amd64")
+    amd64_assets = analyze.get_arch_assets(mock_assets, "amd64")
     assert len(amd64_assets) == expected_amd64_assets
     assert all("x86_64" in a["name"] for a in amd64_assets)
 
-    arm64_assets = dotbins.analyze.get_arch_assets(mock_assets, "arm64")
+    arm64_assets = analyze.get_arch_assets(mock_assets, "arm64")
     assert len(arm64_assets) == expected_arm64_assets
     # Check for either arm64 or aarch64 in name
     assert all("arm64" in a["name"] or "aarch64" in a["name"] for a in arm64_assets)
 
-    unknown_assets = dotbins.analyze.get_arch_assets(mock_assets, "unknown")
+    unknown_assets = analyze.get_arch_assets(mock_assets, "unknown")
     assert len(unknown_assets) == 0
 
 
 def test_find_sample_asset(mock_assets: list[dict[str, str]]) -> None:
     """Test finding a suitable sample asset."""
-    sample = dotbins.analyze.find_sample_asset(mock_assets)
+    sample = analyze.find_sample_asset(mock_assets)
     assert sample is not None
     assert sample["name"] == "tool-1.0.0-linux_x86_64.tar.gz"
 
     # Test with no suitable assets
-    no_sample = dotbins.analyze.find_sample_asset([{"name": "checksums.txt"}])
+    no_sample = analyze.find_sample_asset([{"name": "checksums.txt"}])
     assert no_sample is None
 
 
@@ -123,7 +124,7 @@ def test_find_executables(temp_dir: Path) -> None:
     # Constants for expected counts
     expected_executables = 2
 
-    executables = dotbins.analyze.find_executables(temp_dir)
+    executables = analyze.find_executables(temp_dir)
     assert len(executables) == expected_executables
     assert "tool" in executables
     assert os.path.join("bin", "tool-helper") in executables
@@ -133,28 +134,28 @@ def test_determine_binary_path() -> None:
     """Test determining the binary path from executables."""
     # Case 1: Exact name match
     executables = ["bin/other", "tool", "lib/helper"]
-    path = dotbins.analyze.determine_binary_path(executables, "tool")
+    path = analyze.determine_binary_path(executables, "tool")
     assert path == "tool"
 
     # Case 2: Executable in bin/ directory
     executables = ["lib/helper", "bin/tool", "other"]
-    path = dotbins.analyze.determine_binary_path(executables, "different-name")
+    path = analyze.determine_binary_path(executables, "different-name")
     assert path == "bin/tool"  # Should be fixed by our update to determine_binary_path
 
     # Case 3: Fallback to first executable
     executables = ["lib/some-exe", "other-exe"]
-    path = dotbins.analyze.determine_binary_path(executables, "different-name")
+    path = analyze.determine_binary_path(executables, "different-name")
     assert path == "lib/some-exe"
 
     # Case 4: No executables
-    path = dotbins.analyze.determine_binary_path([], "tool")
+    path = analyze.determine_binary_path([], "tool")
     assert path is None
 
 
 def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     """Test generating tool configuration."""
     # Test with binary path
-    config = dotbins.analyze.generate_tool_config(
+    config = analyze.generate_tool_config(
         "test/repo",
         "tool",
         mock_release,
@@ -170,7 +171,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert config["asset_patterns"]["macos"] != "?"
 
     # Test without binary path
-    config = dotbins.analyze.generate_tool_config(
+    config = analyze.generate_tool_config(
         "test/repo",
         "tool",
         mock_release,
@@ -179,7 +180,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert "binary_path" not in config
 
     # Test with binary path containing version
-    config = dotbins.analyze.generate_tool_config(
+    config = analyze.generate_tool_config(
         "test/repo",
         "tool",
         mock_release,
@@ -190,7 +191,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
 
 def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> None:
     """Test generating platform-specific asset patterns."""
-    patterns = dotbins.analyze.generate_platform_specific_patterns(mock_release)
+    patterns = analyze.generate_platform_specific_patterns(mock_release)
     assert "linux" in patterns
     assert "macos" in patterns
     assert patterns["linux"] == "tool-{version}-linux_{arch}.tar.gz"
@@ -199,13 +200,13 @@ def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> No
 
 def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:
     """Test generating a single asset pattern."""
-    pattern = dotbins.analyze.generate_single_pattern(mock_release)
+    pattern = analyze.generate_single_pattern(mock_release)
     # The function should not replace "linux" with "{platform}" for our test
     assert pattern == "tool-{version}-linux_{arch}.tar.gz"
 
     # Test with empty assets
     empty_release = {"tag_name": "v1.0.0", "assets": []}
-    pattern = dotbins.analyze.generate_single_pattern(empty_release)
+    pattern = analyze.generate_single_pattern(empty_release)
     assert pattern == "?"
 
 
@@ -224,13 +225,19 @@ def test_download_and_find_binary(
         "/secure/temp/file.tar.gz"  # Add this line to make mock work
     )
 
+    # Create an actual mock asset that we'll use
+    mock_asset = {
+        "name": "tool-1.0.0-linux_x86_64.tar.gz",
+        "browser_download_url": "https://mocked-example.com/tool.tar.gz",
+    }
+
     # Use secure temporary paths
     with patch("tempfile.NamedTemporaryFile") as mock_temp_file:
         mock_temp_file.return_value.__enter__.return_value.name = (
             "/secure/temp/file.tar.gz"
         )
         with patch("tempfile.mkdtemp", return_value="/secure/temp/extracted"):
-            result = dotbins.analyze.download_and_find_binary(mock_assets[0], "tool")
+            result = analyze.download_and_find_binary(mock_asset, "tool")
 
     assert mock_download.called
     assert mock_extract.called
@@ -284,7 +291,7 @@ def test_analyze_tool(
     mock_gen_config.return_value = tool_config
 
     # Call the function
-    dotbins.analyze_tool(mock_args)
+    analyze.analyze_tool(mock_args)
 
     # Check results
     mock_get_release.assert_called_once_with("test/repo")
@@ -315,7 +322,7 @@ def test_extract_archive(temp_dir: Path) -> None:
 
     extract_dir = os.path.join(temp_dir, "extract_zip")
     os.makedirs(extract_dir)
-    dotbins.download.extract_archive(zip_path, extract_dir)
+    extract_archive(zip_path, extract_dir)
     assert os.path.exists(os.path.join(extract_dir, "test.txt"))
 
     # Test with unsupported format
@@ -326,4 +333,4 @@ def test_extract_archive(temp_dir: Path) -> None:
     extract_dir = os.path.join(temp_dir, "extract_unsupported")
     os.makedirs(extract_dir)
     with pytest.raises(ValueError, match="Unsupported archive format"):
-        dotbins.download.extract_archive(unsupported_path, extract_dir)
+        extract_archive(unsupported_path, extract_dir)

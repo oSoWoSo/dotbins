@@ -12,7 +12,9 @@ import pytest
 import requests
 import yaml
 
-import dotbins
+from dotbins.analyze import generate_tool_configuration
+from dotbins.download import download_file, find_asset
+from dotbins.utils import get_latest_release
 
 TOOLS = ["fzf", "bat", "eza", "zoxide", "uv"]
 
@@ -63,14 +65,14 @@ def find_and_download_asset(
 
     try:
         # Get latest release info
-        release = dotbins.get_latest_release(repo)
+        release = get_latest_release(repo)
 
         # Find an appropriate asset
         asset = find_matching_asset(tool_config, release)
 
         if asset:
             logging.info("Downloading %s for %s", asset["name"], tool_name)
-            dotbins.download_file(asset["browser_download_url"], str(tool_path))
+            download_file(asset["browser_download_url"], str(tool_path))
             return tool_path, release
         logging.info("No suitable asset found for %s", tool_name)
         return None, release  # noqa: TRY300
@@ -97,7 +99,7 @@ def find_matching_asset(
                 platform="linux",
                 arch="x86_64",
             )
-            asset = dotbins.download.find_asset(release["assets"], search_pattern)
+            asset = find_asset(release["assets"], search_pattern)
 
     # Try asset_pattern if patterns didn't work
     if not asset and "asset_pattern" in tool_config:
@@ -107,7 +109,7 @@ def find_matching_asset(
             platform="linux",
             arch="x86_64",
         )
-        asset = dotbins.download.find_asset(release["assets"], search_pattern)
+        asset = find_asset(release["assets"], search_pattern)
 
     # Fallback to generic Linux asset
     if not asset:
@@ -127,9 +129,9 @@ def analyze_tool_with_dotbins(repo: str, tool_name: str) -> dict:
     """Run the analyze function and return the suggested configuration."""
     try:
         # Get the release first
-        release = dotbins.get_latest_release(repo)
+        release = get_latest_release(repo)
         # Use the release in the configuration generation
-        return dotbins.generate_tool_configuration(repo, tool_name, release)
+        return generate_tool_configuration(repo, tool_name, release)
     except Exception:
         logging.exception("Error analyzing %s", tool_name)
         return {}
@@ -199,7 +201,7 @@ def test_tool_has_repo_defined(tools_config: dict, tool_name: str) -> None:
 
 # Mock the GitHub API call to ensure tests pass consistently
 @pytest.mark.parametrize("tool_name", TOOLS)
-@patch("dotbins.get_latest_release")
+@patch("dotbins.utils.get_latest_release")
 def test_config_generation_with_mocked_release(
     mock_get_latest_release: Any,
     tools_config: dict,
@@ -228,7 +230,7 @@ def test_config_generation_with_mocked_release(
     mock_get_latest_release.return_value = mock_release
 
     # Generate the suggested config
-    suggested_config = dotbins.generate_tool_configuration(
+    suggested_config = generate_tool_configuration(
         repo,
         tool_name,
         mock_release,

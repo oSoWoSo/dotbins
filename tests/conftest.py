@@ -9,6 +9,8 @@ import pytest
 import yaml
 from requests_mock import Mocker
 
+from dotbins.config import DotbinsConfig
+
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
@@ -41,6 +43,12 @@ def mock_config_file(temp_dir: Path) -> Path:
         yaml.dump(config, f)
 
     return config_path
+
+
+@pytest.fixture
+def mock_config(mock_config_file: Path) -> DotbinsConfig:
+    """Create a mock DotbinsConfig object."""
+    return DotbinsConfig.load_from_file(str(mock_config_file))
 
 
 @pytest.fixture
