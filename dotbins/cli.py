@@ -12,7 +12,7 @@ from rich.console import Console
 
 from . import __version__
 from .analyze import analyze_tool
-from .config import DEFAULT_TOOLS_DIR, DotbinsConfig
+from .config import DotbinsConfig
 from .download import download_tool, make_binaries_executable
 from .utils import print_shell_setup, setup_logging
 
@@ -91,11 +91,8 @@ def update_tools(  # noqa: PLR0912
         print_shell_setup(config)
 
 
-def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
+def initialize(_args: Any, config: DotbinsConfig) -> None:
     """Initialize the tools directory structure."""
-    if config is None:
-        config = DotbinsConfig.load_from_file()
-
     for platform, architectures in config.platforms.items():
         for arch in architectures:
             (config.tools_dir / platform / arch / "bin").mkdir(
@@ -124,7 +121,6 @@ def create_parser() -> argparse.ArgumentParser:
         "--tools-dir",
         type=str,
         help="Tools directory",
-        default=DEFAULT_TOOLS_DIR,
     )
     parser.add_argument(
         "--config-file",

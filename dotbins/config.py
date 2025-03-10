@@ -23,9 +23,7 @@ DEFAULT_PLATFORMS = {
 class DotbinsConfig:
     """Configuration for dotbins."""
 
-    tools_dir: Path = field(
-        default_factory=lambda: Path(os.path.expanduser(DEFAULT_TOOLS_DIR)),
-    )
+    tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
     platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
     tools: dict[str, Any] = field(default_factory=dict)
 

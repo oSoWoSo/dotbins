@@ -40,7 +40,7 @@ def test_initialization(
     )
 
     # Call initialize with the config
-    cli.initialize(config=config)
+    cli.initialize(None, config=config)
 
     # Check if directories were created - only for valid platform/arch combinations
     platform_archs = [("linux", "amd64"), ("linux", "arm64"), ("macos", "arm64")]
