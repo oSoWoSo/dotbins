@@ -53,12 +53,17 @@ class DotbinsConfig:
         tool_config: dict[str, Any],
     ) -> None:
         """Validate required fields are present."""
-        required_fields = ["repo", "binary_name", "binary_path"]
+        required_fields = ["repo", "binary_name"]  # Remove binary_path from required
         for _field in required_fields:
             if _field not in tool_config:
                 console.print(
-                    f"⚠️ [yellow]Tool {tool_name} is missing required field '{_field}'[/yellow]",
+                    f"⚠️ [red]Tool {tool_name} is missing required field '{_field}'[/yellow]",
                 )
+
+        if "binary_path" not in tool_config:
+            console.print(
+                f"ℹ️ [blue]Tool {tool_name} has no binary_path specified - will attempt auto-detection[/blue]",  # noqa: RUF001
+            )
 
     def _validate_unknown_fields(
         self,

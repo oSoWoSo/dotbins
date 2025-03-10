@@ -116,6 +116,19 @@ def extract_from_archive(
         if isinstance(binary_paths, str):
             binary_paths = [binary_paths]
 
+        # Auto-detect binary paths if not specified
+        if not binary_paths:
+            console.print(
+                "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
+            )
+            binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
+            if not binary_paths:
+                msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
+                raise ValueError(msg)  # noqa: TRY301
+            console.print(
+                f"✅ [green]Auto-detected binary paths: {binary_paths}[/green]",
+            )
+
         # Create the destination directory if needed
         destination_dir.mkdir(parents=True, exist_ok=True)
 
@@ -139,6 +152,48 @@ def extract_from_archive(
     finally:
         # Clean up temporary directory
         shutil.rmtree(temp_dir)
+
+
+def auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
+    """Automatically detect binary paths in an extracted archive.
+
+    Args:
+        temp_dir: Directory containing extracted archive
+        binary_names: Names of binaries to look for
+
+    Returns:
+        List of detected binary paths or empty list if detection fails
+
+    """
+    detected_paths = []
+
+    for binary_name in binary_names:
+        # Look for exact match first
+        exact_matches = list(temp_dir.glob(f"**/{binary_name}"))
+        if len(exact_matches) == 1:
+            detected_paths.append(str(exact_matches[0].relative_to(temp_dir)))
+            continue
+
+        # Look for files containing the name
+        partial_matches = list(temp_dir.glob(f"**/*{binary_name}*"))
+        executable_matches = [p for p in partial_matches if os.access(p, os.X_OK)]
+
+        if len(executable_matches) == 1:
+            detected_paths.append(str(executable_matches[0].relative_to(temp_dir)))
+        elif len(executable_matches) > 1:
+            # If we have multiple matches, try to find the most likely one
+            # (e.g., in a bin/ directory or with exact name match)
+            bin_matches = [p for p in executable_matches if "bin/" in str(p)]
+            if len(bin_matches) == 1:
+                detected_paths.append(str(bin_matches[0].relative_to(temp_dir)))
+            else:
+                # Give up - we need the user to specify
+                return []
+        else:
+            # No matches found
+            return []
+
+    return detected_paths
 
 
 def _log_extracted_files(temp_dir: Path) -> None:
