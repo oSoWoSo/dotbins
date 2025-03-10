@@ -8,7 +8,8 @@
 [![Downloads](https://img.shields.io/pypi/dm/dotbins)](https://pypi.python.org/pypi/dotbins)
 ![Open Issues](https://img.shields.io/github/issues-raw/basnijholt/dotbins)
 
-Introducing `dotbins` - a utility for managing CLI tool binaries in your dotfiles repository. It downloads and organizes binaries for popular tools across multiple platforms (macOS, Linux) and architectures (amd64, arm64), helping you maintain a consistent set of CLI utilities across all your environments.
+Introducing `dotbins` - a utility for managing CLI tool binaries in your dotfiles repository.
+It downloads and organizes binaries for popular tools across multiple platforms (macOS, Linux) and architectures (amd64, arm64), helping you maintain a consistent set of CLI utilities across all your environments.
 
 Whether you work across multiple machines or just want a version-controlled setup for your essential command-line tools, dotbins makes it easy to keep everything synchronized and updated. 🚀
 
@@ -46,15 +47,18 @@ Whether you work across multiple machines or just want a version-controlled setu
 
 As a developer who frequently works across multiple environments, I faced a common frustration: I'd carefully maintain my dotfiles repository with all my preferred configurations, only to find myself unable to use my favorite CLI tools when working on remote systems where I lacked admin permissions.
 
-The scenario was always the same - I'd SSH into a server, clone my dotfiles, and then... hit a wall. My aliases and configurations were there, but the actual tools they relied on (`fzf`, `bat`, `delta`, etc.) weren't available, and I couldn't install them without sudo access.
+The scenario was always the same - I'd SSH into a server, clone my dotfiles, and then... hit a wall.
+My aliases and configurations were there, but the actual tools they relied on (`fzf`, `bat`, `delta`, etc.) weren't available, and I couldn't easily install them without sudo access.
 
-dotbins was born out of this frustration. It allows me to:
+`dotbins` was born out of this frustration.
+It allows me to:
 
 1. Track pre-compiled binaries in a separate Git repository (using Git LFS for efficient storage)
 2. Include this repository as a submodule in my dotfiles
 3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
 
-Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity. No package manager, no sudo, no problem.
+Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity
+No package manager, no sudo, no problem.
 
 ## :star2: Features
 
