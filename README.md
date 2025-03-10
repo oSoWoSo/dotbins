@@ -72,6 +72,9 @@ No package manager, no sudo, no problem.
 
 ## :books: Usage
 
+> [!TIP]
+> Use `uvx dotbins` and create a `~/.config/dotbins/config.yaml` file to store your configuration.
+
 To use `dotbins`, you'll need to familiarize yourself with its commands:
 
 ```bash
@@ -118,6 +121,7 @@ options:
 2. **list** - List available tools defined in your configuration
 3. **update** - Download or update tools
 4. **analyze** - Analyze GitHub releases to help configure new tools
+5. **version** - Print version information
 
 ## :hammer_and_wrench: Installation
 
