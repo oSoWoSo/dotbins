@@ -92,7 +92,7 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         yaml_config = {tool_name: tool_config}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
         console.print(
-            "\n⚠️ [yellow]Please review and adjust the configuration as needed![/yellow]",
+            "\n# ⚠️ [yellow]Please review and adjust the configuration as needed![/yellow]",
         )
     except Exception as e:  # noqa: BLE001
         console.print("❌ [bold red]Error analyzing repo[/bold red]")
