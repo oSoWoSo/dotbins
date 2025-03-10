@@ -57,7 +57,7 @@ My aliases and configurations were there, but the actual tools they relied on (`
 `dotbins` was born out of this frustration.
 It allows me to:
 
-1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/.mydotbins) (using Git LFS for efficient storage)
+1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/mydotbins) (using Git LFS for efficient storage)
 2. Include this repository as a submodule in my dotfiles
 3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
 
