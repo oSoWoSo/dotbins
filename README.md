@@ -17,6 +17,7 @@ Whether you work across multiple machines or just want a version-controlled setu
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
 - [:star2: Features](#star2-features)
 - [:books: Usage](#books-usage)
   - [Commands](#commands)
