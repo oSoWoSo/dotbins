@@ -13,6 +13,8 @@ It downloads and organizes binaries for popular tools across multiple platforms 
 
 Whether you work across multiple machines or just want a version-controlled setup for your essential command-line tools, dotbins makes it easy to keep everything synchronized and updated. 🚀
 
+[![asciicast](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z.svg)](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z)
+
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
