@@ -471,6 +471,7 @@ Add this to your shell configuration file (e.g., .bashrc, .zshrc) to use the pla
 ```bash
 📝 Loading configuration from: /home/runner/work/dotbins/dotbins/dotbins.yaml
 # 🛠️ dotbins initialized tools directory structure
+📝 Loading configuration from: /home/runner/work/dotbins/dotbins/dotbins.yaml
 
 # Add this to your shell configuration file (e.g., .bashrc, .zshrc):
 
@@ -482,7 +483,7 @@ _arch=$(uname -m)
 [[ "$_arch" == "x86_64" ]] && _arch="amd64"
 [[ "$_arch" == "aarch64" || "$_arch" == "arm64" ]] && _arch="arm64"
 
-export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"
+export PATH="$HOME/.mydotbins/tools/$_os/$_arch/bin:$PATH"
 
 ```
 
