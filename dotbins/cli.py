@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 from typing import Any
 
 from rich.console import Console
 
 from .analyze import analyze_tool
-from .config import ARCHITECTURES, PLATFORMS, TOOLS, TOOLS_DIR
+from .config import DotbinsConfig
 from .download import download_tool, make_binaries_executable
 from .utils import print_shell_setup, setup_logging
 
@@ -17,27 +18,27 @@ from .utils import print_shell_setup, setup_logging
 console = Console()
 
 
-def list_tools(_args: Any) -> None:
+def list_tools(_args: Any, config: DotbinsConfig) -> None:
     """List available tools."""
     console.print("🔧 [blue]Available tools:[/blue]")
-    for tool, config in TOOLS.items():
-        console.print(f"  [green]{tool}[/green] (from {config['repo']})")
+    for tool, tool_config in config.tools.items():
+        console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
 
 
-def update_tools(args: argparse.Namespace) -> None:
+def update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     """Update tools based on command line arguments."""
-    tools_to_update = args.tools if args.tools else TOOLS.keys()
-    platforms_to_update = [args.platform] if args.platform else PLATFORMS
-    archs_to_update = [args.architecture] if args.architecture else ARCHITECTURES
+    tools_to_update = args.tools if args.tools else list(config.tools.keys())
+    platforms_to_update = [args.platform] if args.platform else config.platforms
+    archs_to_update = [args.architecture] if args.architecture else config.architectures
 
     # Validate tools
     for tool in tools_to_update:
-        if tool not in TOOLS:
+        if tool not in config.tools:
             console.print(f"❌ [bold red]Unknown tool: {tool}[/bold red]")
             sys.exit(1)
 
     # Create the tools directory structure
-    TOOLS_DIR.mkdir(parents=True, exist_ok=True)
+    config.tools_dir.mkdir(parents=True, exist_ok=True)
 
     success_count = 0
     total_count = 0
@@ -46,10 +47,10 @@ def update_tools(args: argparse.Namespace) -> None:
         for platform in platforms_to_update:
             for arch in archs_to_update:
                 total_count += 1
-                if download_tool(tool_name, platform, arch, args.force):
+                if download_tool(tool_name, platform, arch, config, args.force):
                     success_count += 1
 
-    make_binaries_executable()
+    make_binaries_executable(config)
 
     console.print(
         f"\n🔄 [blue]Completed: {success_count}/{total_count} tools updated successfully[/blue]",
@@ -64,11 +65,17 @@ def update_tools(args: argparse.Namespace) -> None:
         print_shell_setup()
 
 
-def initialize(_args: Any = None) -> None:
+def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
     """Initialize the tools directory structure."""
-    for platform in PLATFORMS:
-        for arch in ARCHITECTURES:
-            (TOOLS_DIR / platform / arch / "bin").mkdir(parents=True, exist_ok=True)
+    if config is None:
+        config = DotbinsConfig.load_from_file()
+
+    for platform in config.platforms:
+        for arch in config.architectures:
+            (config.tools_dir / platform / arch / "bin").mkdir(
+                parents=True,
+                exist_ok=True,
+            )
 
     console.print("🛠️ [green]Initialized tools directory structure[/green]")
     print_shell_setup()
@@ -76,9 +83,6 @@ def initialize(_args: Any = None) -> None:
 
 def main() -> None:
     """Main function to parse arguments and execute commands."""
-    global TOOLS_DIR  # This is needed to modify the global TOOLS_DIR from config
-    from .config import TOOLS_DIR as original_tools_dir
-
     parser = argparse.ArgumentParser(
         description="dotbins - Manage CLI tool binaries in your dotfiles repository",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -93,7 +97,12 @@ def main() -> None:
     parser.add_argument(
         "--tools-dir",
         type=str,
-        help=f"Tools directory (default: {original_tools_dir})",
+        help="Tools directory",
+    )
+    parser.add_argument(
+        "--config-file",
+        type=str,
+        help="Path to configuration file",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
@@ -112,13 +121,11 @@ def main() -> None:
     update_parser.add_argument(
         "-p",
         "--platform",
-        choices=PLATFORMS,
         help="Only update for specific platform",
     )
     update_parser.add_argument(
         "-a",
         "--architecture",
-        choices=ARCHITECTURES,
         help="Only update for specific architecture",
     )
     update_parser.add_argument(
@@ -156,23 +163,20 @@ def main() -> None:
     # Setup logging
     setup_logging(args.verbose)
 
+    # Create config
+    config = DotbinsConfig.load_from_file(args.config_file)
+
     # Override tools directory if specified
     if args.tools_dir:
-        from pathlib import Path
-
-        TOOLS_DIR = Path(args.tools_dir)
-        sys.modules[__name__].TOOLS_DIR = TOOLS_DIR
-        # Also update it in other modules that use it
-        from .config import TOOLS_DIR as config_tools_dir
-
-        sys.modules[config_tools_dir.__module__].TOOLS_DIR = TOOLS_DIR
-        from .download import TOOLS_DIR as download_tools_dir
-
-        sys.modules[download_tools_dir.__module__].TOOLS_DIR = TOOLS_DIR
+        config.tools_dir = Path(args.tools_dir)
 
     # Execute command or show help
     if hasattr(args, "func"):
-        args.func(args)
+        if args.func == analyze_tool:
+            # analyze_tool doesn't need the config
+            args.func(args)
+        else:
+            args.func(args, config)
     else:
         parser.print_help()
 

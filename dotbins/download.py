@@ -9,12 +9,15 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import requests
 from rich.console import Console
 
-from .config import ARCHITECTURES, PLATFORMS, TOOLS, TOOLS_DIR
 from .utils import get_latest_release
+
+if TYPE_CHECKING:
+    from .config import DotbinsConfig
 
 # Initialize rich console
 console = Console()
@@ -169,17 +172,18 @@ def download_tool(  # noqa: PLR0912, PLR0915
     tool_name: str,
     platform: str,
     arch: str,
+    config: DotbinsConfig,
     force: bool = False,  # noqa: FBT001, FBT002
 ) -> bool:
     """Download a tool for a specific platform and architecture."""
-    tool_config = TOOLS.get(tool_name)
+    tool_config = config.tools.get(tool_name)
     if not tool_config:
         console.print(
             f"❌ [bold red]Tool '{tool_name}' not found in configuration[/bold red]",
         )
         return False
 
-    destination_dir = TOOLS_DIR / platform / arch / "bin"
+    destination_dir = config.tools_dir / platform / arch / "bin"
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     # Check if we should skip this download
@@ -202,9 +206,7 @@ def download_tool(  # noqa: PLR0912, PLR0915
         # Map architecture if needed
         tool_arch = arch
         # First check global arch_maps
-        from .config import CONFIG
-
-        arch_maps = CONFIG.get("arch_maps", {}).get(tool_name, {})
+        arch_maps = config.arch_maps.get(tool_name, {})
         if arch in arch_maps:
             tool_arch = arch_maps[arch]
         # Then check tool-specific arch_map (this has priority)
@@ -287,11 +289,11 @@ def download_tool(  # noqa: PLR0912, PLR0915
         return False
 
 
-def make_binaries_executable() -> None:
+def make_binaries_executable(config: DotbinsConfig) -> None:
     """Make all binaries executable."""
-    for platform in PLATFORMS:
-        for arch in ARCHITECTURES:
-            bin_dir = TOOLS_DIR / platform / arch / "bin"
+    for platform in config.platforms:
+        for arch in config.architectures:
+            bin_dir = config.tools_dir / platform / arch / "bin"
             if bin_dir.exists():
                 for binary in bin_dir.iterdir():
                     if binary.is_file():

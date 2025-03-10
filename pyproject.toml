@@ -29,10 +29,10 @@ docs = []
 dotbins = "dotbins.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["unidep.*", "unidep"]
+include = ["dotbins.*", "dotbins"]
 
 [tool.setuptools.package-data]
-"unidep" = ["py.typed"]
+"dotbins" = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = """

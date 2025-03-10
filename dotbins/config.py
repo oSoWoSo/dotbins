@@ -3,49 +3,56 @@
 from __future__ import annotations
 
 import os
-import os.path
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 from rich.console import Console
 
-# Initialize rich console
 console = Console()
 
 
-# Function to load the configuration
-def load_config() -> dict[str, Any]:
-    """Load configuration from YAML file."""
-    config_path = os.path.join(os.path.dirname(__file__), "..", "tools.yaml")
-    try:
-        with open(config_path) as file:
-            config = yaml.safe_load(file)
+@dataclass
+class DotbinsConfig:
+    """Configuration for dotbins."""
 
-        # Convert home directory shorthand
-        if isinstance(config.get("dotfiles_dir"), str):
-            config["dotfiles_dir"] = os.path.expanduser(config["dotfiles_dir"])
-        if isinstance(config.get("tools_dir"), str):
-            config["tools_dir"] = os.path.expanduser(config["tools_dir"])
-    except Exception:  # noqa: BLE001
-        console.print("❌ [bold red]Error loading configuration[/bold red]")
-        console.print_exception()
-        # Fallback to defaults
-        return {
-            "dotfiles_dir": os.path.expanduser("~/.dotfiles"),
-            "tools_dir": os.path.expanduser("~/.dotfiles/tools"),
-            "platforms": ["linux", "macos"],
-            "architectures": ["amd64", "arm64"],
-            "tools": {},
-        }
-    else:
-        return config
+    dotfiles_dir: Path = field(
+        default_factory=lambda: Path(os.path.expanduser("~/.dotfiles")),
+    )
+    tools_dir: Path = field(
+        default_factory=lambda: Path(os.path.expanduser("~/.dotfiles/tools")),
+    )
+    platforms: list[str] = field(default_factory=lambda: ["linux", "macos"])
+    architectures: list[str] = field(default_factory=lambda: ["amd64", "arm64"])
+    tools: dict[str, Any] = field(default_factory=dict)
+    arch_maps: dict[str, dict[str, str]] = field(default_factory=dict)
+    platform_maps: dict[str, str] = field(default_factory=dict)
 
+    @classmethod
+    def load_from_file(cls, config_path: str | None = None) -> DotbinsConfig:
+        """Load configuration from YAML file."""
+        if not config_path:
+            config_path = os.path.join(os.path.dirname(__file__), "..", "tools.yaml")
 
-# Load configuration
-CONFIG = load_config()
-DOTFILES_DIR = Path(CONFIG.get("dotfiles_dir", "~/.dotfiles"))
-TOOLS_DIR = Path(CONFIG.get("tools_dir", "~/.dotfiles/tools"))
-PLATFORMS = CONFIG.get("platforms", ["linux", "macos"])
-ARCHITECTURES = CONFIG.get("architectures", ["amd64", "arm64"])
-TOOLS = CONFIG.get("tools", {})
+        try:
+            with open(config_path) as file:
+                config_data = yaml.safe_load(file)
+
+            # Expand paths
+            if isinstance(config_data.get("dotfiles_dir"), str):
+                config_data["dotfiles_dir"] = Path(
+                    os.path.expanduser(config_data["dotfiles_dir"]),
+                )
+            if isinstance(config_data.get("tools_dir"), str):
+                config_data["tools_dir"] = Path(
+                    os.path.expanduser(config_data["tools_dir"]),
+                )
+
+            return cls(**config_data)
+
+        except Exception:  # noqa: BLE001
+            console.print("❌ [bold red]Error loading configuration[/bold red]")
+            console.print_exception()
+            # Return default configuration
+            return cls()
