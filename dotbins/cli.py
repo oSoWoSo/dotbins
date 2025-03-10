@@ -79,7 +79,7 @@ def initialize(_args: Any = None, config: DotbinsConfig | None = None) -> None:
                 exist_ok=True,
             )
 
-    console.print("🛠️ [green]Initialized tools directory structure[/green]")
+    console.print("# 🛠️ [green]dotbins initialized tools directory structure[/green]")
     print_shell_setup()
 
 
