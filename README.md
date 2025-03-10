@@ -129,7 +129,19 @@ options:
 
 ## :hammer_and_wrench: Installation
 
-To install `dotbins`, simply use pip:
+We highly recommend to use [`uv`](https://docs.astral.sh/uv/) to run `dotbins`:
+
+```bash
+uvx dotbins
+```
+
+or install as a global command:
+
+```bash
+uv tool install dotbins
+```
+
+Otherwise, simply use pip:
 
 ```bash
 pip install dotbins
