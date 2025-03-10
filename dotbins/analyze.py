@@ -176,7 +176,7 @@ def find_sample_asset(assets: list[dict]) -> dict | None:
     return None
 
 
-def download_and_find_binary(asset: dict, tool_name: str) -> str | None:
+def download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | None:
     """Download sample asset and find binary path."""
     console.print(
         f"\n📥 [blue]Downloading sample archive: {asset['name']} to inspect contents...[/blue]",
@@ -233,11 +233,26 @@ def find_executables(directory: str | Path) -> list[str]:
     return executables
 
 
-def determine_binary_path(executables: list[str], tool_name: str) -> str | None:
-    """Determine the most likely binary path based on executables."""
+def determine_binary_path(
+    executables: list[str],
+    tool_name: str,
+) -> str | list[str] | None:
+    """Determine the most likely binary paths based on executables."""
     if not executables:
         return None
 
+    # Find all executables that match the tool name pattern
+    matches = []
+    for exe in executables:
+        base_name = os.path.basename(exe)
+        if tool_name.lower() in base_name.lower():
+            matches.append(exe)
+
+    # If we found multiple matches that seem related, return a list
+    if len(matches) > 1:
+        return matches
+
+    # Otherwise, follow the old logic for single binary
     # Try to find an exact name match first
     for exe in executables:
         base_name = os.path.basename(exe)
@@ -257,7 +272,7 @@ def generate_tool_config(
     repo: str,
     tool_name: str,
     release: dict,
-    binary_path: str | None,
+    binary_path: str | list[str] | None,
 ) -> dict:
     """Generate tool configuration based on release information."""
     assets = release["assets"]
@@ -279,10 +294,27 @@ def generate_tool_config(
     # Add binary path if found
     if binary_path:
         version = release["tag_name"].lstrip("v")
-        # Check if there's a version folder in the path
-        if version in binary_path:
-            binary_path = binary_path.replace(version, "{version}")
-        tool_config["binary_path"] = binary_path
+
+        # Handle both string and list paths
+        if isinstance(binary_path, list):
+            # For lists, replace version in each path
+            binary_paths = []
+            for path in binary_path:
+                if version in path:
+                    path = path.replace(version, "{version}")  # noqa: PLW2901
+                binary_paths.append(path)
+            tool_config["binary_path"] = binary_paths
+
+            # Also make binary_name a list if it's not already
+            if not isinstance(tool_config["binary_name"], list):
+                # Create a list of binary names based on the basename of each path
+                binary_names = [os.path.basename(path) for path in binary_path]
+                tool_config["binary_name"] = binary_names
+        else:
+            # For single string path
+            if version in binary_path:
+                binary_path = binary_path.replace(version, "{version}")
+            tool_config["binary_path"] = binary_path
 
     # Add arch_map if needed
     if arch_conversion:

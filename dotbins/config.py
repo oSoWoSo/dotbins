@@ -50,20 +50,31 @@ class DotbinsConfig:
                     f"⚠️ [yellow]Tool {tool_name} is missing required field '{_field}'[/yellow]",
                 )
 
+        # Validate binary_name and binary_path are either strings or lists
+        for _field in ["binary_name", "binary_path"]:
+            if _field in tool_config and not isinstance(
+                tool_config[_field],
+                (str, list),
+            ):
+                console.print(
+                    f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a string or a list of strings[/yellow]",
+                )
+
+        # Validate binary_path and binary_name have the same length if both are lists
+        if (
+            isinstance(tool_config.get("binary_name"), list)
+            and isinstance(tool_config.get("binary_path"), list)
+            and len(tool_config["binary_name"]) != len(tool_config["binary_path"])
+        ):
+            console.print(
+                f"⚠️ [yellow]Tool {tool_name}: 'binary_name' and 'binary_path' lists must have the same length[/yellow]",
+            )
+
         # Check that either asset_pattern or asset_patterns is defined
         if "asset_pattern" not in tool_config and "asset_patterns" not in tool_config:
             console.print(
                 f"⚠️ [yellow]Tool {tool_name} has neither 'asset_pattern' nor 'asset_patterns' defined[/yellow]",
             )
-
-        # Validate asset_patterns if present
-        if "asset_patterns" in tool_config:
-            patterns = tool_config["asset_patterns"]
-            for platform in self.platforms:
-                if platform not in patterns:
-                    console.print(
-                        f"⚠️ [yellow]Tool {tool_name} is missing asset pattern for platform '{platform}'[/yellow]",
-                    )
 
     @classmethod
     def load_from_file(cls, config_path: str | None = None) -> DotbinsConfig:

@@ -239,7 +239,7 @@ def test_download_and_find_binary(
     assert mock_download.called
     assert mock_extract.called
     assert mock_find_executables.called
-    assert result == "tool"  # Should match the exact name
+    assert result == ["tool", "bin/tool"]
 
 
 @patch("dotbins.analyze.get_latest_release")

@@ -90,7 +90,7 @@ def extract_from_archive(
     tool_config: dict,
     platform: str,
 ) -> None:
-    """Extract a binary from an archive using explicit paths."""
+    """Extract binaries from an archive."""
     console.print(f"📦 [blue]Extracting from {archive_path} for {platform}[/blue]")
     temp_dir = Path(tempfile.mkdtemp())
 
@@ -102,14 +102,31 @@ def extract_from_archive(
         # Debug: List the extracted files
         _log_extracted_files(temp_dir)
 
-        # Find the binary in the extracted files
-        binary_path = find_binary_in_extracted_files(temp_dir, tool_config)
+        # Handle single binary or multiple binaries
+        binary_names = tool_config.get("binary_name", [])
+        binary_paths = tool_config.get("binary_path", [])
+
+        # Convert to lists if they're strings for consistent handling
+        if isinstance(binary_names, str):
+            binary_names = [binary_names]
+        if isinstance(binary_paths, str):
+            binary_paths = [binary_paths]
 
         # Create the destination directory if needed
         destination_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy the binary to destination
-        copy_binary_to_destination(binary_path, destination_dir, tool_config)
+        # Process each binary
+        for i, binary_path_pattern in enumerate(binary_paths):
+            # Get corresponding binary name (use last name for extra paths)
+            binary_name = binary_names[min(i, len(binary_names) - 1)]
+
+            # Find and copy each binary
+            source_path = find_binary_in_extracted_files(
+                temp_dir,
+                tool_config,
+                binary_path_pattern,
+            )
+            copy_binary_to_destination(source_path, destination_dir, binary_name)
 
     except Exception as e:
         console.print(f"❌ [bold red]Error extracting archive: {e}[/bold red]")
@@ -130,14 +147,12 @@ def _log_extracted_files(temp_dir: Path) -> None:
         console.print(f"❌ Could not list extracted files: {e}")
 
 
-def find_binary_in_extracted_files(temp_dir: Path, tool_config: dict) -> Path:
-    """Find the binary in the extracted files."""
-    # Get the binary path from configuration
-    binary_path = tool_config.get("binary_path")
-    if not binary_path:
-        msg = "No binary path specified in configuration"
-        raise ValueError(msg)
-
+def find_binary_in_extracted_files(
+    temp_dir: Path,
+    tool_config: dict,
+    binary_path: str,
+) -> Path:
+    """Find a specific binary in the extracted files."""
     # Replace variables in the binary path
     binary_path = replace_variables_in_path(binary_path, tool_config)
 
@@ -158,6 +173,20 @@ def find_binary_in_extracted_files(temp_dir: Path, tool_config: dict) -> Path:
     return source_path
 
 
+def copy_binary_to_destination(
+    source_path: Path,
+    destination_dir: Path,
+    binary_name: str,
+) -> None:
+    """Copy the binary to its destination and set permissions."""
+    dest_path = destination_dir / binary_name
+
+    # Copy the binary and set permissions
+    shutil.copy2(source_path, dest_path)
+    dest_path.chmod(dest_path.stat().st_mode | 0o755)
+    console.print(f"✅ [green]Copied binary to {dest_path}[/green]")
+
+
 def replace_variables_in_path(path: str, tool_config: dict) -> str:
     """Replace variables in a path with their values."""
     if "{version}" in path and "version" in tool_config:
@@ -167,22 +196,6 @@ def replace_variables_in_path(path: str, tool_config: dict) -> str:
         path = path.replace("{arch}", tool_config["arch"])
 
     return path
-
-
-def copy_binary_to_destination(
-    source_path: Path,
-    destination_dir: Path,
-    tool_config: dict,
-) -> None:
-    """Copy the binary to its destination and set permissions."""
-    # Determine destination filename
-    binary_name = tool_config.get("binary_name", source_path.name)
-    dest_path = destination_dir / binary_name
-
-    # Copy the binary and set permissions
-    shutil.copy2(source_path, dest_path)
-    dest_path.chmod(dest_path.stat().st_mode | 0o755)
-    console.print(f"✅ [green]Copied binary to {dest_path}[/green]")
 
 
 def download_tool(
@@ -262,10 +275,21 @@ def should_skip_download(
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
     destination_dir = config.tools_dir / platform / arch / "bin"
-    binary_name = config.tools[tool_name].get("binary_name", tool_name)
-    binary_path = destination_dir / binary_name
+    binary_names = config.tools[tool_name].get("binary_name", tool_name)
 
-    if binary_path.exists() and not force:
+    # Convert to list if it's a string
+    if isinstance(binary_names, str):
+        binary_names = [binary_names]
+
+    # Check if all binaries exist
+    all_exist = True
+    for binary_name in binary_names:
+        binary_path = destination_dir / binary_name
+        if not binary_path.exists():
+            all_exist = False
+            break
+
+    if all_exist and not force:
         console.print(
             f"✅ [green]{tool_name} for {platform}/{arch} already exists (use --force to update)[/green]",
         )
@@ -369,7 +393,10 @@ def download_and_install_asset(
     destination_dir = config.tools_dir / platform / arch / "bin"
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    binary_name = tool_config.get("binary_name", tool_name)
+    # Handle binary_name as string or list
+    binary_names = tool_config.get("binary_name", tool_name)
+    if isinstance(binary_names, str):
+        binary_names = [binary_names]
 
     # Create a temporary file for download
     with tempfile.NamedTemporaryFile(
@@ -386,7 +413,10 @@ def download_and_install_asset(
             # Extract the binary using the explicit path
             extract_from_archive(temp_path, destination_dir, tool_config, platform)
         else:
-            # Just copy the file directly
+            # For direct downloads with multiple binaries, we can only copy one
+            # Just use the first binary name
+            binary_name = binary_names[0]
+            # Copy the file directly
             shutil.copy2(temp_path, destination_dir / binary_name)
             # Make executable
             dest_file = destination_dir / binary_name
