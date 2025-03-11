@@ -29,18 +29,12 @@ def generate_tool_configuration(
 ) -> dict:
     """Analyze GitHub releases and generate tool configuration.
 
-    Parameters
-    ----------
-    repo : str
-        GitHub repository in the format 'owner/repo'
-    tool_name : str, optional
-        Name to use for the tool. If None, uses repo name
-    release : dict, optional
-        Pre-fetched release data. If None, it will be fetched from GitHub
+    Args:
+        repo: GitHub repository in the format 'owner/repo'
+        tool_name: Name to use for the tool. If None, uses repo name
+        release: Pre-fetched release data. If None, it will be fetched from GitHub
 
-    Returns
-    -------
-    dict
+    Returns:
         Tool configuration dictionary
 
     """
