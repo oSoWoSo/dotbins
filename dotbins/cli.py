@@ -51,7 +51,7 @@ def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     downloaded_tasks = download_files_in_parallel(download_tasks)
     success_count = process_downloaded_files(downloaded_tasks)
     make_binaries_executable(config)
-    _print_completion_summary(config, success_count, total_count, args)
+    _print_completion_summary(config, success_count, total_count, args.shell_setup)
 
 
 def _determine_update_targets(
@@ -76,7 +76,7 @@ def _print_completion_summary(
     config: DotbinsConfig,
     success_count: int,
     total_count: int,
-    args: argparse.Namespace,
+    shell_setup: bool,
 ) -> None:
     """Print completion summary and additional instructions."""
     log(
@@ -92,7 +92,7 @@ def _print_completion_summary(
             "💾",
         )
 
-    if args.shell_setup:
+    if shell_setup:
         print_shell_setup(config)
 
 
