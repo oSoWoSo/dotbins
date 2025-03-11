@@ -533,7 +533,8 @@ def _prepare_download_task(
             arch=arch,
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
-            tool_config=tool_config,
+            # Make a copy of tool_config because we'll modify it
+            tool_config=dict(tool_config, arch=tool_arch, version=version),
             destination_dir=destination_dir,
             temp_path=temp_path,
         )
