@@ -223,7 +223,7 @@ class DotbinsConfig:
 
             config = cls(**config_data)
             config.validate()
-            return config  # noqa: TRY300
+            return config
 
         except FileNotFoundError:
             console.print(
@@ -236,7 +236,7 @@ class DotbinsConfig:
             )
             console.print_exception()
             return cls()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             console.print(f"❌ [bold red]Error loading configuration: {e}[/bold red]")
             console.print_exception()
             return cls()

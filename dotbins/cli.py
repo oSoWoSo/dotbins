@@ -13,7 +13,12 @@ from rich.console import Console
 from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
-from .download import download_tool, make_binaries_executable
+from .download import (
+    download_files_in_parallel,
+    make_binaries_executable,
+    prepare_download_tasks,
+    process_downloaded_files,
+)
 from .utils import print_shell_setup, setup_logging
 
 # Initialize rich console
@@ -21,63 +26,55 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-def list_tools(_args: Any, config: DotbinsConfig) -> None:
+def _list_tools(_args: Any, config: DotbinsConfig) -> None:
     """List available tools."""
     console.print("🔧 [blue]Available tools:[/blue]")
     for tool, tool_config in config.tools.items():
         console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
 
 
-def update_tools(  # noqa: PLR0912
+def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
+    """Update tools based on command line arguments."""
+    tools_to_update, platforms_to_update = _determine_update_targets(args, config)
+    _validate_tools(tools_to_update, config)
+    config.tools_dir.mkdir(parents=True, exist_ok=True)
+    download_tasks, total_count = prepare_download_tasks(
+        tools_to_update,
+        platforms_to_update,
+        args.architecture,
+        config,
+    )
+    downloaded_tasks = download_files_in_parallel(download_tasks)
+    success_count = process_downloaded_files(downloaded_tasks)
+    make_binaries_executable(config)
+    _print_completion_summary(config, success_count, total_count, args)
+
+
+def _determine_update_targets(
     args: argparse.Namespace,
     config: DotbinsConfig,
-) -> None:
-    """Update tools based on command line arguments."""
+) -> tuple[list[str], list[str]]:
+    """Determine which tools and platforms to update."""
     tools_to_update = args.tools if args.tools else list(config.tools.keys())
-
-    # Handle specific platform filtering
     platforms_to_update = [args.platform] if args.platform else config.platform_names
+    return tools_to_update, platforms_to_update
 
-    # Validate tools
+
+def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
+    """Validate that all tools exist in the configuration."""
     for tool in tools_to_update:
         if tool not in config.tools:
             console.print(f"❌ [bold red]Unknown tool: {tool}[/bold red]")
             sys.exit(1)
 
-    # Create the tools directory structure
-    config.tools_dir.mkdir(parents=True, exist_ok=True)
 
-    success_count = 0
-    total_count = 0
-
-    for tool_name in tools_to_update:
-        for platform in platforms_to_update:
-            if platform not in config.platforms:
-                console.print(
-                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
-                )
-                continue
-
-            # Get architectures to update
-            if args.architecture:
-                # Filter to only include the specified architecture if it's supported for this platform
-                if args.architecture in config.platforms[platform]:
-                    archs_to_update = [args.architecture]
-                else:
-                    console.print(
-                        f"⚠️ [yellow]Architecture {args.architecture} not configured for platform {platform}, skipping[/yellow]",
-                    )
-                    continue
-            else:
-                archs_to_update = config.platforms[platform]
-
-            for arch in archs_to_update:
-                total_count += 1
-                if download_tool(tool_name, platform, arch, config, args.force):
-                    success_count += 1
-
-    make_binaries_executable(config)
-
+def _print_completion_summary(
+    config: DotbinsConfig,
+    success_count: int,
+    total_count: int,
+    args: argparse.Namespace,
+) -> None:
+    """Print completion summary and additional instructions."""
     console.print(
         f"\n🔄 [blue]Completed: {success_count}/{total_count} tools updated successfully[/blue]",
     )
@@ -91,7 +88,7 @@ def update_tools(  # noqa: PLR0912
         print_shell_setup(config)
 
 
-def initialize(_args: Any, config: DotbinsConfig) -> None:
+def _initialize(_args: Any, config: DotbinsConfig) -> None:
     """Initialize the tools directory structure."""
     for platform, architectures in config.platforms.items():
         for arch in architectures:
@@ -132,7 +129,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     # list command
     list_parser = subparsers.add_parser("list", help="List available tools")
-    list_parser.set_defaults(func=list_tools)
+    list_parser.set_defaults(func=_list_tools)
 
     # update command
     update_parser = subparsers.add_parser("update", help="Update tools")
@@ -163,11 +160,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print shell setup instructions",
     )
-    update_parser.set_defaults(func=update_tools)
+    update_parser.set_defaults(func=_update_tools)
 
     # init command
     init_parser = subparsers.add_parser("init", help="Initialize directory structure")
-    init_parser.set_defaults(func=initialize)
+    init_parser.set_defaults(func=_initialize)
 
     # analyze command for discovering new tools
     analyze_parser = subparsers.add_parser(
@@ -212,7 +209,7 @@ def main() -> None:
         else:
             parser.print_help()
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
         console.print_exception()
         sys.exit(1)

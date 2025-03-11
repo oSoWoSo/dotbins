@@ -12,8 +12,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dotbins.download import (
-    auto_detect_binary_paths,
-    extract_from_archive,
+    _auto_detect_binary_paths,
+    _extract_from_archive,
 )
 
 
@@ -129,7 +129,7 @@ def test_auto_detect_binary_paths_simple(
 
     # Test auto-detection
     binary_names = ["fzf"]
-    detected_paths = auto_detect_binary_paths(extract_dir, binary_names)
+    detected_paths = _auto_detect_binary_paths(extract_dir, binary_names)
 
     assert len(detected_paths) == 1
     assert detected_paths[0] == "fzf"
@@ -150,7 +150,7 @@ def test_auto_detect_binary_paths_nested(
 
     # Test auto-detection
     binary_names = ["delta"]
-    detected_paths = auto_detect_binary_paths(extract_dir, binary_names)
+    detected_paths = _auto_detect_binary_paths(extract_dir, binary_names)
 
     assert len(detected_paths) == 1
     assert detected_paths[0] == "bin/delta"  # Should prefer the one in bin/
@@ -171,7 +171,7 @@ def test_auto_detect_binary_paths_multiple(
 
     # Test auto-detection
     binary_names = ["uv", "uvx"]
-    detected_paths = auto_detect_binary_paths(extract_dir, binary_names)
+    detected_paths = _auto_detect_binary_paths(extract_dir, binary_names)
 
     assert len(detected_paths) == 2  # noqa: PLR2004
     assert detected_paths[0] == "uv"
@@ -193,7 +193,7 @@ def test_auto_detect_binary_paths_no_match(
 
     # Test auto-detection
     binary_names = ["git-lfs"]
-    detected_paths = auto_detect_binary_paths(extract_dir, binary_names)
+    detected_paths = _auto_detect_binary_paths(extract_dir, binary_names)
 
     assert len(detected_paths) == 0  # Should not find any matches
 
@@ -219,7 +219,7 @@ def test_extract_from_archive_with_auto_detection(
 
     with patch("dotbins.download.console", mock_console):
         # Call the function
-        extract_from_archive(
+        _extract_from_archive(
             str(mock_archive_simple),
             destination_dir,
             tool_config,
@@ -262,7 +262,7 @@ def test_extract_from_archive_auto_detection_failure(
         patch("dotbins.download.console", mock_console),
         pytest.raises(ValueError, match="Could not auto-detect binary paths"),
     ):
-        extract_from_archive(
+        _extract_from_archive(
             str(mock_archive_no_match),
             destination_dir,
             tool_config,

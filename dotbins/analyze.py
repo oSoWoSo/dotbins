@@ -58,11 +58,11 @@ def generate_tool_configuration(
         release = get_latest_release(repo)
 
     # Find sample asset and determine binary path
-    sample_asset = find_sample_asset(release["assets"])
+    sample_asset = _find_sample_asset(release["assets"])
     binary_path = None
 
     if sample_asset:
-        binary_path = download_and_find_binary(sample_asset, tool_name)
+        binary_path = _download_and_find_binary(sample_asset, tool_name)
 
     # Generate and return tool configuration
     return generate_tool_config(repo, tool_name, release, binary_path)
@@ -79,7 +79,7 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         console.print(
             f"\n🏷️ [green]Latest release: {release['tag_name']} ({release['name']})[/green]",
         )
-        print_assets_info(release["assets"])
+        _print_assets_info(release["assets"])
 
         # Extract tool name from repo or use provided name
         tool_name = args.name or repo.split("/")[-1]
@@ -94,7 +94,7 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         console.print(
             "\n# ⚠️ [yellow]Please review and adjust the configuration as needed![/yellow]",
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print("❌ [bold red]Error analyzing repo[/bold red]")
         console.print_exception()
         console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
@@ -103,7 +103,7 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         sys.exit(1)
 
 
-def print_assets_info(assets: list[dict]) -> None:
+def _print_assets_info(assets: list[dict]) -> None:
     """Print detailed information about available assets."""
     console.print("\n📦 [blue]Available assets:[/blue]")
     for asset in assets:
@@ -157,7 +157,7 @@ def get_arch_assets(assets: list[dict], arch: str) -> list[dict]:
     return [a for a in assets if any(kw in a["name"].lower() for kw in keywords)]
 
 
-def find_sample_asset(assets: list[dict]) -> dict | None:
+def _find_sample_asset(assets: list[dict]) -> dict | None:
     """Find a suitable sample asset for analysis."""
     # Priority: Linux x86_64 compressed files, then macOS x86_64 compressed files
     compressed_extensions = (".tar.gz", ".tgz", ".zip")
@@ -181,7 +181,7 @@ def find_sample_asset(assets: list[dict]) -> dict | None:
     return None
 
 
-def download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | None:
+def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | None:
     """Download sample asset and find binary path."""
     console.print(
         f"\n📥 [blue]Downloading sample archive: {asset['name']} to inspect contents...[/blue]",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import os
 import re
@@ -10,7 +11,7 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 from rich.console import Console
@@ -24,7 +25,7 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-def find_asset(assets: list[dict], pattern: str) -> dict | None:
+def _find_asset(assets: list[dict], pattern: str) -> dict | None:
     """Find an asset that matches the given pattern."""
     regex_pattern = (
         pattern.replace("{version}", ".*")
@@ -52,7 +53,7 @@ def download_file(url: str, destination: str) -> str:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
-        return destination  # noqa: TRY300
+        return destination
     except requests.RequestException as e:
         console.print(f"❌ [bold red]Download failed: {e}[/bold red]")
         console.print_exception()  # Replaces logger.exception
@@ -88,7 +89,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
         raise
 
 
-def extract_from_archive(
+def _extract_from_archive(
     archive_path: str,
     destination_dir: Path,
     tool_config: dict,
@@ -141,7 +142,7 @@ def _detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     console.print(
         "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
     )
-    binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
+    binary_paths = _auto_detect_binary_paths(temp_dir, binary_names)
     if not binary_paths:
         msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
         raise ValueError(msg)
@@ -164,15 +165,15 @@ def _process_binaries(
         binary_name = binary_names[min(i, len(binary_names) - 1)]
 
         # Find and copy each binary
-        source_path = find_binary_in_extracted_files(
+        source_path = _find_binary_in_extracted_files(
             temp_dir,
             tool_config,
             binary_path_pattern,
         )
-        copy_binary_to_destination(source_path, destination_dir, binary_name)
+        _copy_binary_to_destination(source_path, destination_dir, binary_name)
 
 
-def auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
+def _auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     """Automatically detect binary paths in an extracted archive.
 
     Args:
@@ -220,18 +221,18 @@ def _log_extracted_files(temp_dir: Path) -> None:
         console.print("📋 [blue]Extracted files:[/blue]")
         for item in temp_dir.glob("**/*"):
             console.print(f"  - {item.relative_to(temp_dir)}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"❌ Could not list extracted files: {e}")
 
 
-def find_binary_in_extracted_files(
+def _find_binary_in_extracted_files(
     temp_dir: Path,
     tool_config: dict,
     binary_path: str,
 ) -> Path:
     """Find a specific binary in the extracted files."""
     # Replace variables in the binary path
-    binary_path = replace_variables_in_path(binary_path, tool_config)
+    binary_path = _replace_variables_in_path(binary_path, tool_config)
 
     # Handle glob patterns in binary path
     if "*" in binary_path:
@@ -250,7 +251,7 @@ def find_binary_in_extracted_files(
     return source_path
 
 
-def copy_binary_to_destination(
+def _copy_binary_to_destination(
     source_path: Path,
     destination_dir: Path,
     binary_name: str,
@@ -264,7 +265,7 @@ def copy_binary_to_destination(
     console.print(f"✅ [green]Copied binary to {dest_path}[/green]")
 
 
-def replace_variables_in_path(path: str, tool_config: dict) -> str:
+def _replace_variables_in_path(path: str, tool_config: dict) -> str:
     """Replace variables in a path with their values."""
     if "{version}" in path and "version" in tool_config:
         path = path.replace("{version}", tool_config["version"])
@@ -275,66 +276,7 @@ def replace_variables_in_path(path: str, tool_config: dict) -> str:
     return path
 
 
-def download_tool(
-    tool_name: str,
-    platform: str,
-    arch: str,
-    config: DotbinsConfig,
-    force: bool = False,  # noqa: FBT001, FBT002
-) -> bool:
-    """Download a tool for a specific platform and architecture."""
-    # Validate tool configuration
-    tool_config = validate_tool_config(tool_name, config)
-    if not tool_config:
-        return False
-
-    # Check if we should skip this download
-    if should_skip_download(tool_name, platform, arch, config, force):
-        return True
-
-    try:
-        # Get release information
-        release, version = get_release_info(tool_config)
-
-        # Map platform and architecture
-        tool_platform, tool_arch = map_platform_and_arch(
-            platform,
-            arch,
-            tool_config,
-        )
-
-        # Find matching asset
-        asset = find_matching_asset(
-            tool_config,
-            release,
-            version,
-            platform,
-            arch,
-            tool_platform,
-            tool_arch,
-        )
-        if not asset:
-            return False
-
-        # Download and install the asset
-        return download_and_install_asset(
-            asset,
-            tool_name,
-            platform,
-            arch,
-            tool_config,
-            config,
-        )
-
-    except Exception as e:  # noqa: BLE001
-        console.print(
-            f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
-        )
-        console.print_exception()
-        return False
-
-
-def validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
+def _validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
     """Validate that the tool exists in configuration."""
     tool_config = config.tools.get(tool_name)
     if not tool_config:
@@ -376,7 +318,7 @@ def should_skip_download(
     return False
 
 
-def get_release_info(tool_config: dict) -> tuple[dict, str]:
+def _get_release_info(tool_config: dict) -> tuple[dict, str]:
     """Get release information for a tool."""
     repo = tool_config["repo"]
     release = get_latest_release(repo)
@@ -385,7 +327,7 @@ def get_release_info(tool_config: dict) -> tuple[dict, str]:
     return release, version
 
 
-def map_platform_and_arch(
+def _map_platform_and_arch(
     platform: str,
     arch: str,
     tool_config: dict,
@@ -407,7 +349,7 @@ def map_platform_and_arch(
     return tool_platform, tool_arch
 
 
-def find_matching_asset(
+def _find_matching_asset(
     tool_config: dict,
     release: dict,
     version: str,
@@ -433,7 +375,7 @@ def find_matching_asset(
     )
 
     # Find matching asset
-    asset = find_asset(release["assets"], search_pattern)
+    asset = _find_asset(release["assets"], search_pattern)
     if not asset:
         console.print(
             f"⚠️ [yellow]No asset matching '{search_pattern}' found[/yellow]",
@@ -491,55 +433,6 @@ def get_asset_pattern(  # noqa: PLR0911
     return None
 
 
-def download_and_install_asset(
-    asset: dict,
-    tool_name: str,
-    platform: str,
-    arch: str,
-    tool_config: dict,
-    config: DotbinsConfig,
-) -> bool:
-    """Download and install an asset."""
-    destination_dir = config.tools_dir / platform / arch / "bin"
-    destination_dir.mkdir(parents=True, exist_ok=True)
-
-    # Handle binary_name as string or list
-    binary_names = tool_config.get("binary_name", tool_name)
-    if isinstance(binary_names, str):
-        binary_names = [binary_names]
-
-    # Create a temporary file for download
-    tmp_dir = Path(tempfile.gettempdir())
-    temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
-
-    try:
-        # Download the asset
-        download_file(asset["browser_download_url"], temp_path)
-
-        if tool_config.get("extract_binary", False):
-            # Extract the binary using the explicit path
-            extract_from_archive(temp_path, destination_dir, tool_config, platform)
-        else:
-            # For direct downloads with multiple binaries, we can only copy one
-            # Just use the first binary name
-            binary_name = binary_names[0]
-            # Copy the file directly
-            shutil.copy2(temp_path, destination_dir / binary_name)
-            # Make executable
-            dest_file = destination_dir / binary_name
-            dest_file.chmod(dest_file.stat().st_mode | 0o755)
-
-        console.print(
-            f"✅ [green]Successfully downloaded {tool_name} for {platform}/{arch}[/green]",
-        )
-        return True
-
-    finally:
-        # Cleanup
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
-
-
 def make_binaries_executable(config: DotbinsConfig) -> None:
     """Make all binaries executable."""
     for platform, architectures in config.platforms.items():
@@ -549,3 +442,239 @@ def make_binaries_executable(config: DotbinsConfig) -> None:
                 for binary in bin_dir.iterdir():
                     if binary.is_file():
                         binary.chmod(binary.stat().st_mode | 0o755)
+
+
+class _DownloadTask(NamedTuple):
+    """Represents a single download task."""
+
+    tool_name: str
+    platform: str
+    arch: str
+    asset_url: str
+    asset_name: str
+    tool_config: dict
+    destination_dir: Path
+    temp_path: Path
+
+
+def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
+    """Download a file for a DownloadTask."""
+    try:
+        console.print(
+            f"📥 [blue]Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...[/blue]",
+        )
+        download_file(task.asset_url, str(task.temp_path))
+        return task, True
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error downloading {task.asset_name}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return task, False
+
+
+def _prepare_download_task(
+    tool_name: str,
+    platform: str,
+    arch: str,
+    config: DotbinsConfig,
+) -> _DownloadTask | None:
+    """Prepare a download task without actually downloading.
+
+    Returns a DownloadTask if a download is needed, None if it should be skipped.
+    """
+    tool_config = _validate_tool_config(tool_name, config)
+    if not tool_config:
+        return None
+
+    destination_dir = config.tools_dir / platform / arch / "bin"
+    binary_names = tool_config.get("binary_name", tool_name)
+    if isinstance(binary_names, str):
+        binary_names = [binary_names]
+
+    all_exist = True
+    for binary_name in binary_names:
+        binary_path = destination_dir / binary_name
+        if not binary_path.exists():
+            all_exist = False
+            break
+
+    if all_exist:
+        console.print(
+            f"✅ [green]{tool_name} for {platform}/{arch} already exists (use --force to update)[/green]",
+        )
+        return None
+
+    try:
+        release, version = _get_release_info(tool_config)
+        tool_platform, tool_arch = _map_platform_and_arch(
+            platform,
+            arch,
+            tool_config,
+        )
+        asset = _find_matching_asset(
+            tool_config,
+            release,
+            version,
+            platform,
+            arch,
+            tool_platform,
+            tool_arch,
+        )
+        if not asset:
+            return None
+
+        tmp_dir = Path(tempfile.gettempdir())
+        temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
+
+        return _DownloadTask(
+            tool_name=tool_name,
+            platform=platform,
+            arch=arch,
+            asset_url=asset["browser_download_url"],
+            asset_name=asset["name"],
+            # Make a copy of tool_config because we'll modify it
+            tool_config=dict(tool_config, arch=tool_arch, version=version),
+            destination_dir=destination_dir,
+            temp_path=temp_path,
+        )
+
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return None
+
+
+def _process_downloaded_task(
+    task: _DownloadTask,
+    success: bool,  # noqa: FBT001
+) -> bool:
+    """Process a downloaded file."""
+    if not success:
+        return False
+
+    try:
+        task.destination_dir.mkdir(parents=True, exist_ok=True)
+        if task.tool_config.get("extract_binary", False):
+            _extract_from_archive(
+                str(task.temp_path),
+                task.destination_dir,
+                task.tool_config,
+                task.platform,
+            )
+        else:
+            binary_names = task.tool_config.get("binary_name", task.tool_name)
+            if isinstance(binary_names, str):
+                binary_names = [binary_names]
+            binary_name = binary_names[0]
+
+            shutil.copy2(task.temp_path, task.destination_dir / binary_name)
+            dest_file = task.destination_dir / binary_name
+            dest_file.chmod(dest_file.stat().st_mode | 0o755)
+
+        console.print(
+            f"✅ [green]Successfully processed {task.tool_name} for {task.platform}/{task.arch}[/green]",
+        )
+        return True
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error processing {task.tool_name}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return False
+    finally:
+        if task.temp_path.exists():
+            task.temp_path.unlink()
+
+
+def process_downloaded_files(
+    downloaded_tasks: list[tuple[_DownloadTask, bool]],
+) -> int:
+    """Process downloaded files and return success count."""
+    console.print(
+        f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
+    )
+    success_count = 0
+
+    for task, download_success in downloaded_tasks:
+        if _process_downloaded_task(task, download_success):
+            success_count += 1
+
+    return success_count
+
+
+def download_files_in_parallel(
+    download_tasks: list[_DownloadTask],
+) -> list[tuple[_DownloadTask, bool]]:
+    """Download files in parallel using ThreadPoolExecutor."""
+    console.print(
+        f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
+    )
+    downloaded_tasks = []
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(8, len(download_tasks) or 1),
+    ) as executor:
+        future_to_task = {
+            executor.submit(_download_task, task): task for task in download_tasks
+        }
+        for future in concurrent.futures.as_completed(future_to_task):
+            task, success = future.result()
+            downloaded_tasks.append((task, success))
+
+    return downloaded_tasks
+
+
+def prepare_download_tasks(
+    tools_to_update: list[str],
+    platforms_to_update: list[str],
+    architecture: str,
+    config: DotbinsConfig,
+) -> tuple[list[_DownloadTask], int]:
+    """Prepare download tasks for all tools and platforms."""
+    download_tasks = []
+    total_count = 0
+
+    for tool_name in tools_to_update:
+        for platform in platforms_to_update:
+            if platform not in config.platforms:
+                console.print(
+                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
+                )
+                continue
+
+            # Get architectures to update
+            archs_to_update = _determine_architectures(platform, architecture, config)
+            if not archs_to_update:
+                continue
+
+            for arch in archs_to_update:
+                total_count += 1
+                task = _prepare_download_task(
+                    tool_name,
+                    platform,
+                    arch,
+                    config,
+                )
+                if task:
+                    download_tasks.append(task)
+
+    return sorted(download_tasks, key=lambda t: t.asset_url), total_count
+
+
+def _determine_architectures(
+    platform: str,
+    architecture: str,
+    config: DotbinsConfig,
+) -> list[str]:
+    """Determine which architectures to update for a platform."""
+    if architecture:
+        # Filter to only include the specified architecture if it's supported
+        if architecture in config.platforms[platform]:
+            return [architecture]
+        console.print(
+            f"⚠️ [yellow]Architecture {architecture} not configured for platform {platform}, skipping[/yellow]",
+        )
+        return []
+    return config.platforms[platform]
