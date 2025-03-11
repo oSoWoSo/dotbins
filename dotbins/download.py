@@ -432,55 +432,6 @@ def get_asset_pattern(  # noqa: PLR0911
     return None
 
 
-def download_and_install_asset(
-    asset: dict,
-    tool_name: str,
-    platform: str,
-    arch: str,
-    tool_config: dict,
-    config: DotbinsConfig,
-) -> bool:
-    """Download and install an asset."""
-    destination_dir = config.tools_dir / platform / arch / "bin"
-    destination_dir.mkdir(parents=True, exist_ok=True)
-
-    # Handle binary_name as string or list
-    binary_names = tool_config.get("binary_name", tool_name)
-    if isinstance(binary_names, str):
-        binary_names = [binary_names]
-
-    # Create a temporary file for download
-    tmp_dir = Path(tempfile.gettempdir())
-    temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
-
-    try:
-        # Download the asset
-        download_file(asset["browser_download_url"], temp_path)
-
-        if tool_config.get("extract_binary", False):
-            # Extract the binary using the explicit path
-            extract_from_archive(temp_path, destination_dir, tool_config, platform)
-        else:
-            # For direct downloads with multiple binaries, we can only copy one
-            # Just use the first binary name
-            binary_name = binary_names[0]
-            # Copy the file directly
-            shutil.copy2(temp_path, destination_dir / binary_name)
-            # Make executable
-            dest_file = destination_dir / binary_name
-            dest_file.chmod(dest_file.stat().st_mode | 0o755)
-
-        console.print(
-            f"✅ [green]Successfully downloaded {tool_name} for {platform}/{arch}[/green]",
-        )
-        return True
-
-    finally:
-        # Cleanup
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
-
-
 def make_binaries_executable(config: DotbinsConfig) -> None:
     """Make all binaries executable."""
     for platform, architectures in config.platforms.items():
