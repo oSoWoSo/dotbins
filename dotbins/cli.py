@@ -16,7 +16,7 @@ from .download import (
     prepare_download_tasks,
     process_downloaded_files,
 )
-from .utils import current_platform, log, print_shell_setup, setup_logging
+from .utils import current_platform, log, print_shell_setup
 from .versions import VersionStore
 
 
@@ -230,9 +230,6 @@ def main() -> None:
     """Main function to parse arguments and execute commands."""
     parser = create_parser()
     args = parser.parse_args()
-
-    # Setup logging
-    setup_logging(args.verbose)
 
     try:
         # Create config

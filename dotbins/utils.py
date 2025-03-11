@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import functools
 import hashlib
-import logging
 import os
 import sys
 from typing import TYPE_CHECKING
@@ -18,15 +17,6 @@ if TYPE_CHECKING:
     from .config import DotbinsConfig
 
 console = Console()
-
-
-def setup_logging(verbose: bool = False) -> None:
-    """Configure logging level based on verbosity."""
-    log_level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
 
 
 @functools.cache
