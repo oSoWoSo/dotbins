@@ -385,7 +385,6 @@ def get_asset_pattern(  # noqa: PLR0911
     if isinstance(patterns, dict):
         # If platform not in dict or explicitly set to null, no pattern for this platform
         if platform not in patterns or patterns[platform] is None:
-            log("No asset pattern defined for platform {platform}", "warning")
             return None
 
         platform_patterns = patterns[platform]
@@ -398,7 +397,6 @@ def get_asset_pattern(  # noqa: PLR0911
         if isinstance(platform_patterns, dict):
             # If arch not in dict or explicitly set to null, no pattern for this arch
             if arch not in platform_patterns or platform_patterns[arch] is None:
-                log("No asset pattern defined for {platform}/{arch}", "warning")
                 return None
 
             return platform_patterns[arch]
