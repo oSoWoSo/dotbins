@@ -13,7 +13,7 @@ import requests
 import yaml
 
 from dotbins.analyze import generate_tool_configuration
-from dotbins.download import download_file, find_asset
+from dotbins.download import _find_asset, download_file
 from dotbins.utils import get_latest_release
 
 TOOLS = ["fzf", "bat", "eza", "zoxide", "uv"]
@@ -75,7 +75,7 @@ def find_and_download_asset(
             download_file(asset["browser_download_url"], str(tool_path))
             return tool_path, release
         logging.info("No suitable asset found for %s", tool_name)
-        return None, release  # noqa: TRY300
+        return None, release
 
     except requests.exceptions.RequestException:
         logging.exception("Error downloading %s", tool_name)
@@ -104,7 +104,7 @@ def find_matching_asset(
                     platform="linux",
                     arch="x86_64",
                 )
-                asset = find_asset(release["assets"], search_pattern)
+                asset = _find_asset(release["assets"], search_pattern)
         # If asset_patterns is a string (global pattern)
         elif isinstance(tool_config["asset_patterns"], str):
             pattern = tool_config["asset_patterns"]
@@ -113,7 +113,7 @@ def find_matching_asset(
                 platform="linux",
                 arch="x86_64",
             )
-            asset = find_asset(release["assets"], search_pattern)
+            asset = _find_asset(release["assets"], search_pattern)
 
     # Fallback to generic Linux asset
     if not asset:

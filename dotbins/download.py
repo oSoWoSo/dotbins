@@ -25,7 +25,7 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-def find_asset(assets: list[dict], pattern: str) -> dict | None:
+def _find_asset(assets: list[dict], pattern: str) -> dict | None:
     """Find an asset that matches the given pattern."""
     regex_pattern = (
         pattern.replace("{version}", ".*")
@@ -89,7 +89,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
         raise
 
 
-def extract_from_archive(
+def _extract_from_archive(
     archive_path: str,
     destination_dir: Path,
     tool_config: dict,
@@ -142,7 +142,7 @@ def _detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     console.print(
         "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
     )
-    binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
+    binary_paths = _auto_detect_binary_paths(temp_dir, binary_names)
     if not binary_paths:
         msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
         raise ValueError(msg)
@@ -165,15 +165,15 @@ def _process_binaries(
         binary_name = binary_names[min(i, len(binary_names) - 1)]
 
         # Find and copy each binary
-        source_path = find_binary_in_extracted_files(
+        source_path = _find_binary_in_extracted_files(
             temp_dir,
             tool_config,
             binary_path_pattern,
         )
-        copy_binary_to_destination(source_path, destination_dir, binary_name)
+        _copy_binary_to_destination(source_path, destination_dir, binary_name)
 
 
-def auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
+def _auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     """Automatically detect binary paths in an extracted archive.
 
     Args:
@@ -225,14 +225,14 @@ def _log_extracted_files(temp_dir: Path) -> None:
         console.print(f"❌ Could not list extracted files: {e}")
 
 
-def find_binary_in_extracted_files(
+def _find_binary_in_extracted_files(
     temp_dir: Path,
     tool_config: dict,
     binary_path: str,
 ) -> Path:
     """Find a specific binary in the extracted files."""
     # Replace variables in the binary path
-    binary_path = replace_variables_in_path(binary_path, tool_config)
+    binary_path = _replace_variables_in_path(binary_path, tool_config)
 
     # Handle glob patterns in binary path
     if "*" in binary_path:
@@ -251,7 +251,7 @@ def find_binary_in_extracted_files(
     return source_path
 
 
-def copy_binary_to_destination(
+def _copy_binary_to_destination(
     source_path: Path,
     destination_dir: Path,
     binary_name: str,
@@ -265,7 +265,7 @@ def copy_binary_to_destination(
     console.print(f"✅ [green]Copied binary to {dest_path}[/green]")
 
 
-def replace_variables_in_path(path: str, tool_config: dict) -> str:
+def _replace_variables_in_path(path: str, tool_config: dict) -> str:
     """Replace variables in a path with their values."""
     if "{version}" in path and "version" in tool_config:
         path = path.replace("{version}", tool_config["version"])
@@ -276,7 +276,7 @@ def replace_variables_in_path(path: str, tool_config: dict) -> str:
     return path
 
 
-def validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
+def _validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
     """Validate that the tool exists in configuration."""
     tool_config = config.tools.get(tool_name)
     if not tool_config:
@@ -318,7 +318,7 @@ def should_skip_download(
     return False
 
 
-def get_release_info(tool_config: dict) -> tuple[dict, str]:
+def _get_release_info(tool_config: dict) -> tuple[dict, str]:
     """Get release information for a tool."""
     repo = tool_config["repo"]
     release = get_latest_release(repo)
@@ -327,7 +327,7 @@ def get_release_info(tool_config: dict) -> tuple[dict, str]:
     return release, version
 
 
-def map_platform_and_arch(
+def _map_platform_and_arch(
     platform: str,
     arch: str,
     tool_config: dict,
@@ -349,7 +349,7 @@ def map_platform_and_arch(
     return tool_platform, tool_arch
 
 
-def find_matching_asset(
+def _find_matching_asset(
     tool_config: dict,
     release: dict,
     version: str,
@@ -375,7 +375,7 @@ def find_matching_asset(
     )
 
     # Find matching asset
-    asset = find_asset(release["assets"], search_pattern)
+    asset = _find_asset(release["assets"], search_pattern)
     if not asset:
         console.print(
             f"⚠️ [yellow]No asset matching '{search_pattern}' found[/yellow]",
@@ -483,7 +483,7 @@ def _prepare_download_task(
 
     Returns a DownloadTask if a download is needed, None if it should be skipped.
     """
-    tool_config = validate_tool_config(tool_name, config)
+    tool_config = _validate_tool_config(tool_name, config)
     if not tool_config:
         return None
 
@@ -506,13 +506,13 @@ def _prepare_download_task(
         return None
 
     try:
-        release, version = get_release_info(tool_config)
-        tool_platform, tool_arch = map_platform_and_arch(
+        release, version = _get_release_info(tool_config)
+        tool_platform, tool_arch = _map_platform_and_arch(
             platform,
             arch,
             tool_config,
         )
-        asset = find_matching_asset(
+        asset = _find_matching_asset(
             tool_config,
             release,
             version,
@@ -557,7 +557,7 @@ def _process_downloaded_task(
     try:
         task.destination_dir.mkdir(parents=True, exist_ok=True)
         if task.tool_config.get("extract_binary", False):
-            extract_from_archive(
+            _extract_from_archive(
                 str(task.temp_path),
                 task.destination_dir,
                 task.tool_config,

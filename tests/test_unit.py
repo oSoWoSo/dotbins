@@ -106,19 +106,19 @@ def test_find_asset() -> None:
 
     # Test finding Linux amd64 asset
     pattern = "tool-{version}-linux_{arch}.tar.gz"
-    asset = dotbins.download.find_asset(assets, pattern)
+    asset = dotbins.download._find_asset(assets, pattern)
     assert asset is not None
     assert asset["name"] == "tool-1.0.0-linux_amd64.tar.gz"
 
     # Test finding macOS asset
     pattern = "tool-{version}-darwin_{arch}.tar.gz"
-    asset = dotbins.download.find_asset(assets, pattern)
+    asset = dotbins.download._find_asset(assets, pattern)
     assert asset is not None
     assert asset["name"] == "tool-1.0.0-darwin_amd64.tar.gz"
 
     # Test pattern with no match
     pattern = "tool-{version}-windows_{arch}.zip"
-    asset = dotbins.download.find_asset(assets, pattern)
+    asset = dotbins.download._find_asset(assets, pattern)
     assert asset is None
 
 
@@ -165,7 +165,7 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download.extract_from_archive(archive_path, dest_dir, tool_config, "linux")
+    dotbins.download._extract_from_archive(archive_path, dest_dir, tool_config, "linux")
 
     # Verify the binary was extracted and renamed
     extracted_bin = dest_dir / "test-tool"
@@ -199,7 +199,7 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download.extract_from_archive(archive_path, dest_dir, tool_config, "linux")
+    dotbins.download._extract_from_archive(archive_path, dest_dir, tool_config, "linux")
 
     # Verify the binary was extracted and renamed
     extracted_bin = dest_dir / "test-tool"
@@ -314,7 +314,7 @@ def test_download_tool_asset_not_found(
     )
 
     # Mock find_asset to ensure it returns None for our specific pattern
-    with patch("dotbins.download.find_asset") as mock_find_asset:
+    with patch("dotbins.download._find_asset") as mock_find_asset:
         mock_find_asset.return_value = None
 
         # Call the function
@@ -348,7 +348,7 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
 
     # Call the function and check for exception
     with pytest.raises(ValueError, match="Unsupported archive format"):
-        dotbins.download.extract_from_archive(
+        dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
             tool_config,
@@ -382,7 +382,7 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
 
     # Call the function and check for exception
     with pytest.raises(FileNotFoundError):
-        dotbins.download.extract_from_archive(
+        dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
             tool_config,
@@ -427,7 +427,7 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download.extract_from_archive(archive_path, dest_dir, tool_config, "linux")
+    dotbins.download._extract_from_archive(archive_path, dest_dir, tool_config, "linux")
 
     # Verify both binaries were extracted and renamed correctly
     for bin_name in ["primary-tool", "secondary-tool"]:
