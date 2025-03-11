@@ -18,7 +18,7 @@ from .download import (
     _download_task,
     _DownloadTask,
     _prepare_download_task,
-    _process_downloaded_task,
+    _process_downloaded_files,
     make_binaries_executable,
 )
 from .utils import print_shell_setup, setup_logging
@@ -43,7 +43,7 @@ def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     download_tasks, total_count = _prepare_download_tasks(
         tools_to_update,
         platforms_to_update,
-        args,
+        args.architecture,
         config,
     )
     downloaded_tasks = _download_files_in_parallel(download_tasks)
@@ -73,7 +73,7 @@ def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
 def _prepare_download_tasks(
     tools_to_update: list[str],
     platforms_to_update: list[str],
-    args: argparse.Namespace,
+    architecture: str,
     config: DotbinsConfig,
 ) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
@@ -89,7 +89,7 @@ def _prepare_download_tasks(
                 continue
 
             # Get architectures to update
-            archs_to_update = _determine_architectures(platform, args, config)
+            archs_to_update = _determine_architectures(platform, architecture, config)
             if not archs_to_update:
                 continue
 
@@ -109,16 +109,16 @@ def _prepare_download_tasks(
 
 def _determine_architectures(
     platform: str,
-    args: argparse.Namespace,
+    architecture: str,
     config: DotbinsConfig,
 ) -> list[str]:
     """Determine which architectures to update for a platform."""
-    if args.architecture:
+    if architecture:
         # Filter to only include the specified architecture if it's supported
-        if args.architecture in config.platforms[platform]:
-            return [args.architecture]
+        if architecture in config.platforms[platform]:
+            return [architecture]
         console.print(
-            f"⚠️ [yellow]Architecture {args.architecture} not configured for platform {platform}, skipping[/yellow]",
+            f"⚠️ [yellow]Architecture {architecture} not configured for platform {platform}, skipping[/yellow]",
         )
         return []
     return config.platforms[platform]
@@ -143,22 +143,6 @@ def _download_files_in_parallel(
             downloaded_tasks.append((task, success))
 
     return downloaded_tasks
-
-
-def _process_downloaded_files(
-    downloaded_tasks: list[tuple[_DownloadTask, bool]],
-) -> int:
-    """Process downloaded files and return success count."""
-    console.print(
-        f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
-    )
-    success_count = 0
-
-    for task, download_success in downloaded_tasks:
-        if _process_downloaded_task(task, download_success):
-            success_count += 1
-
-    return success_count
 
 
 def _print_completion_summary(

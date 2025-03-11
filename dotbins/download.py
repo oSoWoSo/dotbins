@@ -585,3 +585,19 @@ def _process_downloaded_task(
     finally:
         if task.temp_path.exists():
             task.temp_path.unlink()
+
+
+def _process_downloaded_files(
+    downloaded_tasks: list[tuple[_DownloadTask, bool]],
+) -> int:
+    """Process downloaded files and return success count."""
+    console.print(
+        f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
+    )
+    success_count = 0
+
+    for task, download_success in downloaded_tasks:
+        if _process_downloaded_task(task, download_success):
+            success_count += 1
+
+    return success_count
