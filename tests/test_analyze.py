@@ -91,12 +91,12 @@ def test_get_arch_assets(mock_assets: list[dict[str, str]]) -> None:
 
 def test_find_sample_asset(mock_assets: list[dict[str, str]]) -> None:
     """Test finding a suitable sample asset."""
-    sample = analyze.find_sample_asset(mock_assets)
+    sample = analyze._find_sample_asset(mock_assets)
     assert sample is not None
     assert sample["name"] == "tool-1.0.0-linux_x86_64.tar.gz"
 
     # Test with no suitable assets
-    no_sample = analyze.find_sample_asset([{"name": "checksums.txt"}])
+    no_sample = analyze._find_sample_asset([{"name": "checksums.txt"}])
     assert no_sample is None
 
 
@@ -234,7 +234,7 @@ def test_download_and_find_binary(
             "/secure/temp/file.tar.gz"
         )
         with patch("tempfile.mkdtemp", return_value="/secure/temp/extracted"):
-            result = analyze.download_and_find_binary(mock_asset, "tool")
+            result = analyze._download_and_find_binary(mock_asset, "tool")
 
     assert mock_download.called
     assert mock_extract.called
@@ -243,10 +243,10 @@ def test_download_and_find_binary(
 
 
 @patch("dotbins.analyze.get_latest_release")
-@patch("dotbins.analyze.find_sample_asset")
-@patch("dotbins.analyze.download_and_find_binary")
+@patch("dotbins.analyze._find_sample_asset")
+@patch("dotbins.analyze._download_and_find_binary")
 @patch("dotbins.analyze.generate_tool_config")
-@patch("dotbins.analyze.print_assets_info")
+@patch("dotbins.analyze._print_assets_info")
 def test_analyze_tool(
     mock_print_assets: MagicMock,
     mock_gen_config: MagicMock,

@@ -443,7 +443,7 @@ def make_binaries_executable(config: DotbinsConfig) -> None:
                         binary.chmod(binary.stat().st_mode | 0o755)
 
 
-class DownloadTask(NamedTuple):
+class _DownloadTask(NamedTuple):
     """Represents a single download task."""
 
     tool_name: str
@@ -456,7 +456,7 @@ class DownloadTask(NamedTuple):
     temp_path: Path
 
 
-def download_task(task: DownloadTask) -> tuple[DownloadTask, bool]:
+def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
     """Download a file for a DownloadTask."""
     try:
         console.print(
@@ -472,12 +472,12 @@ def download_task(task: DownloadTask) -> tuple[DownloadTask, bool]:
         return task, False
 
 
-def prepare_download_task(
+def _prepare_download_task(
     tool_name: str,
     platform: str,
     arch: str,
     config: DotbinsConfig,
-) -> DownloadTask | None:
+) -> _DownloadTask | None:
     """Prepare a download task without actually downloading.
 
     Returns a DownloadTask if a download is needed, None if it should be skipped.
@@ -526,7 +526,7 @@ def prepare_download_task(
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
 
-        return DownloadTask(
+        return _DownloadTask(
             tool_name=tool_name,
             platform=platform,
             arch=arch,
@@ -545,7 +545,10 @@ def prepare_download_task(
         return None
 
 
-def process_downloaded_task(task: DownloadTask, success: bool) -> bool:  # noqa: FBT001
+def _process_downloaded_task(
+    task: _DownloadTask,
+    success: bool,  # noqa: FBT001
+) -> bool:
     """Process a downloaded file."""
     if not success:
         return False

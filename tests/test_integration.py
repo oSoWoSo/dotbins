@@ -40,7 +40,7 @@ def test_initialization(
     )
 
     # Call initialize with the config
-    cli.initialize(None, config=config)
+    cli._initialize(None, config=config)
 
     # Check if directories were created - only for valid platform/arch combinations
     platform_archs = [("linux", "amd64"), ("linux", "arm64"), ("macos", "arm64")]
@@ -75,7 +75,7 @@ def test_list_tools(
     )
 
     # Directly call the list_tools function
-    cli.list_tools(None, config)
+    cli._list_tools(None, config)
 
     # Check if tool was listed
     captured = capsys.readouterr()
@@ -129,7 +129,7 @@ def test_update_tool(
     mock_args.shell_setup = False
 
     # Directly call update_tools
-    cli.update_tools(mock_args, config)
+    cli._update_tools(mock_args, config)
 
     # Check if binary was installed
     assert (tmp_dir / "tools" / "linux" / "amd64" / "bin" / "test-tool").exists()
@@ -184,7 +184,7 @@ def test_analyze_tool(
     try:
         # This should not raise an exception if the YAML is valid
         yaml.safe_load(yaml_text)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         pytest.fail(f"Generated YAML is invalid: {e}")
 
 

@@ -270,7 +270,7 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
         mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
 
         # With prepare_download_task, it should return None if file exists
-        result = dotbins.download.prepare_download_task(
+        result = dotbins.download._prepare_download_task(
             "test-tool",
             "linux",
             "amd64",
@@ -318,7 +318,7 @@ def test_download_tool_asset_not_found(
         mock_find_asset.return_value = None
 
         # Call the function
-        result = dotbins.download.prepare_download_task(
+        result = dotbins.download._prepare_download_task(
             "test-tool",
             "linux",
             "amd64",

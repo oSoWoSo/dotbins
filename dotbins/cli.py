@@ -15,11 +15,11 @@ from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
 from .download import (
-    DownloadTask,
-    download_task,
+    _download_task,
+    _DownloadTask,
+    _prepare_download_task,
+    _process_downloaded_task,
     make_binaries_executable,
-    prepare_download_task,
-    process_downloaded_task,
 )
 from .utils import print_shell_setup, setup_logging
 
@@ -28,14 +28,14 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-def list_tools(_args: Any, config: DotbinsConfig) -> None:
+def _list_tools(_args: Any, config: DotbinsConfig) -> None:
     """List available tools."""
     console.print("🔧 [blue]Available tools:[/blue]")
     for tool, tool_config in config.tools.items():
         console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
 
 
-def update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
+def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     """Update tools based on command line arguments."""
     tools_to_update, platforms_to_update = _determine_update_targets(args, config)
     _validate_tools(tools_to_update, config)
@@ -75,7 +75,7 @@ def _prepare_download_tasks(
     platforms_to_update: list[str],
     args: argparse.Namespace,
     config: DotbinsConfig,
-) -> tuple[list[DownloadTask], int]:
+) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
     download_tasks = []
     total_count = 0
@@ -95,7 +95,7 @@ def _prepare_download_tasks(
 
             for arch in archs_to_update:
                 total_count += 1
-                task = prepare_download_task(
+                task = _prepare_download_task(
                     tool_name,
                     platform,
                     arch,
@@ -125,8 +125,8 @@ def _determine_architectures(
 
 
 def _download_files_in_parallel(
-    download_tasks: list[DownloadTask],
-) -> list[tuple[DownloadTask, bool]]:
+    download_tasks: list[_DownloadTask],
+) -> list[tuple[_DownloadTask, bool]]:
     """Download files in parallel using ThreadPoolExecutor."""
     console.print(
         f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
@@ -136,7 +136,7 @@ def _download_files_in_parallel(
         max_workers=min(8, len(download_tasks) or 1),
     ) as executor:
         future_to_task = {
-            executor.submit(download_task, task): task for task in download_tasks
+            executor.submit(_download_task, task): task for task in download_tasks
         }
         for future in concurrent.futures.as_completed(future_to_task):
             task, success = future.result()
@@ -145,7 +145,9 @@ def _download_files_in_parallel(
     return downloaded_tasks
 
 
-def _process_downloaded_files(downloaded_tasks: list[tuple[DownloadTask, bool]]) -> int:
+def _process_downloaded_files(
+    downloaded_tasks: list[tuple[_DownloadTask, bool]],
+) -> int:
     """Process downloaded files and return success count."""
     console.print(
         f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
@@ -153,7 +155,7 @@ def _process_downloaded_files(downloaded_tasks: list[tuple[DownloadTask, bool]])
     success_count = 0
 
     for task, download_success in downloaded_tasks:
-        if process_downloaded_task(task, download_success):
+        if _process_downloaded_task(task, download_success):
             success_count += 1
 
     return success_count
@@ -179,7 +181,7 @@ def _print_completion_summary(
         print_shell_setup(config)
 
 
-def initialize(_args: Any, config: DotbinsConfig) -> None:
+def _initialize(_args: Any, config: DotbinsConfig) -> None:
     """Initialize the tools directory structure."""
     for platform, architectures in config.platforms.items():
         for arch in architectures:
@@ -220,7 +222,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     # list command
     list_parser = subparsers.add_parser("list", help="List available tools")
-    list_parser.set_defaults(func=list_tools)
+    list_parser.set_defaults(func=_list_tools)
 
     # update command
     update_parser = subparsers.add_parser("update", help="Update tools")
@@ -251,11 +253,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print shell setup instructions",
     )
-    update_parser.set_defaults(func=update_tools)
+    update_parser.set_defaults(func=_update_tools)
 
     # init command
     init_parser = subparsers.add_parser("init", help="Initialize directory structure")
-    init_parser.set_defaults(func=initialize)
+    init_parser.set_defaults(func=_initialize)
 
     # analyze command for discovering new tools
     analyze_parser = subparsers.add_parser(
