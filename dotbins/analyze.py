@@ -247,29 +247,26 @@ def determine_binary_path(
     if not executables:
         return None
 
-    # Find all executables that match the tool name pattern
-    matches = []
-    for exe in executables:
-        base_name = os.path.basename(exe)
-        if tool_name.lower() in base_name.lower():
-            matches.append(exe)
+    # Step 1: Look for exact name matches
+    exact_matches = [
+        exe for exe in executables if os.path.basename(exe).lower() == tool_name.lower()
+    ]
+    if exact_matches:
+        return exact_matches[0] if len(exact_matches) == 1 else exact_matches
 
-    if len(matches) > 1:
-        return matches
+    # Step 2: Look for partial name matches
+    partial_matches = [
+        exe for exe in executables if tool_name.lower() in os.path.basename(exe).lower()
+    ]
+    if partial_matches:
+        return partial_matches[0] if len(partial_matches) == 1 else partial_matches
 
-    # Otherwise, follow the old logic for single binary
-    # Try to find an exact name match first
-    for exe in executables:
-        base_name = os.path.basename(exe)
-        if base_name.lower() == tool_name.lower():
-            return exe
+    # Step 3: Look for binaries in bin/ directory
+    bin_matches = [exe for exe in executables if "bin/" in exe]
+    if bin_matches:
+        return bin_matches[0]
 
-    # Then try to find executables in bin/
-    for exe in executables:
-        if "bin/" in exe:
-            return exe
-
-    # Finally, just take the first executable
+    # Step 4: Fall back to the first executable
     return executables[0]
 
 
