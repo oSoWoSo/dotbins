@@ -105,16 +105,32 @@ export PATH="{tools_dir}/$_os/$_arch/bin:$PATH"
     )
 
 
+STYLE_EMOJI_MAP = {
+    "success": "✅",
+    "error": "❌",
+    "warning": "⚠️",
+    "info": "🔍",
+    "default": "",
+}
+
+STYLE_FORMAT_MAP = {
+    "success": "green",
+    "error": "bold red",
+    "warning": "yellow",
+    "info": "blue",
+    "default": "",
+}
+
+
 def log(message: str, style: str = "default", emoji: str = "") -> None:
     """Print a formatted message to the console."""
+    if emoji is None:
+        emoji = STYLE_EMOJI_MAP.get(style, "")
+
     prefix = f"{emoji} " if emoji else ""
-    if style == "error":
-        console.print(f"{prefix}[bold red]{message}[/bold red]")
-    elif style == "warning":
-        console.print(f"{prefix}[yellow]{message}[/yellow]")
-    elif style == "success":
-        console.print(f"{prefix}[green]{message}[/green]")
-    elif style == "info":
-        console.print(f"{prefix}[blue]{message}[/blue]")
+
+    if style != "default":
+        rich_format = STYLE_FORMAT_MAP.get(style, "")
+        console.print(f"{prefix}[{rich_format}]{message}[/{rich_format}]")
     else:
         console.print(f"{prefix}{message}")
