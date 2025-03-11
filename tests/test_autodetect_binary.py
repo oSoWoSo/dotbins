@@ -232,7 +232,7 @@ def test_extract_from_archive_with_auto_detection(
 
     # Check that auto-detection message was logged
     mock_console.print.assert_any_call(
-        "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
+        "🔍 [cyan]Binary path not specified, attempting auto-detection...[/cyan]",
     )
     mock_console.print.assert_any_call(
         "✅ [green]Auto-detected binary paths: ['fzf'][/green]",

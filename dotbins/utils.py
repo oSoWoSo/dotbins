@@ -117,7 +117,7 @@ STYLE_FORMAT_MAP = {
     "success": "green",
     "error": "bold red",
     "warning": "yellow",
-    "info": "blue",
+    "info": "cyan",
     "default": "",
 }
 
