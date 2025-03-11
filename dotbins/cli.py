@@ -64,7 +64,7 @@ def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
     """Validate that all tools exist in the configuration."""
     for tool in tools_to_update:
         if tool not in config.tools:
-            log(f"Unknown tool: {tool}", "error", "❌")
+            log(f"Unknown tool: {tool}", "error")
             sys.exit(1)
 
 
@@ -214,7 +214,7 @@ def main() -> None:
             parser.print_help()
 
     except Exception as e:
-        log(f"Error: {e!s}", "error", "❌")
+        log(f"Error: {e!s}", "error")
         console.print_exception()
         sys.exit(1)
 
