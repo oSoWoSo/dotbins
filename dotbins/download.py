@@ -36,7 +36,7 @@ def _find_asset(assets: list[dict], pattern: str) -> dict | None:
 
     for asset in assets:
         if re.search(regex_pattern, asset["name"]):
-            log(f"Found matching asset: {asset['name']}", "success", "✅")
+            log(f"Found matching asset: {asset['name']}", "success")
             return asset
 
     return None
@@ -55,7 +55,7 @@ def download_file(url: str, destination: str) -> str:
 
         return destination
     except requests.RequestException as e:
-        log(f"Download failed: {e}", "error", "❌")
+        log(f"Download failed: {e}", "error")
         console.print_exception()  # Keep this as is since it's a special case
         msg = f"Failed to download {url}: {e}"
         raise RuntimeError(msg) from e
@@ -84,7 +84,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
             msg = f"Unsupported archive format: {archive_path}"
             raise ValueError(msg)  # noqa: TRY301
     except Exception as e:
-        log(f"Extraction failed: {e}", "error", "❌")
+        log(f"Extraction failed: {e}", "error")
         console.print_exception()  # Replaces logger.error with exc_info=True
         raise
 
@@ -117,7 +117,7 @@ def _extract_from_archive(
         )
 
     except Exception as e:
-        log(f"Error extracting archive: {e}", "error", "❌")
+        log(f"Error extracting archive: {e}", "error")
         console.print_exception()
         raise
     finally:
@@ -144,7 +144,7 @@ def _detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     if not binary_paths:
         msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
         raise ValueError(msg)
-    log(f"Auto-detected binary paths: {binary_paths}", "success", "✅")
+    log(f"Auto-detected binary paths: {binary_paths}", "success")
     return binary_paths
 
 
@@ -258,7 +258,7 @@ def _copy_binary_to_destination(
     # Copy the binary and set permissions
     shutil.copy2(source_path, dest_path)
     dest_path.chmod(dest_path.stat().st_mode | 0o755)
-    log(f"Copied binary to {dest_path}", "success", "✅")
+    log(f"Copied binary to {dest_path}", "success")
 
 
 def _replace_variables_in_path(path: str, tool_config: dict) -> str:
@@ -276,7 +276,7 @@ def _validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
     """Validate that the tool exists in configuration."""
     tool_config = config.tools.get(tool_name)
     if not tool_config:
-        log(f"Tool '{tool_name}' not found in configuration", "error", "❌")
+        log(f"Tool '{tool_name}' not found in configuration", "error")
         return None
     return tool_config
 
@@ -358,7 +358,7 @@ def _find_matching_asset(
     # Determine asset pattern
     asset_pattern = get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
-        log("No asset pattern found for {platform}/{arch}", "warning", "⚠️")
+        log("No asset pattern found for {platform}/{arch}", "warning")
         return None
 
     # Replace variables in pattern
@@ -371,7 +371,7 @@ def _find_matching_asset(
     # Find matching asset
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
-        log(f"No asset matching '{search_pattern}' found", "warning", "⚠️")
+        log(f"No asset matching '{search_pattern}' found", "warning")
         return None
 
     return asset
@@ -385,7 +385,7 @@ def get_asset_pattern(  # noqa: PLR0911
     """Get the asset pattern for a tool, platform, and architecture."""
     # No asset patterns defined
     if "asset_patterns" not in tool_config:
-        log("No asset patterns defined", "warning", "⚠️")
+        log("No asset patterns defined", "warning")
         return None
 
     patterns = tool_config["asset_patterns"]
@@ -398,7 +398,7 @@ def get_asset_pattern(  # noqa: PLR0911
     if isinstance(patterns, dict):
         # If platform not in dict or explicitly set to null, no pattern for this platform
         if platform not in patterns or patterns[platform] is None:
-            log("No asset pattern defined for platform {platform}", "warning", "⚠️")
+            log("No asset pattern defined for platform {platform}", "warning")
             return None
 
         platform_patterns = patterns[platform]
@@ -411,13 +411,13 @@ def get_asset_pattern(  # noqa: PLR0911
         if isinstance(platform_patterns, dict):
             # If arch not in dict or explicitly set to null, no pattern for this arch
             if arch not in platform_patterns or platform_patterns[arch] is None:
-                log("No asset pattern defined for {platform}/{arch}", "warning", "⚠️")
+                log("No asset pattern defined for {platform}/{arch}", "warning")
                 return None
 
             return platform_patterns[arch]
 
     # No valid pattern found
-    log(f"No asset pattern found for {platform}/{arch}", "warning", "⚠️")
+    log(f"No asset pattern found for {platform}/{arch}", "warning")
     return None
 
 
@@ -456,7 +456,7 @@ def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
         download_file(task.asset_url, str(task.temp_path))
         return task, True
     except Exception as e:
-        log(f"Error downloading {task.asset_name}: {e!s}", "error", "❌")
+        log(f"Error downloading {task.asset_name}: {e!s}", "error")
         console.print_exception()
         return task, False
 
@@ -530,7 +530,7 @@ def _prepare_download_task(
         )
 
     except Exception as e:
-        log(f"Error processing {tool_name} for {platform}/{arch}: {e!s}", "error", "❌")
+        log(f"Error processing {tool_name} for {platform}/{arch}: {e!s}", "error")
         console.print_exception()
         return None
 
@@ -569,7 +569,7 @@ def _process_downloaded_task(
         )
         return True
     except Exception as e:
-        log(f"Error processing {task.tool_name}: {e!s}", "error", "❌")
+        log(f"Error processing {task.tool_name}: {e!s}", "error")
         console.print_exception()
         return False
     finally:
@@ -623,7 +623,7 @@ def prepare_download_tasks(
     for tool_name in tools_to_update:
         for platform in platforms_to_update:
             if platform not in config.platforms:
-                log(f"Skipping unknown platform: {platform}", "warning", "⚠️")
+                log(f"Skipping unknown platform: {platform}", "warning")
                 continue
 
             # Get architectures to update
@@ -658,7 +658,6 @@ def _determine_architectures(
         log(
             f"Architecture {architecture} not configured for platform {platform}, skipping",
             "warning",
-            "⚠️",
         )
         return []
     return config.platforms[platform]

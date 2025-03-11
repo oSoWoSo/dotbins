@@ -124,7 +124,7 @@ STYLE_FORMAT_MAP = {
 
 def log(message: str, style: str = "default", emoji: str = "") -> None:
     """Print a formatted message to the console."""
-    if emoji is None:
+    if not emoji:
         emoji = STYLE_EMOJI_MAP.get(style, "")
 
     prefix = f"{emoji} " if emoji else ""
