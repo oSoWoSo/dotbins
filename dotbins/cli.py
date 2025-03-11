@@ -15,6 +15,7 @@ from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
 from .download import (
+    DownloadTask,
     download_task,
     make_binaries_executable,
     prepare_download_task,
@@ -34,26 +35,48 @@ def list_tools(_args: Any, config: DotbinsConfig) -> None:
         console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
 
 
-def update_tools(  # noqa: PLR0912
+def update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
+    """Update tools based on command line arguments."""
+    tools_to_update, platforms_to_update = _determine_update_targets(args, config)
+    _validate_tools(tools_to_update, config)
+    config.tools_dir.mkdir(parents=True, exist_ok=True)
+    download_tasks, total_count = _prepare_download_tasks(
+        tools_to_update,
+        platforms_to_update,
+        args,
+        config,
+    )
+    downloaded_tasks = _download_files_in_parallel(download_tasks)
+    success_count = _process_downloaded_files(downloaded_tasks)
+    make_binaries_executable(config)
+    _print_completion_summary(config, success_count, total_count, args)
+
+
+def _determine_update_targets(
     args: argparse.Namespace,
     config: DotbinsConfig,
-) -> None:
-    """Update tools based on command line arguments."""
+) -> tuple[list[str], list[str]]:
+    """Determine which tools and platforms to update."""
     tools_to_update = args.tools if args.tools else list(config.tools.keys())
-
-    # Handle specific platform filtering
     platforms_to_update = [args.platform] if args.platform else config.platform_names
+    return tools_to_update, platforms_to_update
 
-    # Validate tools
+
+def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
+    """Validate that all tools exist in the configuration."""
     for tool in tools_to_update:
         if tool not in config.tools:
             console.print(f"❌ [bold red]Unknown tool: {tool}[/bold red]")
             sys.exit(1)
 
-    # Create the tools directory structure
-    config.tools_dir.mkdir(parents=True, exist_ok=True)
 
-    # PHASE 1: Prepare download tasks
+def _prepare_download_tasks(
+    tools_to_update: list[str],
+    platforms_to_update: list[str],
+    args: argparse.Namespace,
+    config: DotbinsConfig,
+) -> tuple[list[DownloadTask], int]:
+    """Prepare download tasks for all tools and platforms."""
     download_tasks = []
     total_count = 0
 
@@ -66,17 +89,9 @@ def update_tools(  # noqa: PLR0912
                 continue
 
             # Get architectures to update
-            if args.architecture:
-                # Filter to only include the specified architecture if it's supported for this platform
-                if args.architecture in config.platforms[platform]:
-                    archs_to_update = [args.architecture]
-                else:
-                    console.print(
-                        f"⚠️ [yellow]Architecture {args.architecture} not configured for platform {platform}, skipping[/yellow]",
-                    )
-                    continue
-            else:
-                archs_to_update = config.platforms[platform]
+            archs_to_update = _determine_architectures(platform, args, config)
+            if not archs_to_update:
+                continue
 
             for arch in archs_to_update:
                 total_count += 1
@@ -89,7 +104,30 @@ def update_tools(  # noqa: PLR0912
                 if task:
                     download_tasks.append(task)
 
-    # PHASE 2: Download files in parallel
+    return download_tasks, total_count
+
+
+def _determine_architectures(
+    platform: str,
+    args: argparse.Namespace,
+    config: DotbinsConfig,
+) -> list[str]:
+    """Determine which architectures to update for a platform."""
+    if args.architecture:
+        # Filter to only include the specified architecture if it's supported
+        if args.architecture in config.platforms[platform]:
+            return [args.architecture]
+        console.print(
+            f"⚠️ [yellow]Architecture {args.architecture} not configured for platform {platform}, skipping[/yellow]",
+        )
+        return []
+    return config.platforms[platform]
+
+
+def _download_files_in_parallel(
+    download_tasks: list[DownloadTask],
+) -> list[tuple[DownloadTask, bool]]:
+    """Download files in parallel using ThreadPoolExecutor."""
     console.print(
         f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
     )
@@ -109,7 +147,11 @@ def update_tools(  # noqa: PLR0912
             task, success = future.result()
             downloaded_tasks.append((task, success))
 
-    # PHASE 3: Process downloaded files sequentially
+    return downloaded_tasks
+
+
+def _process_downloaded_files(downloaded_tasks: list[tuple[DownloadTask, bool]]) -> int:
+    """Process downloaded files and return success count."""
     console.print(
         f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
     )
@@ -119,9 +161,16 @@ def update_tools(  # noqa: PLR0912
         if process_downloaded_task(task, download_success):
             success_count += 1
 
-    # Make all binaries executable
-    make_binaries_executable(config)
+    return success_count
 
+
+def _print_completion_summary(
+    config: DotbinsConfig,
+    success_count: int,
+    total_count: int,
+    args: argparse.Namespace,
+) -> None:
+    """Print completion summary and additional instructions."""
     console.print(
         f"\n🔄 [blue]Completed: {success_count}/{total_count} tools updated successfully[/blue]",
     )
