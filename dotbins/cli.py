@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import concurrent.futures
 import logging
 import sys
 from pathlib import Path
@@ -15,11 +14,10 @@ from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
 from .download import (
-    _download_task,
-    _DownloadTask,
-    _prepare_download_task,
-    _process_downloaded_files,
+    download_files_in_parallel,
     make_binaries_executable,
+    prepare_download_tasks,
+    process_downloaded_files,
 )
 from .utils import print_shell_setup, setup_logging
 
@@ -40,14 +38,14 @@ def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     tools_to_update, platforms_to_update = _determine_update_targets(args, config)
     _validate_tools(tools_to_update, config)
     config.tools_dir.mkdir(parents=True, exist_ok=True)
-    download_tasks, total_count = _prepare_download_tasks(
+    download_tasks, total_count = prepare_download_tasks(
         tools_to_update,
         platforms_to_update,
         args.architecture,
         config,
     )
-    downloaded_tasks = _download_files_in_parallel(download_tasks)
-    success_count = _process_downloaded_files(downloaded_tasks)
+    downloaded_tasks = download_files_in_parallel(download_tasks)
+    success_count = process_downloaded_files(downloaded_tasks)
     make_binaries_executable(config)
     _print_completion_summary(config, success_count, total_count, args)
 
@@ -68,81 +66,6 @@ def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
         if tool not in config.tools:
             console.print(f"❌ [bold red]Unknown tool: {tool}[/bold red]")
             sys.exit(1)
-
-
-def _prepare_download_tasks(
-    tools_to_update: list[str],
-    platforms_to_update: list[str],
-    architecture: str,
-    config: DotbinsConfig,
-) -> tuple[list[_DownloadTask], int]:
-    """Prepare download tasks for all tools and platforms."""
-    download_tasks = []
-    total_count = 0
-
-    for tool_name in tools_to_update:
-        for platform in platforms_to_update:
-            if platform not in config.platforms:
-                console.print(
-                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
-                )
-                continue
-
-            # Get architectures to update
-            archs_to_update = _determine_architectures(platform, architecture, config)
-            if not archs_to_update:
-                continue
-
-            for arch in archs_to_update:
-                total_count += 1
-                task = _prepare_download_task(
-                    tool_name,
-                    platform,
-                    arch,
-                    config,
-                )
-                if task:
-                    download_tasks.append(task)
-
-    return download_tasks, total_count
-
-
-def _determine_architectures(
-    platform: str,
-    architecture: str,
-    config: DotbinsConfig,
-) -> list[str]:
-    """Determine which architectures to update for a platform."""
-    if architecture:
-        # Filter to only include the specified architecture if it's supported
-        if architecture in config.platforms[platform]:
-            return [architecture]
-        console.print(
-            f"⚠️ [yellow]Architecture {architecture} not configured for platform {platform}, skipping[/yellow]",
-        )
-        return []
-    return config.platforms[platform]
-
-
-def _download_files_in_parallel(
-    download_tasks: list[_DownloadTask],
-) -> list[tuple[_DownloadTask, bool]]:
-    """Download files in parallel using ThreadPoolExecutor."""
-    console.print(
-        f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
-    )
-    downloaded_tasks = []
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=min(8, len(download_tasks) or 1),
-    ) as executor:
-        future_to_task = {
-            executor.submit(_download_task, task): task for task in download_tasks
-        }
-        for future in concurrent.futures.as_completed(future_to_task):
-            task, success = future.result()
-            downloaded_tasks.append((task, success))
-
-    return downloaded_tasks
 
 
 def _print_completion_summary(

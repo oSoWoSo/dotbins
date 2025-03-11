@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import os
 import re
@@ -587,7 +588,7 @@ def _process_downloaded_task(
             task.temp_path.unlink()
 
 
-def _process_downloaded_files(
+def process_downloaded_files(
     downloaded_tasks: list[tuple[_DownloadTask, bool]],
 ) -> int:
     """Process downloaded files and return success count."""
@@ -601,3 +602,78 @@ def _process_downloaded_files(
             success_count += 1
 
     return success_count
+
+
+def download_files_in_parallel(
+    download_tasks: list[_DownloadTask],
+) -> list[tuple[_DownloadTask, bool]]:
+    """Download files in parallel using ThreadPoolExecutor."""
+    console.print(
+        f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
+    )
+    downloaded_tasks = []
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(8, len(download_tasks) or 1),
+    ) as executor:
+        future_to_task = {
+            executor.submit(_download_task, task): task for task in download_tasks
+        }
+        for future in concurrent.futures.as_completed(future_to_task):
+            task, success = future.result()
+            downloaded_tasks.append((task, success))
+
+    return downloaded_tasks
+
+
+def prepare_download_tasks(
+    tools_to_update: list[str],
+    platforms_to_update: list[str],
+    architecture: str,
+    config: DotbinsConfig,
+) -> tuple[list[_DownloadTask], int]:
+    """Prepare download tasks for all tools and platforms."""
+    download_tasks = []
+    total_count = 0
+
+    for tool_name in tools_to_update:
+        for platform in platforms_to_update:
+            if platform not in config.platforms:
+                console.print(
+                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
+                )
+                continue
+
+            # Get architectures to update
+            archs_to_update = _determine_architectures(platform, architecture, config)
+            if not archs_to_update:
+                continue
+
+            for arch in archs_to_update:
+                total_count += 1
+                task = _prepare_download_task(
+                    tool_name,
+                    platform,
+                    arch,
+                    config,
+                )
+                if task:
+                    download_tasks.append(task)
+
+    return download_tasks, total_count
+
+
+def _determine_architectures(
+    platform: str,
+    architecture: str,
+    config: DotbinsConfig,
+) -> list[str]:
+    """Determine which architectures to update for a platform."""
+    if architecture:
+        # Filter to only include the specified architecture if it's supported
+        if architecture in config.platforms[platform]:
+            return [architecture]
+        console.print(
+            f"⚠️ [yellow]Architecture {architecture} not configured for platform {platform}, skipping[/yellow]",
+        )
+        return []
+    return config.platforms[platform]
