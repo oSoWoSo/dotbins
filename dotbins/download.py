@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import requests
 from rich.console import Console
 
-from .utils import get_latest_release, log
+from .utils import calculate_sha256, get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import DotbinsConfig
@@ -550,6 +550,10 @@ def _process_downloaded_task(
         return False
 
     try:
+        # Calculate SHA256 hash before extraction
+        sha256_hash = calculate_sha256(task.temp_path)
+        log(f"SHA256: {sha256_hash}", "info", "🔐")
+
         task.destination_dir.mkdir(parents=True, exist_ok=True)
         if task.tool_config.get("extract_binary", False):
             _extract_from_archive(
@@ -573,6 +577,7 @@ def _process_downloaded_task(
             task.platform,
             task.arch,
             task.tool_config.get("version", "unknown"),
+            sha256=sha256_hash,
         )
 
         log(

@@ -122,8 +122,11 @@ def _show_versions(_args: Any, config: DotbinsConfig) -> None:
     log("Installed tool versions:", "info", "📋")
     for key, info in versions.items():
         tool, platform, arch = key.split("/")
+        sha256_info = (
+            f" [SHA256: {info.get('sha256', 'N/A')}]" if info.get("sha256") else ""
+        )
         log(
-            f"  {tool} ({platform}/{arch}): {info['version']} - Updated on {info['updated_at']}",
+            f"  {tool} ({platform}/{arch}): {info['version']} - Updated on {info['updated_at']}{sha256_info}",
             "success",
         )
 

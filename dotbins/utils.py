@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import logging
 import os
 import sys
@@ -12,6 +13,8 @@ import requests
 from rich.console import Console
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from .config import DotbinsConfig
 
 console = Console()
@@ -132,3 +135,21 @@ def log(message: str, style: str = "default", emoji: str = "") -> None:
         console.print(f"{prefix}[{rich_format}]{message}[/{rich_format}]")
     else:
         console.print(f"{prefix}{message}")
+
+
+def calculate_sha256(file_path: str | Path) -> str:
+    """Calculate SHA256 hash of a file.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Hexadecimal SHA256 hash string
+
+    """
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        # Read the file in chunks to handle large files efficiently
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
