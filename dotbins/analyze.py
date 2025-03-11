@@ -11,15 +11,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
-from rich.console import Console
 
 from .download import download_file, extract_archive
 from .utils import get_latest_release, log
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-console = Console()
 
 
 def generate_tool_configuration(
@@ -87,10 +84,8 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         yaml_config = {tool_name: tool_config}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
         log("Please review and adjust the configuration as needed!", "warning", "# ⚠️")
-    except Exception as e:
-        log("Error analyzing repo", "error")
-        console.print_exception()
-        log(f"Error: {e!s}", "error")
+    except Exception:
+        log("Error analyzing repo", "error", print_exception=True)
         import sys
 
         sys.exit(1)

@@ -13,15 +13,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 import requests
-from rich.console import Console
 
 from .utils import calculate_sha256, get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import DotbinsConfig
     from .versions import VersionStore
-
-console = Console()
 
 
 def _find_asset(assets: list[dict], pattern: str) -> dict | None:
@@ -54,8 +51,7 @@ def download_file(url: str, destination: str) -> str:
 
         return destination
     except requests.RequestException as e:
-        log(f"Download failed: {e}", "error")
-        console.print_exception()
+        log(f"Download failed: {e}", "error", print_exception=True)
         msg = f"Failed to download {url}: {e}"
         raise RuntimeError(msg) from e
 
@@ -83,8 +79,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
             msg = f"Unsupported archive format: {archive_path}"
             raise ValueError(msg)  # noqa: TRY301
     except Exception as e:
-        log(f"Extraction failed: {e}", "error")
-        console.print_exception()
+        log(f"Extraction failed: {e}", "error", print_exception=True)
         raise
 
 
@@ -116,8 +111,7 @@ def _extract_from_archive(
         )
 
     except Exception as e:
-        log(f"Error extracting archive: {e}", "error")
-        console.print_exception()
+        log(f"Error extracting archive: {e}", "error", print_exception=True)
         raise
     finally:
         shutil.rmtree(temp_dir)
@@ -449,8 +443,11 @@ def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
         download_file(task.asset_url, str(task.temp_path))
         return task, True
     except Exception as e:
-        log(f"Error downloading {task.asset_name}: {e!s}", "error")
-        console.print_exception()
+        log(
+            f"Error downloading {task.asset_name}: {e!s}",
+            "error",
+            print_exception=True,
+        )
         return task, False
 
 
@@ -535,8 +532,11 @@ def _prepare_download_task(
         )
 
     except Exception as e:
-        log(f"Error processing {tool_name} for {platform}/{arch}: {e!s}", "error")
-        console.print_exception()
+        log(
+            f"Error processing {tool_name} for {platform}/{arch}: {e!s}",
+            "error",
+            print_exception=True,
+        )
         return None
 
 
@@ -586,8 +586,7 @@ def _process_downloaded_task(
         )
         return True
     except Exception as e:
-        log(f"Error processing {task.tool_name}: {e!s}", "error")
-        console.print_exception()
+        log(f"Error processing {task.tool_name}: {e!s}", "error", print_exception=True)
         return False
     finally:
         if task.temp_path.exists():

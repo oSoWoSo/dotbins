@@ -40,8 +40,7 @@ def get_latest_release(repo: str) -> dict:
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        log("Failed to fetch latest release.", "error")
-        console.print_exception()
+        log("Failed to fetch latest release.", "error", print_exception=True)
         msg = f"Failed to fetch latest release for {repo}: {e}"
         raise RuntimeError(msg) from e
 
@@ -123,7 +122,13 @@ STYLE_FORMAT_MAP = {
 }
 
 
-def log(message: str, style: str = "default", emoji: str = "") -> None:
+def log(
+    message: str,
+    style: str = "default",
+    emoji: str = "",
+    *,
+    print_exception: bool = False,
+) -> None:
     """Print a formatted message to the console."""
     if not emoji:
         emoji = STYLE_EMOJI_MAP.get(style, "")
@@ -135,6 +140,8 @@ def log(message: str, style: str = "default", emoji: str = "") -> None:
         console.print(f"{prefix}[{rich_format}]{message}[/{rich_format}]")
     else:
         console.print(f"{prefix}{message}")
+    if style == "error" and print_exception:
+        console.print_exception()
 
 
 def calculate_sha256(file_path: str | Path) -> str:

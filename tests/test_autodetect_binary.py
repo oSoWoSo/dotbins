@@ -173,7 +173,7 @@ def test_auto_detect_binary_paths_multiple(
     binary_names = ["uv", "uvx"]
     detected_paths = _auto_detect_binary_paths(extract_dir, binary_names)
 
-    assert len(detected_paths) == 2  # noqa: PLR2004
+    assert len(detected_paths) == 2
     assert detected_paths[0] == "uv"
     assert detected_paths[1] == "uvx"
 
@@ -259,7 +259,7 @@ def test_extract_from_archive_auto_detection_failure(
     mock_console = MagicMock()
 
     with (
-        patch("dotbins.download.console", mock_console),
+        patch("dotbins.utils.console", mock_console),
         pytest.raises(ValueError, match="Could not auto-detect binary paths"),
     ):
         _extract_from_archive(

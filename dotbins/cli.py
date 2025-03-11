@@ -217,7 +217,7 @@ def create_parser() -> argparse.ArgumentParser:
     # version command
     version_parser = subparsers.add_parser("version", help="Print version information")
     version_parser.set_defaults(
-        func=lambda _, __: console.print(f"[yellow]dotbins[/] [bold]v{__version__}[/]"),
+        func=lambda _, __: log(f"[yellow]dotbins[/] [bold]v{__version__}[/]"),
     )
 
     # versions command
@@ -253,8 +253,7 @@ def main() -> None:
             parser.print_help()
 
     except Exception as e:
-        log(f"Error: {e!s}", "error")
-        console.print_exception()
+        log(f"Error: {e!s}", "error", print_exception=True)
         sys.exit(1)
 
 

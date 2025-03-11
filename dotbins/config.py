@@ -8,11 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from rich.console import Console
 
 from .utils import log
-
-console = Console()
 
 DEFAULT_TOOLS_DIR = "~/.dotfiles/tools"
 DEFAULT_PLATFORMS = {
@@ -240,10 +237,12 @@ class DotbinsConfig:
             log(f"Configuration file not found: {config_paths[0]}", "warning")
             return cls()
         except yaml.YAMLError:
-            log(f"Invalid YAML in configuration file: {config_paths[0]}", "error")
-            console.print_exception()
+            log(
+                f"Invalid YAML in configuration file: {config_paths[0]}",
+                "error",
+                print_exception=True,
+            )
             return cls()
         except Exception as e:
-            log(f"Error loading configuration: {e}", "error")
-            console.print_exception()
+            log(f"Error loading configuration: {e}", "error", print_exception=True)
             return cls()
