@@ -19,7 +19,6 @@ from .utils import get_latest_release, log
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Initialize rich console
 console = Console()
 
 

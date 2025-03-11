@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -21,9 +20,7 @@ from .download import (
 )
 from .utils import current_platform, log, print_shell_setup, setup_logging
 
-# Initialize rich console
 console = Console()
-logger = logging.getLogger(__name__)
 
 
 def _list_tools(_args: Any, config: DotbinsConfig) -> None:

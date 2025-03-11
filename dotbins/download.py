@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import logging
 import os
 import re
 import shutil
@@ -22,7 +21,6 @@ if TYPE_CHECKING:
     from .config import DotbinsConfig
 
 console = Console()
-logger = logging.getLogger(__name__)
 
 
 def _find_asset(assets: list[dict], pattern: str) -> dict | None:

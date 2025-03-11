@@ -14,9 +14,7 @@ from rich.console import Console
 if TYPE_CHECKING:
     from .config import DotbinsConfig
 
-# Initialize rich console
 console = Console()
-logger = logging.getLogger(__name__)
 
 
 def setup_logging(verbose: bool = False) -> None:
