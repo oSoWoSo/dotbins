@@ -347,7 +347,7 @@ def _find_matching_asset(
     """Find a matching asset for the tool."""
     asset_pattern = get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
-        log("No asset pattern found for {platform}/{arch}", "warning")
+        log(f"No asset pattern found for {platform}/{arch}", "warning")
         return None
 
     search_pattern = asset_pattern.format(
@@ -404,7 +404,6 @@ def get_asset_pattern(  # noqa: PLR0911
             return platform_patterns[arch]
 
     # No valid pattern found
-    log(f"No asset pattern found for {platform}/{arch}", "warning")
     return None
 
 
