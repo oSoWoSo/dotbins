@@ -194,8 +194,8 @@ def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> No
     patterns = analyze.generate_platform_specific_patterns(mock_release)
     assert "linux" in patterns
     assert "macos" in patterns
-    assert patterns["linux"] == "tool-{version}-linux_{arch}.tar.gz"
-    assert patterns["macos"] == "tool-{version}-darwin_{arch}.tar.gz"
+    assert patterns["linux"] == "tool-{version}-{platform}_{arch}.tar.gz"
+    assert patterns["macos"] == "tool-{version}-{platform}_{arch}.tar.gz"
 
 
 def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:

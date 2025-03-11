@@ -135,26 +135,32 @@ def _print_arch_assets(assets: list[dict], arch: str, icon: str) -> None:
         console.print(f"  - {asset['name']}")
 
 
-def get_platform_assets(assets: list[dict], platform: str) -> list[dict]:
-    """Filter assets by platform."""
-    platform_keywords = {"linux": ["linux"], "macos": ["darwin", "macos"]}
+def _get_filtered_assets(
+    assets: list[dict],
+    filter_type: str,
+    value: str,
+) -> list[dict]:
+    """Filter assets by platform or architecture."""
+    filters = {
+        "platform": {"linux": ["linux"], "macos": ["darwin", "macos"]},
+        "arch": {"amd64": ["amd64", "x86_64"], "arm64": ["arm64", "aarch64"]},
+    }
 
-    keywords = platform_keywords.get(platform, [])
+    keywords = filters.get(filter_type, {}).get(value, [])
     if not keywords:
         return []
 
     return [a for a in assets if any(kw in a["name"].lower() for kw in keywords)]
+
+
+def get_platform_assets(assets: list[dict], platform: str) -> list[dict]:
+    """Filter assets by platform."""
+    return _get_filtered_assets(assets, "platform", platform)
 
 
 def get_arch_assets(assets: list[dict], arch: str) -> list[dict]:
     """Filter assets by architecture."""
-    arch_keywords = {"amd64": ["amd64", "x86_64"], "arm64": ["arm64", "aarch64"]}
-
-    keywords = arch_keywords.get(arch, [])
-    if not keywords:
-        return []
-
-    return [a for a in assets if any(kw in a["name"].lower() for kw in keywords)]
+    return _get_filtered_assets(assets, "arch", arch)
 
 
 def _find_sample_asset(assets: list[dict]) -> dict | None:
@@ -359,44 +365,73 @@ def generate_platform_specific_patterns(release: dict) -> dict:
     assets = release["assets"]
     linux_assets = get_platform_assets(assets, "linux")
     macos_assets = get_platform_assets(assets, "macos")
-    amd64_assets = get_arch_assets(assets, "amd64")
-
-    patterns = {"linux": "?", "macos": "?"}
     version = release["tag_name"].lstrip("v")
 
-    # Find pattern for Linux
-    if linux_assets and amd64_assets:
-        for asset in linux_assets:
-            if "x86_64" in asset["name"] or "amd64" in asset["name"]:
-                pattern = asset["name"]
-                # Replace architecture and version placeholders
-                if "x86_64" in pattern:
-                    pattern = pattern.replace("x86_64", "{arch}")
-                elif "amd64" in pattern:
-                    pattern = pattern.replace("amd64", "{arch}")
+    patterns = {"linux": "?", "macos": "?"}
 
-                if version in pattern:
-                    pattern = pattern.replace(version, "{version}")
-                patterns["linux"] = pattern
-                break
+    # Find pattern for each platform
+    for platform, platform_assets in [("linux", linux_assets), ("macos", macos_assets)]:
+        amd64_assets = [
+            a
+            for a in platform_assets
+            if any(arch in a["name"] for arch in ["x86_64", "amd64"])
+        ]
 
-    # Find pattern for macOS
-    if macos_assets and amd64_assets:
-        for asset in macos_assets:
-            if "x86_64" in asset["name"] or "amd64" in asset["name"]:
-                pattern = asset["name"]
-                # Replace architecture and version placeholders
-                if "x86_64" in pattern:
-                    pattern = pattern.replace("x86_64", "{arch}")
-                elif "amd64" in pattern:
-                    pattern = pattern.replace("amd64", "{arch}")
-
-                if version in pattern:
-                    pattern = pattern.replace(version, "{version}")
-                patterns["macos"] = pattern
-                break
+        if amd64_assets:
+            # Use the first match
+            pattern = amd64_assets[0]["name"]
+            # Replace with placeholders
+            patterns[platform] = _replace_pattern_placeholders(
+                pattern,
+                version,
+                platform_found=True,
+                arch_found=True,
+            )
 
     return patterns
+
+
+def _replace_pattern_placeholders(
+    pattern: str,
+    version: str,
+    platform_found: bool = False,
+    arch_found: bool = False,
+) -> str:
+    """Replace version, platform, and architecture placeholders in a pattern.
+
+    Args:
+        pattern: The asset filename pattern
+        version: Version string to replace with {version}
+        platform_found: Whether a platform was detected in the pattern
+        arch_found: Whether an architecture was detected in the pattern
+
+    Returns:
+        The pattern with placeholders applied
+
+    """
+    # Replace version if present
+    if version and version in pattern:
+        pattern = pattern.replace(version, "{version}")
+
+    # Replace platform if detected
+    if platform_found:
+        if "darwin" in pattern.lower():
+            pattern = re.sub(r"(?i)darwin", "{platform}", pattern)
+        elif "linux" in pattern.lower():
+            pattern = re.sub(r"(?i)linux", "{platform}", pattern)
+
+    # Replace architecture if detected
+    if arch_found:
+        if "x86_64" in pattern:
+            pattern = pattern.replace("x86_64", "{arch}")
+        elif "amd64" in pattern:
+            pattern = pattern.replace("amd64", "{arch}")
+        elif "aarch64" in pattern:
+            pattern = pattern.replace("aarch64", "{arch}")
+        elif "arm64" in pattern:
+            pattern = pattern.replace("arm64", "{arch}")
+
+    return pattern
 
 
 def generate_single_pattern(release: dict) -> str:
@@ -405,23 +440,15 @@ def generate_single_pattern(release: dict) -> str:
         return "?"
 
     asset_name = release["assets"][0]["name"]
-    pattern = asset_name
     version = release["tag_name"].lstrip("v")
 
-    # Replace version if present
-    if version in pattern:
-        pattern = pattern.replace(version, "{version}")
+    # Detect if the pattern contains platform/arch info
+    platform_found = any(p in asset_name.lower() for p in ["darwin", "linux", "macos"])
+    arch_found = any(a in asset_name for a in ["x86_64", "amd64", "arm64", "aarch64"])
 
-    # Replace platform if present
-    if "darwin" in pattern.lower():
-        pattern = re.sub(r"(?i)darwin", "{platform}", pattern)
-    elif "linux" in pattern.lower():
-        pattern = re.sub(r"(?i)linux", "{platform}", pattern)
-
-    # Replace architecture if present
-    if "x86_64" in pattern:
-        pattern = pattern.replace("x86_64", "{arch}")
-    elif "amd64" in pattern:
-        pattern = pattern.replace("amd64", "{arch}")
-
-    return pattern
+    return _replace_pattern_placeholders(
+        asset_name,
+        version,
+        platform_found,
+        arch_found,
+    )
