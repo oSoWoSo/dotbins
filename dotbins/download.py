@@ -19,6 +19,7 @@ from .utils import get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import DotbinsConfig
+    from .versions import VersionStore
 
 console = Console()
 
@@ -458,13 +459,26 @@ def _prepare_download_task(
     platform: str,
     arch: str,
     config: DotbinsConfig,
+    version_store: VersionStore,
+    force: bool = False,
 ) -> _DownloadTask | None:
-    """Prepare a download task without actually downloading.
-
-    Returns a DownloadTask if a download is needed, None if it should be skipped.
-    """
+    """Prepare a download task, checking if update is needed based on version."""
     tool_config = _validate_tool_config(tool_name, config)
     if not tool_config:
+        return None
+
+    # Get current version info
+    tool_info = version_store.get_tool_info(tool_name, platform, arch)
+
+    # Get latest release info
+    release, version = _get_release_info(tool_config)
+
+    # Check if update is needed
+    if tool_info and tool_info["version"] == version and not force:
+        log(
+            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']})",
+            "success",
+        )
         return None
 
     destination_dir = config.tools_dir / platform / arch / "bin"
@@ -529,6 +543,7 @@ def _prepare_download_task(
 def _process_downloaded_task(
     task: _DownloadTask,
     success: bool,
+    version_store: VersionStore,
 ) -> bool:
     """Process a downloaded file."""
     if not success:
@@ -553,8 +568,15 @@ def _process_downloaded_task(
             dest_file = task.destination_dir / binary_name
             dest_file.chmod(dest_file.stat().st_mode | 0o755)
 
+        version_store.update_tool_info(
+            task.tool_name,
+            task.platform,
+            task.arch,
+            task.tool_config.get("version", "unknown"),
+        )
+
         log(
-            f"Successfully processed {task.tool_name} for {task.platform}/{task.arch}",
+            f"Successfully processed {task.tool_name} v{task.tool_config.get('version')} for {task.platform}/{task.arch}",
             "success",
         )
         return True
@@ -569,13 +591,14 @@ def _process_downloaded_task(
 
 def process_downloaded_files(
     downloaded_tasks: list[tuple[_DownloadTask, bool]],
+    version_store: VersionStore,
 ) -> int:
     """Process downloaded files and return success count."""
     log(f"\nProcessing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
 
     for task, download_success in downloaded_tasks:
-        if _process_downloaded_task(task, download_success):
+        if _process_downloaded_task(task, download_success, version_store):
             success_count += 1
 
     return success_count
@@ -605,6 +628,8 @@ def prepare_download_tasks(
     platforms_to_update: list[str],
     architecture: str,
     config: DotbinsConfig,
+    version_store: VersionStore,
+    force: bool = False,
 ) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
     download_tasks = []
@@ -628,6 +653,8 @@ def prepare_download_tasks(
                     platform,
                     arch,
                     config,
+                    version_store,
+                    force,
                 )
                 if task:
                     download_tasks.append(task)

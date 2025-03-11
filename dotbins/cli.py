@@ -19,6 +19,7 @@ from .download import (
     process_downloaded_files,
 )
 from .utils import current_platform, log, print_shell_setup, setup_logging
+from .versions import VersionStore
 
 console = Console()
 
@@ -32,6 +33,7 @@ def _list_tools(_args: Any, config: DotbinsConfig) -> None:
 
 def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     """Update tools based on command line arguments."""
+    version_store = VersionStore(config.tools_dir)
     tools_to_update, platforms_to_update = _determine_update_targets(args, config)
     architecture = args.architecture
     if args.current:
@@ -44,9 +46,11 @@ def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
         platforms_to_update,
         architecture,
         config,
+        version_store,
+        args.force,
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
-    success_count = process_downloaded_files(downloaded_tasks)
+    success_count = process_downloaded_files(downloaded_tasks, version_store)
     make_binaries_executable(config)
     _print_completion_summary(config, success_count, total_count, args.shell_setup)
 
@@ -104,6 +108,24 @@ def _initialize(_args: Any, config: DotbinsConfig) -> None:
 
     log("dotbins initialized tools directory structure", "success", "🛠️")
     print_shell_setup(config)
+
+
+def _show_versions(_args: Any, config: DotbinsConfig) -> None:
+    """Show versions of installed tools."""
+    version_store = VersionStore(config.tools_dir)
+    versions = version_store.list_all()
+
+    if not versions:
+        log("No tool versions recorded yet.", "info")
+        return
+
+    log("Installed tool versions:", "info", "📋")
+    for key, info in versions.items():
+        tool, platform, arch = key.split("/")
+        log(
+            f"  {tool} ({platform}/{arch}): {info['version']} - Updated on {info['updated_at']}",
+            "success",
+        )
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -194,6 +216,13 @@ def create_parser() -> argparse.ArgumentParser:
     version_parser.set_defaults(
         func=lambda _, __: console.print(f"[yellow]dotbins[/] [bold]v{__version__}[/]"),
     )
+
+    # versions command
+    versions_parser = subparsers.add_parser(
+        "versions",
+        help="Show installed tool versions and their last update times",
+    )
+    versions_parser.set_defaults(func=_show_versions)
 
     return parser
 

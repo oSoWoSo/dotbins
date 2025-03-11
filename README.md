@@ -69,6 +69,7 @@ No package manager, no sudo, no problem.
 * 🌐 Supports multiple platforms (macOS, Linux) and architectures (amd64, arm64)
 * 📦 Downloads and organizes binaries from GitHub releases
 * 🔄 Updates tools to their latest versions with a single command
+* 📊 Tracks installed versions and update timestamps for all tools
 * 🧩 Extracts binaries from various archive formats (zip, tar.gz)
 * 📂 Organizes tools by platform and architecture for easy access
 * 🔍 Includes a tool to analyze GitHub releases to help configure new tools
@@ -126,6 +127,7 @@ options:
 3. **update** - Download or update tools
 4. **analyze** - Analyze GitHub releases to help configure new tools
 5. **version** - Print version information
+6. **versions** - Show detailed information about installed tool versions
 
 ## :hammer_and_wrench: Installation
 

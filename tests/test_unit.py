@@ -13,6 +13,7 @@ from pytest_mock import MockFixture
 
 import dotbins
 from dotbins.config import DotbinsConfig
+from dotbins.versions import VersionStore
 
 
 def test_load_config(temp_dir: Path) -> None:
@@ -253,6 +254,8 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
         "asset_patterns": "test-tool-{version}-{platform}_{arch}.tar.gz",
     }
 
+    version_store = VersionStore(temp_dir)
+
     config = DotbinsConfig(
         tools_dir=temp_dir,
         tools={"test-tool": test_tool_config},
@@ -275,6 +278,7 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
             "linux",
             "amd64",
             config,
+            version_store,
         )
 
     # Should return None (skip download) since file exists
@@ -323,6 +327,7 @@ def test_download_tool_asset_not_found(
             "linux",
             "amd64",
             config,
+            version_store=VersionStore(temp_dir),
         )
 
         # Verify find_asset was called with the correct pattern
