@@ -20,7 +20,7 @@ from .utils import get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import DotbinsConfig
-# Initialize rich console
+
 console = Console()
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def download_file(url: str, destination: str) -> str:
         return destination
     except requests.RequestException as e:
         log(f"Download failed: {e}", "error")
-        console.print_exception()  # Keep this as is since it's a special case
+        console.print_exception()
         msg = f"Failed to download {url}: {e}"
         raise RuntimeError(msg) from e
 
@@ -85,7 +85,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
             raise ValueError(msg)  # noqa: TRY301
     except Exception as e:
         log(f"Extraction failed: {e}", "error")
-        console.print_exception()  # Replaces logger.error with exc_info=True
+        console.print_exception()
         raise
 
 
@@ -105,7 +105,7 @@ def _extract_from_archive(
         # Debug: List the extracted files
         _log_extracted_files(temp_dir)
         binary_names, binary_paths = _get_binary_config(tool_config)
-        if not binary_paths:  # Auto-detect binary paths if not specified
+        if not binary_paths:
             binary_paths = _detect_binary_paths(temp_dir, binary_names)
         destination_dir.mkdir(parents=True, exist_ok=True)
         _process_binaries(
@@ -292,11 +292,9 @@ def should_skip_download(
     destination_dir = config.tools_dir / platform / arch / "bin"
     binary_names = config.tools[tool_name].get("binary_name", tool_name)
 
-    # Convert to list if it's a string
     if isinstance(binary_names, str):
         binary_names = [binary_names]
 
-    # Check if all binaries exist
     all_exist = True
     for binary_name in binary_names:
         binary_path = destination_dir / binary_name
@@ -355,20 +353,17 @@ def _find_matching_asset(
     tool_arch: str,
 ) -> dict | None:
     """Find a matching asset for the tool."""
-    # Determine asset pattern
     asset_pattern = get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
         log("No asset pattern found for {platform}/{arch}", "warning")
         return None
 
-    # Replace variables in pattern
     search_pattern = asset_pattern.format(
         version=version,
         platform=tool_platform,
         arch=tool_arch,
     )
 
-    # Find matching asset
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
         log(f"No asset matching '{search_pattern}' found", "warning")
