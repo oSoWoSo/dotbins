@@ -15,7 +15,7 @@ Whether you work across multiple machines or just want a version-controlled setu
 
 **See it in action:**
 
-[![asciicast](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z.svg)](https://asciinema.org/a/4RpXAbbqxtW61myn1PaUzOn3z)
+[![asciicast](https://asciinema.org/a/707563.svg)](https://asciinema.org/a/707563)
 
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
