@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import requests
 from rich.console import Console
 
-from .utils import get_latest_release
+from .utils import get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import DotbinsConfig
@@ -32,11 +32,11 @@ def _find_asset(assets: list[dict], pattern: str) -> dict | None:
         .replace("{arch}", ".*")
         .replace("{platform}", ".*")
     )
-    console.print(f"🔍 [blue]Looking for asset with pattern: {regex_pattern}[/blue]")
+    log(f"Looking for asset with pattern: {regex_pattern}", "info", "🔍")
 
     for asset in assets:
         if re.search(regex_pattern, asset["name"]):
-            console.print(f"✅ [green]Found matching asset: {asset['name']}[/green]")
+            log(f"Found matching asset: {asset['name']}", "success", "✅")
             return asset
 
     return None
@@ -44,7 +44,7 @@ def _find_asset(assets: list[dict], pattern: str) -> dict | None:
 
 def download_file(url: str, destination: str) -> str:
     """Download a file from a URL to a destination path."""
-    console.print(f"📥 [blue]Downloading from {url}[/blue]")
+    log(f"Downloading from {url}", "info", "📥")
     try:
         response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
@@ -55,8 +55,8 @@ def download_file(url: str, destination: str) -> str:
 
         return destination
     except requests.RequestException as e:
-        console.print(f"❌ [bold red]Download failed: {e}[/bold red]")
-        console.print_exception()  # Replaces logger.exception
+        log(f"Download failed: {e}", "error", "❌")
+        console.print_exception()  # Keep this as is since it's a special case
         msg = f"Failed to download {url}: {e}"
         raise RuntimeError(msg) from e
 
@@ -84,7 +84,7 @@ def extract_archive(archive_path: str, dest_dir: str) -> None:
             msg = f"Unsupported archive format: {archive_path}"
             raise ValueError(msg)  # noqa: TRY301
     except Exception as e:
-        console.print(f"❌ [bold red]Extraction failed: {e}[/bold red]")
+        log(f"Extraction failed: {e}", "error", "❌")
         console.print_exception()  # Replaces logger.error with exc_info=True
         raise
 
@@ -96,12 +96,12 @@ def _extract_from_archive(
     platform: str,
 ) -> None:
     """Extract binaries from an archive."""
-    console.print(f"📦 [blue]Extracting from {archive_path} for {platform}[/blue]")
+    log(f"Extracting from {archive_path} for {platform}", "info", "📦")
     temp_dir = Path(tempfile.mkdtemp())
 
     try:
         extract_archive(str(archive_path), str(temp_dir))
-        console.print(f"📦 [green]Archive extracted to {temp_dir}[/green]")
+        log(f"Archive extracted to {temp_dir}", "success", "📦")
         # Debug: List the extracted files
         _log_extracted_files(temp_dir)
         binary_names, binary_paths = _get_binary_config(tool_config)
@@ -117,7 +117,7 @@ def _extract_from_archive(
         )
 
     except Exception as e:
-        console.print(f"❌ [bold red]Error extracting archive: {e}[/bold red]")
+        log(f"Error extracting archive: {e}", "error", "❌")
         console.print_exception()
         raise
     finally:
@@ -139,16 +139,12 @@ def _get_binary_config(tool_config: dict) -> tuple[list[str], list[str]]:
 
 def _detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
     """Auto-detect binary paths if not specified in configuration."""
-    console.print(
-        "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
-    )
+    log("Binary path not specified, attempting auto-detection...", "info", "🔍")
     binary_paths = _auto_detect_binary_paths(temp_dir, binary_names)
     if not binary_paths:
         msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
         raise ValueError(msg)
-    console.print(
-        f"✅ [green]Auto-detected binary paths: {binary_paths}[/green]",
-    )
+    log(f"Auto-detected binary paths: {binary_paths}", "success", "✅")
     return binary_paths
 
 
@@ -218,11 +214,11 @@ def _auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[s
 def _log_extracted_files(temp_dir: Path) -> None:
     """Log the extracted files for debugging."""
     try:
-        console.print("📋 [blue]Extracted files:[/blue]")
+        log("Extracted files:", "info", "��")
         for item in temp_dir.glob("**/*"):
-            console.print(f"  - {item.relative_to(temp_dir)}")
-    except Exception as e:
-        console.print(f"❌ Could not list extracted files: {e}")
+            log(f"  - {item.relative_to(temp_dir)}", "info", "")
+    except Exception:
+        log("Could not list extracted files: {e}")
 
 
 def _find_binary_in_extracted_files(
@@ -262,7 +258,7 @@ def _copy_binary_to_destination(
     # Copy the binary and set permissions
     shutil.copy2(source_path, dest_path)
     dest_path.chmod(dest_path.stat().st_mode | 0o755)
-    console.print(f"✅ [green]Copied binary to {dest_path}[/green]")
+    log(f"Copied binary to {dest_path}", "success", "✅")
 
 
 def _replace_variables_in_path(path: str, tool_config: dict) -> str:
@@ -280,9 +276,7 @@ def _validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
     """Validate that the tool exists in configuration."""
     tool_config = config.tools.get(tool_name)
     if not tool_config:
-        console.print(
-            f"❌ [bold red]Tool '{tool_name}' not found in configuration[/bold red]",
-        )
+        log(f"Tool '{tool_name}' not found in configuration", "error", "❌")
         return None
     return tool_config
 
@@ -292,7 +286,7 @@ def should_skip_download(
     platform: str,
     arch: str,
     config: DotbinsConfig,
-    force: bool,  # noqa: FBT001
+    force: bool,
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
     destination_dir = config.tools_dir / platform / arch / "bin"
@@ -311,8 +305,10 @@ def should_skip_download(
             break
 
     if all_exist and not force:
-        console.print(
-            f"✅ [green]{tool_name} for {platform}/{arch} already exists (use --force to update)[/green]",
+        log(
+            f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
+            "success",
+            "✅",
         )
         return True
     return False
@@ -362,9 +358,7 @@ def _find_matching_asset(
     # Determine asset pattern
     asset_pattern = get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
-        console.print(
-            f"⚠️ [yellow]No asset pattern found for {platform}/{arch}[/yellow]",
-        )
+        log("No asset pattern found for {platform}/{arch}", "warning", "⚠️")
         return None
 
     # Replace variables in pattern
@@ -377,9 +371,7 @@ def _find_matching_asset(
     # Find matching asset
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
-        console.print(
-            f"⚠️ [yellow]No asset matching '{search_pattern}' found[/yellow]",
-        )
+        log(f"No asset matching '{search_pattern}' found", "warning", "⚠️")
         return None
 
     return asset
@@ -393,7 +385,7 @@ def get_asset_pattern(  # noqa: PLR0911
     """Get the asset pattern for a tool, platform, and architecture."""
     # No asset patterns defined
     if "asset_patterns" not in tool_config:
-        console.print("⚠️ [yellow]No asset patterns defined[/yellow]")
+        log("No asset patterns defined", "warning", "⚠️")
         return None
 
     patterns = tool_config["asset_patterns"]
@@ -406,9 +398,7 @@ def get_asset_pattern(  # noqa: PLR0911
     if isinstance(patterns, dict):
         # If platform not in dict or explicitly set to null, no pattern for this platform
         if platform not in patterns or patterns[platform] is None:
-            console.print(
-                f"⚠️ [yellow]No asset pattern defined for platform {platform}[/yellow]",
-            )
+            log("No asset pattern defined for platform {platform}", "warning", "⚠️")
             return None
 
         platform_patterns = patterns[platform]
@@ -421,15 +411,13 @@ def get_asset_pattern(  # noqa: PLR0911
         if isinstance(platform_patterns, dict):
             # If arch not in dict or explicitly set to null, no pattern for this arch
             if arch not in platform_patterns or platform_patterns[arch] is None:
-                console.print(
-                    f"⚠️ [yellow]No asset pattern defined for {platform}/{arch}[/yellow]",
-                )
+                log("No asset pattern defined for {platform}/{arch}", "warning", "⚠️")
                 return None
 
             return platform_patterns[arch]
 
     # No valid pattern found
-    console.print(f"⚠️ [yellow]No asset pattern found for {platform}/{arch}[/yellow]")
+    log(f"No asset pattern found for {platform}/{arch}", "warning", "⚠️")
     return None
 
 
@@ -460,15 +448,15 @@ class _DownloadTask(NamedTuple):
 def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
     """Download a file for a DownloadTask."""
     try:
-        console.print(
-            f"📥 [blue]Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...[/blue]",
+        log(
+            f"Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...",
+            "info",
+            "📥",
         )
         download_file(task.asset_url, str(task.temp_path))
         return task, True
     except Exception as e:
-        console.print(
-            f"❌ [bold red]Error downloading {task.asset_name}: {e!s}[/bold red]",
-        )
+        log(f"Error downloading {task.asset_name}: {e!s}", "error", "❌")
         console.print_exception()
         return task, False
 
@@ -500,8 +488,10 @@ def _prepare_download_task(
             break
 
     if all_exist:
-        console.print(
-            f"✅ [green]{tool_name} for {platform}/{arch} already exists (use --force to update)[/green]",
+        log(
+            f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
+            "success",
+            "✅",
         )
         return None
 
@@ -540,16 +530,14 @@ def _prepare_download_task(
         )
 
     except Exception as e:
-        console.print(
-            f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
-        )
+        log(f"Error processing {tool_name} for {platform}/{arch}: {e!s}", "error", "❌")
         console.print_exception()
         return None
 
 
 def _process_downloaded_task(
     task: _DownloadTask,
-    success: bool,  # noqa: FBT001
+    success: bool,
 ) -> bool:
     """Process a downloaded file."""
     if not success:
@@ -574,14 +562,14 @@ def _process_downloaded_task(
             dest_file = task.destination_dir / binary_name
             dest_file.chmod(dest_file.stat().st_mode | 0o755)
 
-        console.print(
-            f"✅ [green]Successfully processed {task.tool_name} for {task.platform}/{task.arch}[/green]",
+        log(
+            f"Successfully processed {task.tool_name} for {task.platform}/{task.arch}",
+            "success",
+            "✅",
         )
         return True
     except Exception as e:
-        console.print(
-            f"❌ [bold red]Error processing {task.tool_name}: {e!s}[/bold red]",
-        )
+        log(f"Error processing {task.tool_name}: {e!s}", "error", "❌")
         console.print_exception()
         return False
     finally:
@@ -593,9 +581,7 @@ def process_downloaded_files(
     downloaded_tasks: list[tuple[_DownloadTask, bool]],
 ) -> int:
     """Process downloaded files and return success count."""
-    console.print(
-        f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
-    )
+    log(f"\nProcessing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
 
     for task, download_success in downloaded_tasks:
@@ -609,9 +595,7 @@ def download_files_in_parallel(
     download_tasks: list[_DownloadTask],
 ) -> list[tuple[_DownloadTask, bool]]:
     """Download files in parallel using ThreadPoolExecutor."""
-    console.print(
-        f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
-    )
+    log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
     downloaded_tasks = []
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=min(8, len(download_tasks) or 1),
@@ -639,9 +623,7 @@ def prepare_download_tasks(
     for tool_name in tools_to_update:
         for platform in platforms_to_update:
             if platform not in config.platforms:
-                console.print(
-                    f"⚠️ [yellow]Skipping unknown platform: {platform}[/yellow]",
-                )
+                log(f"Skipping unknown platform: {platform}", "warning", "⚠️")
                 continue
 
             # Get architectures to update
@@ -673,8 +655,10 @@ def _determine_architectures(
         # Filter to only include the specified architecture if it's supported
         if architecture in config.platforms[platform]:
             return [architecture]
-        console.print(
-            f"⚠️ [yellow]Architecture {architecture} not configured for platform {platform}, skipping[/yellow]",
+        log(
+            f"Architecture {architecture} not configured for platform {platform}, skipping",
+            "warning",
+            "⚠️",
         )
         return []
     return config.platforms[platform]

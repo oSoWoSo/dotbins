@@ -14,7 +14,7 @@ import yaml
 from rich.console import Console
 
 from .download import download_file, extract_archive
-from .utils import get_latest_release
+from .utils import get_latest_release, log
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -73,11 +73,13 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
     repo = args.repo
 
     try:
-        console.print(f"🔍 [blue]Analyzing releases for {repo}...[/blue]")
+        log(f"Analyzing releases for {repo}...", "info", "🔍")
         release = get_latest_release(repo)
 
-        console.print(
-            f"\n🏷️ [green]Latest release: {release['tag_name']} ({release['name']})[/green]",
+        log(
+            f"Latest release: {release['tag_name']} ({release['name']})",
+            "success",
+            "🏷️",
         )
         _print_assets_info(release["assets"])
 
@@ -88,16 +90,14 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         tool_config = generate_tool_configuration(repo, tool_name, release)
 
         # Output YAML
-        console.print("\n📋 [blue]Suggested configuration for YAML tools file:[/blue]")
+        log("Suggested configuration for YAML tools file:", "info", "📋")
         yaml_config = {tool_name: tool_config}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
-        console.print(
-            "\n# ⚠️ [yellow]Please review and adjust the configuration as needed![/yellow]",
-        )
+        log("Please review and adjust the configuration as needed!", "warning", "# ⚠️")
     except Exception as e:
-        console.print("❌ [bold red]Error analyzing repo[/bold red]")
+        log("Error analyzing repo", "error", "❌")
         console.print_exception()
-        console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
+        log(f"Error: {e!s}", "error", "❌")
         import sys
 
         sys.exit(1)
@@ -105,9 +105,9 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
 
 def _print_assets_info(assets: list[dict]) -> None:
     """Print detailed information about available assets."""
-    console.print("\n📦 [blue]Available assets:[/blue]")
+    log("Available assets:", "info", "📦")
     for asset in assets:
-        console.print(f"  - {asset['name']} ({asset['browser_download_url']})")
+        log(f"  - {asset['name']} ({asset['browser_download_url']})")
 
     # Platform categorization
     _print_platform_assets(assets, "linux", "🐧")
@@ -121,18 +121,18 @@ def _print_assets_info(assets: list[dict]) -> None:
 def _print_platform_assets(assets: list[dict], platform: str, icon: str) -> None:
     """Print assets for a specific platform."""
     platform_assets = get_platform_assets(assets, platform)
-    console.print(f"\n{icon} [blue]{platform.capitalize()} assets:[/blue]")
+    log(f"{platform.capitalize()} assets:", "info", icon)
     for asset in platform_assets:
-        console.print(f"  - {asset['name']}")
+        log(f"  - {asset['name']}")
 
 
 def _print_arch_assets(assets: list[dict], arch: str, icon: str) -> None:
     """Print assets for a specific architecture."""
     arch_assets = get_arch_assets(assets, arch)
     arch_display = "AMD64/x86_64" if arch == "amd64" else "ARM64/aarch64"
-    console.print(f"\n{icon} [blue]{arch_display} assets:[/blue]")
+    log(f"{arch_display} assets:", "info", icon)
     for asset in arch_assets:
-        console.print(f"  - {asset['name']}")
+        log(f"  - {asset['name']}")
 
 
 def _get_filtered_assets(
@@ -189,8 +189,10 @@ def _find_sample_asset(assets: list[dict]) -> dict | None:
 
 def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | None:
     """Download sample asset and find binary path."""
-    console.print(
-        f"\n📥 [blue]Downloading sample archive: {asset['name']} to inspect contents...[/blue]",
+    log(
+        f"Downloading sample archive: {asset['name']} to inspect contents...",
+        "info",
+        "📥",
     )
 
     temp_path = None
@@ -209,14 +211,14 @@ def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | 
         extract_archive(temp_path, temp_dir)
         executables = find_executables(temp_dir)
 
-        console.print("\n🔍 [blue]Executable files found in the archive:[/blue]")
+        log("Executable files found in the archive:", "info", "🔍")
         for exe in executables:
-            console.print(f"  - {exe}")
+            log(f"  - {exe}")
 
         binary_path = determine_binary_path(executables, tool_name)
 
         if binary_path:
-            console.print(f"\n✅ [green]Detected binary path: {binary_path}[/green]")
+            log(f"Detected binary path: {binary_path}", "success", "✅")
 
         return binary_path
 

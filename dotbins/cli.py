@@ -19,7 +19,7 @@ from .download import (
     prepare_download_tasks,
     process_downloaded_files,
 )
-from .utils import print_shell_setup, setup_logging
+from .utils import log, print_shell_setup, setup_logging
 
 # Initialize rich console
 console = Console()
@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 
 def _list_tools(_args: Any, config: DotbinsConfig) -> None:
     """List available tools."""
-    console.print("🔧 [blue]Available tools:[/blue]")
+    log("Available tools:", "info", "🔧")
     for tool, tool_config in config.tools.items():
-        console.print(f"  [green]{tool}[/green] (from {tool_config['repo']})")
+        log(f"  {tool} (from {tool_config['repo']})", "success")
 
 
 def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
@@ -64,7 +64,7 @@ def _validate_tools(tools_to_update: list[str], config: DotbinsConfig) -> None:
     """Validate that all tools exist in the configuration."""
     for tool in tools_to_update:
         if tool not in config.tools:
-            console.print(f"❌ [bold red]Unknown tool: {tool}[/bold red]")
+            log(f"Unknown tool: {tool}", "error", "❌")
             sys.exit(1)
 
 
@@ -75,13 +75,17 @@ def _print_completion_summary(
     args: argparse.Namespace,
 ) -> None:
     """Print completion summary and additional instructions."""
-    console.print(
-        f"\n🔄 [blue]Completed: {success_count}/{total_count} tools updated successfully[/blue]",
+    log(
+        f"Completed: {success_count}/{total_count} tools updated successfully",
+        "info",
+        "🔄",
     )
 
     if success_count > 0:
-        console.print(
-            "💾 [green]Don't forget to commit the changes to your dotfiles repository[/green]",
+        log(
+            "Don't forget to commit the changes to your dotfiles repository",
+            "success",
+            "💾",
         )
 
     if args.shell_setup:
@@ -97,7 +101,7 @@ def _initialize(_args: Any, config: DotbinsConfig) -> None:
                 exist_ok=True,
             )
 
-    console.print("# 🛠️ [green]dotbins initialized tools directory structure[/green]")
+    log("dotbins initialized tools directory structure", "success", "🛠️")
     print_shell_setup(config)
 
 
@@ -210,7 +214,7 @@ def main() -> None:
             parser.print_help()
 
     except Exception as e:
-        console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
+        log(f"Error: {e!s}", "error", "❌")
         console.print_exception()
         sys.exit(1)
 

@@ -19,7 +19,7 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: bool = False) -> None:  # noqa: FBT001, FBT002
+def setup_logging(verbose: bool = False) -> None:
     """Configure logging level based on verbosity."""
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
@@ -39,7 +39,7 @@ def get_latest_release(repo: str) -> dict:
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        console.print("Failed to fetch latest release.")
+        log("Failed to fetch latest release.", "error", "❌")
         console.print_exception()
         msg = f"Failed to fetch latest release for {repo}: {e}"
         raise RuntimeError(msg) from e
@@ -103,3 +103,18 @@ _arch=$(uname -m)
 export PATH="{tools_dir}/$_os/$_arch/bin:$PATH"
 """,
     )
+
+
+def log(message: str, style: str = "default", emoji: str = "") -> None:
+    """Print a formatted message to the console."""
+    prefix = f"{emoji} " if emoji else ""
+    if style == "error":
+        console.print(f"{prefix}[bold red]{message}[/bold red]")
+    elif style == "warning":
+        console.print(f"{prefix}[yellow]{message}[/yellow]")
+    elif style == "success":
+        console.print(f"{prefix}[green]{message}[/green]")
+    elif style == "info":
+        console.print(f"{prefix}[blue]{message}[/blue]")
+    else:
+        console.print(f"{prefix}{message}")

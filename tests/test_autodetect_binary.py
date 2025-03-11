@@ -217,7 +217,7 @@ def test_extract_from_archive_with_auto_detection(
     # Mock console to capture output
     mock_console = MagicMock()
 
-    with patch("dotbins.download.console", mock_console):
+    with patch("dotbins.utils.console", mock_console):
         # Call the function
         _extract_from_archive(
             str(mock_archive_simple),

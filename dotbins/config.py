@@ -10,6 +10,8 @@ from typing import Any
 import yaml
 from rich.console import Console
 
+from .utils import log
+
 console = Console()
 
 DEFAULT_TOOLS_DIR = "~/.dotfiles/tools"
@@ -65,13 +67,17 @@ class DotbinsConfig:
         required_fields = ["repo", "binary_name"]  # Remove binary_path from required
         for _field in required_fields:
             if _field not in tool_config:
-                console.print(
-                    f"⚠️ [red]Tool {tool_name} is missing required field '{_field}'[/yellow]",
+                log(
+                    f"Tool {tool_name} is missing required field '{_field}'",
+                    "error",
+                    "⚠️",
                 )
 
         if "binary_path" not in tool_config:
-            console.print(
-                f"ℹ️ [blue]Tool {tool_name} has no binary_path specified - will attempt auto-detection[/blue]",  # noqa: RUF001
+            log(
+                f"Tool {tool_name} has no binary_path specified - will attempt auto-detection",
+                "info",
+                "ℹ️",  # noqa: RUF001
             )
 
     def _validate_unknown_fields(
@@ -91,8 +97,10 @@ class DotbinsConfig:
         }
         unknown_fields = set(tool_config.keys()) - known_fields
         for _field in unknown_fields:
-            console.print(
-                f"⚠️ [yellow]Tool {tool_name} has unknown field '{_field}' that will be ignored[/yellow]",
+            log(
+                f"Tool {tool_name} has unknown field '{_field}' that will be ignored",
+                "warning",
+                "⚠️",
             )
 
     def _validate_asset_patterns_presence(
@@ -102,8 +110,10 @@ class DotbinsConfig:
     ) -> None:
         """Validate asset_patterns field is present."""
         if "asset_patterns" not in tool_config:
-            console.print(
-                f"⚠️ [yellow]Tool {tool_name} is missing required field 'asset_patterns'[/yellow]",
+            log(
+                f"Tool {tool_name} is missing required field 'asset_patterns'",
+                "error",
+                "⚠️",
             )
 
     def _validate_binary_fields(
@@ -117,8 +127,10 @@ class DotbinsConfig:
                 tool_config[_field],
                 (str, list),
             ):
-                console.print(
-                    f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a string or a list of strings[/yellow]",
+                log(
+                    f"Tool {tool_name}: '{_field}' must be a string or a list of strings",
+                    "error",
+                    "⚠️",
                 )
 
     def _validate_binary_lists_length(
@@ -132,17 +144,17 @@ class DotbinsConfig:
             and isinstance(tool_config.get("binary_path"), list)
             and len(tool_config["binary_name"]) != len(tool_config["binary_path"])
         ):
-            console.print(
-                f"⚠️ [yellow]Tool {tool_name}: 'binary_name' and 'binary_path' lists must have the same length[/yellow]",
+            log(
+                f"Tool {tool_name}: 'binary_name' and 'binary_path' lists must have the same length",
+                "error",
+                "⚠️",
             )
 
     def _validate_map_fields(self, tool_name: str, tool_config: dict[str, Any]) -> None:
         """Validate platform_map and arch_map fields."""
         for _field in ["platform_map", "arch_map"]:
             if _field in tool_config and not isinstance(tool_config[_field], dict):
-                console.print(
-                    f"⚠️ [yellow]Tool {tool_name}: '{_field}' must be a dictionary[/yellow]",
-                )
+                log(f"Tool {tool_name}: '{_field}' must be a dictionary", "error", "⚠️")
 
     def _validate_asset_patterns_structure(
         self,
@@ -157,16 +169,20 @@ class DotbinsConfig:
         if isinstance(patterns, dict):
             for platform, platform_patterns in patterns.items():
                 if platform not in self.platforms and platform != "default":
-                    console.print(
-                        f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'[/yellow]",
+                    log(
+                        f"Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'",
+                        "error",
+                        "⚠️",
                     )
                 if isinstance(platform_patterns, dict):
                     # Get architectures for this platform
                     valid_architectures = self.get_architectures(platform)
                     for arch in platform_patterns:
                         if arch not in valid_architectures and arch != "default":
-                            console.print(
-                                f"⚠️ [yellow]Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'[/yellow]",
+                            log(
+                                f"Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'",
+                                "error",
+                                "⚠️",
                             )
 
     @classmethod
@@ -196,15 +212,15 @@ class DotbinsConfig:
             # Find the first existing config file
             for path in config_paths:
                 if path.exists():
-                    console.print(
-                        f"📝 [green]Loading configuration from: {path}[/green]",
-                    )
+                    log(f"Loading configuration from: {path}", "success", "📝")
                     config_paths = [path]
                     break
             else:
                 # No config file found
-                console.print(
-                    "⚠️ [yellow]No configuration file found, using default settings[/yellow]",
+                log(
+                    "No configuration file found, using default settings",
+                    "warning",
+                    "⚠️",
                 )
                 return cls()
 
@@ -226,17 +242,13 @@ class DotbinsConfig:
             return config
 
         except FileNotFoundError:
-            console.print(
-                f"⚠️ [yellow]Configuration file not found: {config_paths[0]}[/yellow]",
-            )
+            log(f"Configuration file not found: {config_paths[0]}", "warning", "⚠️")
             return cls()
         except yaml.YAMLError:
-            console.print(
-                f"❌ [bold red]Invalid YAML in configuration file: {config_paths[0]}[/bold red]",
-            )
+            log(f"Invalid YAML in configuration file: {config_paths[0]}", "error", "❌")
             console.print_exception()
             return cls()
         except Exception as e:
-            console.print(f"❌ [bold red]Error loading configuration: {e}[/bold red]")
+            log(f"Error loading configuration: {e}", "error", "❌")
             console.print_exception()
             return cls()
