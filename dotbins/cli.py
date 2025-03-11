@@ -19,7 +19,7 @@ from .download import (
     prepare_download_tasks,
     process_downloaded_files,
 )
-from .utils import log, print_shell_setup, setup_logging
+from .utils import current_platform, log, print_shell_setup, setup_logging
 
 # Initialize rich console
 console = Console()
@@ -36,12 +36,16 @@ def _list_tools(_args: Any, config: DotbinsConfig) -> None:
 def _update_tools(args: argparse.Namespace, config: DotbinsConfig) -> None:
     """Update tools based on command line arguments."""
     tools_to_update, platforms_to_update = _determine_update_targets(args, config)
+    architecture = args.architecture
+    if args.current:
+        platform, architecture = current_platform()
+        platforms_to_update = [platform]
     _validate_tools(tools_to_update, config)
     config.tools_dir.mkdir(parents=True, exist_ok=True)
     download_tasks, total_count = prepare_download_tasks(
         tools_to_update,
         platforms_to_update,
-        args.architecture,
+        architecture,
         config,
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
@@ -157,6 +161,12 @@ def create_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Force update even if binary exists",
+    )
+    update_parser.add_argument(
+        "-c",
+        "--current",
+        action="store_true",
+        help="Only update for the current platform and architecture",
     )
     update_parser.add_argument(
         "-s",
