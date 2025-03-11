@@ -7,11 +7,7 @@ name = "dotbins"
 description = "Keep updated binaries in your dotfiles"
 dynamic = ["version"]
 authors = [{ name = "Bas Nijholt", email = "bas@nijho.lt" }]
-dependencies = [
-    "requests",
-    "pyyaml",
-    "rich>=13.9.4",
-]
+dependencies = ["requests", "pyyaml", "rich>=13.9.4"]
 requires-python = ">=3.9"
 
 [project.readme]
@@ -76,6 +72,8 @@ ignore = [
     "S602",    # `subprocess` call with `shell=True` identified, security issue
     "S603",    # `subprocess` call: check for execution of untrusted input
     "S202",    # Uses of `tarfile.extractall()`
+    "BLE001",  # Do not catch blind exception: `Exception`
+    "TRY300",  # Consider moving this statement to an `else` block
 ]
 
 [tool.ruff.lint.per-file-ignores]

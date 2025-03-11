@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import logging
 import sys
 from pathlib import Path
@@ -13,7 +14,12 @@ from rich.console import Console
 from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
-from .download import download_tool, make_binaries_executable
+from .download import (
+    download_task,
+    make_binaries_executable,
+    prepare_download_task,
+    process_downloaded_task,
+)
 from .utils import print_shell_setup, setup_logging
 
 # Initialize rich console
@@ -47,7 +53,8 @@ def update_tools(  # noqa: PLR0912
     # Create the tools directory structure
     config.tools_dir.mkdir(parents=True, exist_ok=True)
 
-    success_count = 0
+    # PHASE 1: Prepare download tasks
+    download_tasks = []
     total_count = 0
 
     for tool_name in tools_to_update:
@@ -73,9 +80,46 @@ def update_tools(  # noqa: PLR0912
 
             for arch in archs_to_update:
                 total_count += 1
-                if download_tool(tool_name, platform, arch, config, args.force):
-                    success_count += 1
+                task = prepare_download_task(
+                    tool_name,
+                    platform,
+                    arch,
+                    config,
+                )
+                if task:
+                    download_tasks.append(task)
 
+    # PHASE 2: Download files in parallel
+    console.print(
+        f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
+    )
+    downloaded_tasks = []
+
+    # Use ThreadPoolExecutor for parallel downloads
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(8, len(download_tasks) or 1),
+    ) as executor:
+        # Start the download tasks
+        future_to_task = {
+            executor.submit(download_task, task): task for task in download_tasks
+        }
+
+        # Process completed downloads
+        for future in concurrent.futures.as_completed(future_to_task):
+            task, success = future.result()
+            downloaded_tasks.append((task, success))
+
+    # PHASE 3: Process downloaded files sequentially
+    console.print(
+        f"\n🔄 [blue]Processing {len(downloaded_tasks)} downloaded tools...[/blue]",
+    )
+    success_count = 0
+
+    for task, download_success in downloaded_tasks:
+        if process_downloaded_task(task, download_success):
+            success_count += 1
+
+    # Make all binaries executable
     make_binaries_executable(config)
 
     console.print(
@@ -212,7 +256,7 @@ def main() -> None:
         else:
             parser.print_help()
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"❌ [bold red]Error: {e!s}[/bold red]")
         console.print_exception()
         sys.exit(1)

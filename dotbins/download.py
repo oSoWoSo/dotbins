@@ -10,7 +10,7 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 from rich.console import Console
@@ -52,7 +52,7 @@ def download_file(url: str, destination: str) -> str:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
-        return destination  # noqa: TRY300
+        return destination
     except requests.RequestException as e:
         console.print(f"❌ [bold red]Download failed: {e}[/bold red]")
         console.print_exception()  # Replaces logger.exception
@@ -202,7 +202,7 @@ def _log_extracted_files(temp_dir: Path) -> None:
         console.print("📋 [blue]Extracted files:[/blue]")
         for item in temp_dir.glob("**/*"):
             console.print(f"  - {item.relative_to(temp_dir)}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"❌ Could not list extracted files: {e}")
 
 
@@ -308,7 +308,7 @@ def download_tool(
             config,
         )
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(
             f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
         )
@@ -531,3 +531,164 @@ def make_binaries_executable(config: DotbinsConfig) -> None:
                 for binary in bin_dir.iterdir():
                     if binary.is_file():
                         binary.chmod(binary.stat().st_mode | 0o755)
+
+
+class DownloadTask(NamedTuple):
+    """Represents a single download task."""
+
+    tool_name: str
+    platform: str
+    arch: str
+    asset_url: str
+    asset_name: str
+    tool_config: dict
+    destination_dir: Path
+    temp_path: Path
+
+
+def download_task(task: DownloadTask) -> tuple[DownloadTask, bool]:
+    """Download a file for a DownloadTask."""
+    try:
+        console.print(
+            f"📥 [blue]Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...[/blue]",
+        )
+        download_file(task.asset_url, str(task.temp_path))
+        return task, True
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error downloading {task.asset_name}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return task, False
+
+
+def prepare_download_task(
+    tool_name: str,
+    platform: str,
+    arch: str,
+    config: DotbinsConfig,
+) -> DownloadTask | None:
+    """Prepare a download task without actually downloading.
+
+    Returns a DownloadTask if a download is needed, None if it should be skipped.
+    """
+    # Validate tool configuration
+    tool_config = validate_tool_config(tool_name, config)
+    if not tool_config:
+        return None
+
+    # Check if we should skip this download
+    destination_dir = config.tools_dir / platform / arch / "bin"
+    binary_names = tool_config.get("binary_name", tool_name)
+
+    # Convert to list if it's a string
+    if isinstance(binary_names, str):
+        binary_names = [binary_names]
+
+    # Check if all binaries exist
+    all_exist = True
+    for binary_name in binary_names:
+        binary_path = destination_dir / binary_name
+        if not binary_path.exists():
+            all_exist = False
+            break
+
+    if all_exist:
+        console.print(
+            f"✅ [green]{tool_name} for {platform}/{arch} already exists (use --force to update)[/green]",
+        )
+        return None
+
+    try:
+        # Get release information
+        release, version = get_release_info(tool_config)
+
+        # Map platform and architecture
+        tool_platform, tool_arch = map_platform_and_arch(
+            platform,
+            arch,
+            tool_config,
+        )
+
+        # Find matching asset
+        asset = find_matching_asset(
+            tool_config,
+            release,
+            version,
+            platform,
+            arch,
+            tool_platform,
+            tool_arch,
+        )
+        if not asset:
+            return None
+
+        # Create a temporary file for download
+        tmp_dir = Path(tempfile.gettempdir())
+        temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
+
+        return DownloadTask(
+            tool_name=tool_name,
+            platform=platform,
+            arch=arch,
+            asset_url=asset["browser_download_url"],
+            asset_name=asset["name"],
+            tool_config=tool_config,
+            destination_dir=destination_dir,
+            temp_path=temp_path,
+        )
+
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return None
+
+
+def process_downloaded_task(task: DownloadTask, success: bool) -> bool:  # noqa: FBT001
+    """Process a downloaded file."""
+    if not success:
+        return False
+
+    try:
+        # Make sure destination directory exists
+        task.destination_dir.mkdir(parents=True, exist_ok=True)
+
+        # Extract or copy the binary
+        if task.tool_config.get("extract_binary", False):
+            # Extract the binary using the explicit path
+            extract_from_archive(
+                str(task.temp_path),
+                task.destination_dir,
+                task.tool_config,
+                task.platform,
+            )
+        else:
+            # For direct downloads with multiple binaries, we can only copy one
+            # Just use the first binary name
+            binary_names = task.tool_config.get("binary_name", task.tool_name)
+            if isinstance(binary_names, str):
+                binary_names = [binary_names]
+            binary_name = binary_names[0]
+
+            # Copy the file directly
+            shutil.copy2(task.temp_path, task.destination_dir / binary_name)
+            # Make executable
+            dest_file = task.destination_dir / binary_name
+            dest_file.chmod(dest_file.stat().st_mode | 0o755)
+
+        console.print(
+            f"✅ [green]Successfully processed {task.tool_name} for {task.platform}/{task.arch}[/green]",
+        )
+        return True
+    except Exception as e:
+        console.print(
+            f"❌ [bold red]Error processing {task.tool_name}: {e!s}[/bold red]",
+        )
+        console.print_exception()
+        return False
+    finally:
+        # Cleanup
+        if task.temp_path.exists():
+            task.temp_path.unlink()
