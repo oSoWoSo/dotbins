@@ -95,9 +95,9 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
         log("Please review and adjust the configuration as needed!", "warning", "# ⚠️")
     except Exception as e:
-        log("Error analyzing repo", "error", "❌")
+        log("Error analyzing repo", "error")
         console.print_exception()
-        log(f"Error: {e!s}", "error", "❌")
+        log(f"Error: {e!s}", "error")
         import sys
 
         sys.exit(1)
@@ -218,7 +218,7 @@ def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | 
         binary_path = determine_binary_path(executables, tool_name)
 
         if binary_path:
-            log(f"Detected binary path: {binary_path}", "success", "✅")
+            log(f"Detected binary path: {binary_path}", "success")
 
         return binary_path
 
