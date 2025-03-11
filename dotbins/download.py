@@ -482,20 +482,15 @@ def prepare_download_task(
 
     Returns a DownloadTask if a download is needed, None if it should be skipped.
     """
-    # Validate tool configuration
     tool_config = validate_tool_config(tool_name, config)
     if not tool_config:
         return None
 
-    # Check if we should skip this download
     destination_dir = config.tools_dir / platform / arch / "bin"
     binary_names = tool_config.get("binary_name", tool_name)
-
-    # Convert to list if it's a string
     if isinstance(binary_names, str):
         binary_names = [binary_names]
 
-    # Check if all binaries exist
     all_exist = True
     for binary_name in binary_names:
         binary_path = destination_dir / binary_name
@@ -510,17 +505,12 @@ def prepare_download_task(
         return None
 
     try:
-        # Get release information
         release, version = get_release_info(tool_config)
-
-        # Map platform and architecture
         tool_platform, tool_arch = map_platform_and_arch(
             platform,
             arch,
             tool_config,
         )
-
-        # Find matching asset
         asset = find_matching_asset(
             tool_config,
             release,
@@ -533,7 +523,6 @@ def prepare_download_task(
         if not asset:
             return None
 
-        # Create a temporary file for download
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
 
@@ -562,12 +551,8 @@ def process_downloaded_task(task: DownloadTask, success: bool) -> bool:  # noqa:
         return False
 
     try:
-        # Make sure destination directory exists
         task.destination_dir.mkdir(parents=True, exist_ok=True)
-
-        # Extract or copy the binary
         if task.tool_config.get("extract_binary", False):
-            # Extract the binary using the explicit path
             extract_from_archive(
                 str(task.temp_path),
                 task.destination_dir,
@@ -575,16 +560,12 @@ def process_downloaded_task(task: DownloadTask, success: bool) -> bool:  # noqa:
                 task.platform,
             )
         else:
-            # For direct downloads with multiple binaries, we can only copy one
-            # Just use the first binary name
             binary_names = task.tool_config.get("binary_name", task.tool_name)
             if isinstance(binary_names, str):
                 binary_names = [binary_names]
             binary_name = binary_names[0]
 
-            # Copy the file directly
             shutil.copy2(task.temp_path, task.destination_dir / binary_name)
-            # Make executable
             dest_file = task.destination_dir / binary_name
             dest_file.chmod(dest_file.stat().st_mode | 0o755)
 
@@ -599,6 +580,5 @@ def process_downloaded_task(task: DownloadTask, success: bool) -> bool:  # noqa:
         console.print_exception()
         return False
     finally:
-        # Cleanup
         if task.temp_path.exists():
             task.temp_path.unlink()
