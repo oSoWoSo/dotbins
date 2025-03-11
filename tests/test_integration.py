@@ -94,7 +94,7 @@ def test_update_tool(
         "repo": "test/tool",
         "extract_binary": True,
         "binary_name": "test-tool",
-        "binary_path": "test-tool",
+        "binary_path": "*",
         "asset_patterns": {
             "linux": "test-tool-{version}-{platform}_{arch}.tar.gz",
             "macos": "test-tool-{version}-{platform}_{arch}.tar.gz",
@@ -123,10 +123,11 @@ def test_update_tool(
     # Create a mock args object
     mock_args = MagicMock()
     mock_args.tools = ["test-tool"]
-    mock_args.platform = None
-    mock_args.architecture = None
+    mock_args.platform = "linux"  # Specify platform to avoid skipping
+    mock_args.architecture = "amd64"
     mock_args.force = False
     mock_args.shell_setup = False
+    mock_args.current = False
 
     # Directly call update_tools
     cli._update_tools(mock_args, config)

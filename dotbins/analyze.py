@@ -277,11 +277,7 @@ def generate_tool_config(
     macos_assets = get_platform_assets(assets, "macos")
     tool_config = _create_base_tool_config(repo, tool_name)
     if binary_path:
-        _add_binary_path_to_config(
-            tool_config,
-            binary_path,
-            release["tag_name"].lstrip("v"),
-        )
+        _add_binary_path_to_config(tool_config, binary_path)
     if _needs_arch_conversion(assets):
         tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
     _add_asset_patterns_to_config(tool_config, release, linux_assets, macos_assets)
@@ -305,20 +301,15 @@ def _needs_arch_conversion(assets: list[dict]) -> bool:
     )
 
 
-def _add_binary_path_to_config(
-    tool_config: dict,
-    binary_path: str | list[str],
-    version: str,
-) -> None:
+def _add_binary_path_to_config(tool_config: dict, binary_path: str | list[str]) -> None:
     """Add binary path information to the tool configuration."""
     # Handle both string and list paths
     if isinstance(binary_path, list):
         # For lists, replace version in each path
         binary_paths = []
         for path in binary_path:
-            if version in path:
-                path = path.replace(version, "{version}")  # noqa: PLW2901
-            binary_paths.append(path)
+            generalized_path = _generalize_binary_path(path)
+            binary_paths.append(generalized_path)
         tool_config["binary_path"] = binary_paths
 
         # Also make binary_name a list if it's not already
@@ -328,9 +319,31 @@ def _add_binary_path_to_config(
             tool_config["binary_name"] = binary_names
     else:
         # For single string path
-        if version in binary_path:
-            binary_path = binary_path.replace(version, "{version}")
-        tool_config["binary_path"] = binary_path
+        generalized_path = _generalize_binary_path(binary_path)
+        tool_config["binary_path"] = generalized_path
+
+
+def _generalize_binary_path(path: str) -> str:
+    """Create a generalized binary path with wildcards for maximum flexibility.
+
+    Takes a concrete binary path like "uv-x86_64-unknown-linux-gnu/uv" and
+    converts it to a wildcard pattern like "*/uv"
+    """
+    # Get the basename (actual binary name)
+    basename = os.path.basename(path)
+
+    # If there's a single directory level, use a simple wildcard pattern
+    if "/" in path and path.count("/") == 1:
+        return f"*/{basename}"
+
+    # If there are multiple directory levels, preserve the last directory
+    # This helps with cases where the binary might be in 'bin/' or similar
+    if "/" in path and path.count("/") > 1:
+        last_dir = os.path.dirname(path).split("/")[-1]
+        return f"*/{last_dir}/{basename}"
+
+    # If there's no directory structure, just return the basename
+    return basename
 
 
 def _add_asset_patterns_to_config(

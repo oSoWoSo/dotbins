@@ -164,7 +164,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert config["repo"] == "test/repo"
     assert config["extract_binary"] is True
     assert config["binary_name"] == "tool"
-    assert config["binary_path"] == "bin/tool"
+    assert config["binary_path"] == "*/tool"
     assert "arch_map" in config
     assert "asset_patterns" in config
     assert config["asset_patterns"]["linux"] != "?"
@@ -186,7 +186,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
         mock_release,
         "tool-1.0.0/bin/tool",
     )
-    assert config["binary_path"] == "tool-{version}/bin/tool"
+    assert config["binary_path"] == "*/bin/tool"
 
 
 def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> None:
