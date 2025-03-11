@@ -39,7 +39,7 @@ def get_latest_release(repo: str) -> dict:
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        log("Failed to fetch latest release.", "error", "❌")
+        log("Failed to fetch latest release.", "error")
         console.print_exception()
         msg = f"Failed to fetch latest release for {repo}: {e}"
         raise RuntimeError(msg) from e
