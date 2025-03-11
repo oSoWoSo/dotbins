@@ -110,25 +110,28 @@ def print_assets_info(assets: list[dict]) -> None:
         console.print(f"  - {asset['name']} ({asset['browser_download_url']})")
 
     # Platform categorization
-    linux_assets = get_platform_assets(assets, "linux")
-    console.print("\n🐧 [blue]Linux assets:[/blue]")
-    for asset in linux_assets:
-        console.print(f"  - {asset['name']}")
-
-    macos_assets = get_platform_assets(assets, "macos")
-    console.print("\n🍏 [blue]macOS assets:[/blue]")
-    for asset in macos_assets:
-        console.print(f"  - {asset['name']}")
+    _print_platform_assets(assets, "linux", "🐧")
+    _print_platform_assets(assets, "macos", "🍏")
 
     # Architecture categorization
-    amd64_assets = get_arch_assets(assets, "amd64")
-    console.print("\n💻 [blue]AMD64/x86_64 assets:[/blue]")
-    for asset in amd64_assets:
+    _print_arch_assets(assets, "amd64", "💻")
+    _print_arch_assets(assets, "arm64", "📱")
+
+
+def _print_platform_assets(assets: list[dict], platform: str, icon: str) -> None:
+    """Print assets for a specific platform."""
+    platform_assets = get_platform_assets(assets, platform)
+    console.print(f"\n{icon} [blue]{platform.capitalize()} assets:[/blue]")
+    for asset in platform_assets:
         console.print(f"  - {asset['name']}")
 
-    arm64_assets = get_arch_assets(assets, "arm64")
-    console.print("\n📱 [blue]ARM64/aarch64 assets:[/blue]")
-    for asset in arm64_assets:
+
+def _print_arch_assets(assets: list[dict], arch: str, icon: str) -> None:
+    """Print assets for a specific architecture."""
+    arch_assets = get_arch_assets(assets, arch)
+    arch_display = "AMD64/x86_64" if arch == "amd64" else "ARM64/aarch64"
+    console.print(f"\n{icon} [blue]{arch_display} assets:[/blue]")
+    for asset in arch_assets:
         console.print(f"  - {asset['name']}")
 
 
