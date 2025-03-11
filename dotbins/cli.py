@@ -7,8 +7,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from rich.console import Console
-
 from . import __version__
 from .analyze import analyze_tool
 from .config import DotbinsConfig
@@ -20,8 +18,6 @@ from .download import (
 )
 from .utils import current_platform, log, print_shell_setup, setup_logging
 from .versions import VersionStore
-
-console = Console()
 
 
 def _list_tools(_args: Any, config: DotbinsConfig) -> None:
