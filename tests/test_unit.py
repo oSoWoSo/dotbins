@@ -243,7 +243,7 @@ def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
 
 
 def test_download_tool_already_exists(temp_dir: Path) -> None:
-    """Test download_tool when binary already exists."""
+    """Test prepare_download_task when binary already exists."""
     # Setup environment with complete tool config
     test_tool_config = {
         "repo": "test/tool",
@@ -269,28 +269,32 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
     with patch("dotbins.utils.get_latest_release") as mock_release:
         mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
 
-        # Call the function with force=False
-        result = dotbins.download.download_tool(
+        # With prepare_download_task, it should return None if file exists
+        result = dotbins.download.prepare_download_task(
             "test-tool",
             "linux",
             "amd64",
             config,
-            force=False,
         )
 
-    # Should return True (skip download) since file exists
-    assert result is True
+    # Should return None (skip download) since file exists
+    assert result is None
 
 
 def test_download_tool_asset_not_found(
     temp_dir: Path,
     requests_mock: MockFixture,
 ) -> None:
-    """Test download_tool when asset is not found."""
-    # Mock GitHub API response
+    """Test prepare_download_task when asset is not found."""
+    # Mock GitHub API response with no matching Linux assets
     response_data = {
         "tag_name": "v1.0.0",
-        "assets": [{"name": "tool-1.0.0-windows_amd64.zip"}],  # No Linux asset
+        "assets": [
+            {
+                "name": "tool-1.0.0-windows_amd64.zip",
+                "browser_download_url": "https://example.com/tool-1.0.0-windows_amd64.zip",
+            },
+        ],  # No Linux asset
     }
     requests_mock.get(
         "https://api.github.com/repos/test/tool/releases/latest",
@@ -309,11 +313,23 @@ def test_download_tool_asset_not_found(
         },
     )
 
-    # Call the function
-    result = dotbins.download.download_tool("test-tool", "linux", "amd64", config)
+    # Mock find_asset to ensure it returns None for our specific pattern
+    with patch("dotbins.download.find_asset") as mock_find_asset:
+        mock_find_asset.return_value = None
 
-    # Should return False since asset wasn't found
-    assert result is False
+        # Call the function
+        result = dotbins.download.prepare_download_task(
+            "test-tool",
+            "linux",
+            "amd64",
+            config,
+        )
+
+        # Verify find_asset was called with the correct pattern
+        mock_find_asset.assert_called_once()
+
+        # Should return None since asset wasn't found
+        assert result is None
 
 
 def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
