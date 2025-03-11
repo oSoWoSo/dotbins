@@ -659,7 +659,7 @@ def prepare_download_tasks(
                 if task:
                     download_tasks.append(task)
 
-    return download_tasks, total_count
+    return sorted(download_tasks, key=lambda t: t.asset_url), total_count
 
 
 def _determine_architectures(
