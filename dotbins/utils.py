@@ -32,7 +32,7 @@ def setup_logging(verbose: bool = False) -> None:
 def get_latest_release(repo: str) -> dict:
     """Get the latest release information from GitHub."""
     url = f"https://api.github.com/repos/{repo}/releases/latest"
-    console.print(f"🔍 [blue]Fetching latest release from {url}[/blue]")
+    log(f"Fetching latest release from {url}", "info", "🔍")
 
     try:
         response = requests.get(url, timeout=30)
