@@ -132,17 +132,12 @@ def _download_files_in_parallel(
         f"\n🔄 [blue]Downloading {len(download_tasks)} tools in parallel...[/blue]",
     )
     downloaded_tasks = []
-
-    # Use ThreadPoolExecutor for parallel downloads
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=min(8, len(download_tasks) or 1),
     ) as executor:
-        # Start the download tasks
         future_to_task = {
             executor.submit(download_task, task): task for task in download_tasks
         }
-
-        # Process completed downloads
         for future in concurrent.futures.as_completed(future_to_task):
             task, success = future.result()
             downloaded_tasks.append((task, success))

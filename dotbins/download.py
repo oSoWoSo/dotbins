@@ -275,65 +275,6 @@ def replace_variables_in_path(path: str, tool_config: dict) -> str:
     return path
 
 
-def download_tool(
-    tool_name: str,
-    platform: str,
-    arch: str,
-    config: DotbinsConfig,
-    force: bool = False,  # noqa: FBT001, FBT002
-) -> bool:
-    """Download a tool for a specific platform and architecture."""
-    # Validate tool configuration
-    tool_config = validate_tool_config(tool_name, config)
-    if not tool_config:
-        return False
-
-    # Check if we should skip this download
-    if should_skip_download(tool_name, platform, arch, config, force):
-        return True
-
-    try:
-        # Get release information
-        release, version = get_release_info(tool_config)
-
-        # Map platform and architecture
-        tool_platform, tool_arch = map_platform_and_arch(
-            platform,
-            arch,
-            tool_config,
-        )
-
-        # Find matching asset
-        asset = find_matching_asset(
-            tool_config,
-            release,
-            version,
-            platform,
-            arch,
-            tool_platform,
-            tool_arch,
-        )
-        if not asset:
-            return False
-
-        # Download and install the asset
-        return download_and_install_asset(
-            asset,
-            tool_name,
-            platform,
-            arch,
-            tool_config,
-            config,
-        )
-
-    except Exception as e:
-        console.print(
-            f"❌ [bold red]Error processing {tool_name} for {platform}/{arch}: {e!s}[/bold red]",
-        )
-        console.print_exception()
-        return False
-
-
 def validate_tool_config(tool_name: str, config: DotbinsConfig) -> dict | None:
     """Validate that the tool exists in configuration."""
     tool_config = config.tools.get(tool_name)
