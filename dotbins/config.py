@@ -100,7 +100,6 @@ class DotbinsConfig:
             log(
                 f"Tool {tool_name} has unknown field '{_field}' that will be ignored",
                 "warning",
-                "⚠️",
             )
 
     def _validate_asset_patterns_presence(
@@ -217,11 +216,7 @@ class DotbinsConfig:
                     break
             else:
                 # No config file found
-                log(
-                    "No configuration file found, using default settings",
-                    "warning",
-                    "⚠️",
-                )
+                log("No configuration file found, using default settings", "warning")
                 return cls()
 
         # At this point, config_paths only contains one path that's either:
@@ -242,13 +237,13 @@ class DotbinsConfig:
             return config
 
         except FileNotFoundError:
-            log(f"Configuration file not found: {config_paths[0]}", "warning", "⚠️")
+            log(f"Configuration file not found: {config_paths[0]}", "warning")
             return cls()
         except yaml.YAMLError:
-            log(f"Invalid YAML in configuration file: {config_paths[0]}", "error", "❌")
+            log(f"Invalid YAML in configuration file: {config_paths[0]}", "error")
             console.print_exception()
             return cls()
         except Exception as e:
-            log(f"Error loading configuration: {e}", "error", "❌")
+            log(f"Error loading configuration: {e}", "error")
             console.print_exception()
             return cls()
