@@ -99,59 +99,77 @@ def extract_from_archive(
     temp_dir = Path(tempfile.mkdtemp())
 
     try:
-        # Extract the archive
         extract_archive(str(archive_path), str(temp_dir))
         console.print(f"📦 [green]Archive extracted to {temp_dir}[/green]")
-
         # Debug: List the extracted files
         _log_extracted_files(temp_dir)
-
-        # Handle single binary or multiple binaries
-        binary_names = tool_config.get("binary_name", [])
-        binary_paths = tool_config.get("binary_path", [])
-
-        # Convert to lists if they're strings for consistent handling
-        if isinstance(binary_names, str):
-            binary_names = [binary_names]
-        if isinstance(binary_paths, str):
-            binary_paths = [binary_paths]
-
-        # Auto-detect binary paths if not specified
-        if not binary_paths:
-            console.print(
-                "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
-            )
-            binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
-            if not binary_paths:
-                msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
-                raise ValueError(msg)  # noqa: TRY301
-            console.print(
-                f"✅ [green]Auto-detected binary paths: {binary_paths}[/green]",
-            )
-
-        # Create the destination directory if needed
+        binary_names, binary_paths = _get_binary_config(tool_config)
+        if not binary_paths:  # Auto-detect binary paths if not specified
+            binary_paths = _detect_binary_paths(temp_dir, binary_names)
         destination_dir.mkdir(parents=True, exist_ok=True)
-
-        # Process each binary
-        for i, binary_path_pattern in enumerate(binary_paths):
-            # Get corresponding binary name (use last name for extra paths)
-            binary_name = binary_names[min(i, len(binary_names) - 1)]
-
-            # Find and copy each binary
-            source_path = find_binary_in_extracted_files(
-                temp_dir,
-                tool_config,
-                binary_path_pattern,
-            )
-            copy_binary_to_destination(source_path, destination_dir, binary_name)
+        _process_binaries(
+            temp_dir,
+            destination_dir,
+            binary_names,
+            binary_paths,
+            tool_config,
+        )
 
     except Exception as e:
         console.print(f"❌ [bold red]Error extracting archive: {e}[/bold red]")
         console.print_exception()
         raise
     finally:
-        # Clean up temporary directory
         shutil.rmtree(temp_dir)
+
+
+def _get_binary_config(tool_config: dict) -> tuple[list[str], list[str]]:
+    """Get binary names and paths from the tool configuration."""
+    binary_names = tool_config.get("binary_name", [])
+    binary_paths = tool_config.get("binary_path", [])
+
+    if isinstance(binary_names, str):
+        binary_names = [binary_names]
+    if isinstance(binary_paths, str):
+        binary_paths = [binary_paths]
+
+    return binary_names, binary_paths
+
+
+def _detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
+    """Auto-detect binary paths if not specified in configuration."""
+    console.print(
+        "🔍 [blue]Binary path not specified, attempting auto-detection...[/blue]",
+    )
+    binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
+    if not binary_paths:
+        msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
+        raise ValueError(msg)
+    console.print(
+        f"✅ [green]Auto-detected binary paths: {binary_paths}[/green]",
+    )
+    return binary_paths
+
+
+def _process_binaries(
+    temp_dir: Path,
+    destination_dir: Path,
+    binary_names: list[str],
+    binary_paths: list[str],
+    tool_config: dict,
+) -> None:
+    """Process each binary by finding it and copying to destination."""
+    for i, binary_path_pattern in enumerate(binary_paths):
+        # Get corresponding binary name (use last name for extra paths)
+        binary_name = binary_names[min(i, len(binary_names) - 1)]
+
+        # Find and copy each binary
+        source_path = find_binary_in_extracted_files(
+            temp_dir,
+            tool_config,
+            binary_path_pattern,
+        )
+        copy_binary_to_destination(source_path, destination_dir, binary_name)
 
 
 def auto_detect_binary_paths(temp_dir: Path, binary_names: list[str]) -> list[str]:
