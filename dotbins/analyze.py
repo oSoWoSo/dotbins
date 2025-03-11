@@ -200,17 +200,13 @@ def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | 
         download_file(asset["browser_download_url"], temp_path)
         temp_dir = tempfile.mkdtemp()
 
-        # Extract the archive
         extract_archive(temp_path, temp_dir)
-
-        # Find executables
         executables = find_executables(temp_dir)
 
         console.print("\n🔍 [blue]Executable files found in the archive:[/blue]")
         for exe in executables:
             console.print(f"  - {exe}")
 
-        # Determine binary path
         binary_path = determine_binary_path(executables, tool_name)
 
         if binary_path:
@@ -219,7 +215,6 @@ def _download_and_find_binary(asset: dict, tool_name: str) -> str | list[str] | 
         return binary_path
 
     finally:
-        # Clean up
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
         if temp_dir and os.path.exists(temp_dir):
@@ -253,7 +248,6 @@ def determine_binary_path(
         if tool_name.lower() in base_name.lower():
             matches.append(exe)
 
-    # If we found multiple matches that seem related, return a list
     if len(matches) > 1:
         return matches
 
