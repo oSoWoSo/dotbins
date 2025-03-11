@@ -304,7 +304,6 @@ def should_skip_download(
         log(
             f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
             "success",
-            "✅",
         )
         return True
     return False
@@ -484,7 +483,6 @@ def _prepare_download_task(
         log(
             f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
             "success",
-            "✅",
         )
         return None
 
@@ -558,7 +556,6 @@ def _process_downloaded_task(
         log(
             f"Successfully processed {task.tool_name} for {task.platform}/{task.arch}",
             "success",
-            "✅",
         )
         return True
     except Exception as e:
