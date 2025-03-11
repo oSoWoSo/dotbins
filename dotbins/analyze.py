@@ -283,49 +283,71 @@ def generate_tool_config(
     assets = release["assets"]
     linux_assets = get_platform_assets(assets, "linux")
     macos_assets = get_platform_assets(assets, "macos")
+    tool_config = _create_base_tool_config(repo, tool_name)
+    if binary_path:
+        _add_binary_path_to_config(
+            tool_config,
+            binary_path,
+            release["tag_name"].lstrip("v"),
+        )
+    if _needs_arch_conversion(assets):
+        tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
+    _add_asset_patterns_to_config(tool_config, release, linux_assets, macos_assets)
 
-    # Determine if we need architecture conversion
-    arch_conversion = any("x86_64" in a["name"] for a in assets) or any(
-        "aarch64" in a["name"] for a in assets
-    )
+    return tool_config
 
-    # Create tool configuration
-    tool_config = {
+
+def _create_base_tool_config(repo: str, tool_name: str) -> dict:
+    """Create the basic tool configuration."""
+    return {
         "repo": repo,
         "extract_binary": True,
         "binary_name": tool_name,
     }
 
-    # Add binary path if found
-    if binary_path:
-        version = release["tag_name"].lstrip("v")
 
-        # Handle both string and list paths
-        if isinstance(binary_path, list):
-            # For lists, replace version in each path
-            binary_paths = []
-            for path in binary_path:
-                if version in path:
-                    path = path.replace(version, "{version}")  # noqa: PLW2901
-                binary_paths.append(path)
-            tool_config["binary_path"] = binary_paths
+def _needs_arch_conversion(assets: list[dict]) -> bool:
+    """Determine if we need architecture conversion."""
+    return any("x86_64" in a["name"] for a in assets) or any(
+        "aarch64" in a["name"] for a in assets
+    )
 
-            # Also make binary_name a list if it's not already
-            if not isinstance(tool_config["binary_name"], list):
-                # Create a list of binary names based on the basename of each path
-                binary_names = [os.path.basename(path) for path in binary_path]
-                tool_config["binary_name"] = binary_names
-        else:
-            # For single string path
-            if version in binary_path:
-                binary_path = binary_path.replace(version, "{version}")
-            tool_config["binary_path"] = binary_path
 
-    # Add arch_map if needed
-    if arch_conversion:
-        tool_config["arch_map"] = {"amd64": "x86_64", "arm64": "aarch64"}
+def _add_binary_path_to_config(
+    tool_config: dict,
+    binary_path: str | list[str],
+    version: str,
+) -> None:
+    """Add binary path information to the tool configuration."""
+    # Handle both string and list paths
+    if isinstance(binary_path, list):
+        # For lists, replace version in each path
+        binary_paths = []
+        for path in binary_path:
+            if version in path:
+                path = path.replace(version, "{version}")  # noqa: PLW2901
+            binary_paths.append(path)
+        tool_config["binary_path"] = binary_paths
 
-    # Generate asset patterns
+        # Also make binary_name a list if it's not already
+        if not isinstance(tool_config["binary_name"], list):
+            # Create a list of binary names based on the basename of each path
+            binary_names = [os.path.basename(path) for path in binary_path]
+            tool_config["binary_name"] = binary_names
+    else:
+        # For single string path
+        if version in binary_path:
+            binary_path = binary_path.replace(version, "{version}")
+        tool_config["binary_path"] = binary_path
+
+
+def _add_asset_patterns_to_config(
+    tool_config: dict,
+    release: dict,
+    linux_assets: list[dict],
+    macos_assets: list[dict],
+) -> None:
+    """Add asset pattern information to the tool configuration."""
     platform_specific = bool(linux_assets and macos_assets)
     if platform_specific:
         asset_patterns = generate_platform_specific_patterns(release)
@@ -336,8 +358,6 @@ def generate_tool_config(
         if pattern != "?":
             # Use asset_patterns as a string instead of asset_pattern
             tool_config["asset_patterns"] = pattern
-
-    return tool_config
 
 
 def generate_platform_specific_patterns(release: dict) -> dict:
