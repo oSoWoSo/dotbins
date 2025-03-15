@@ -266,12 +266,10 @@ def _map_platform_and_arch(
     tool_config: ToolConfig,
 ) -> tuple[str, str]:
     """Map platform and architecture names."""
-    # Map architecture if needed
     tool_arch = arch
     if tool_config.arch_map and arch in tool_config.arch_map:
         tool_arch = tool_config.arch_map[arch]
 
-    # Map platform if needed
     tool_platform = platform
     if tool_config.platform_map and platform in tool_config.platform_map:
         tool_platform = tool_config.platform_map[platform]
@@ -356,6 +354,13 @@ def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
         return task, False
 
 
+def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -> bool:
+    return all(
+        (destination_dir / binary_name).exists()
+        for binary_name in tool_config.binary_name
+    )
+
+
 def _prepare_download_task(
     tool_name: str,
     platform: str,
@@ -366,16 +371,11 @@ def _prepare_download_task(
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
-    tool_info = version_store.get_tool_info(tool_name, platform, arch)
     release, version = _get_release_info(tool_config)
-
+    tool_info = version_store.get_tool_info(tool_name, platform, arch)
     destination_dir = config.tools_dir / platform / arch / "bin"
-    all_exist = all(
-        (destination_dir / binary_name).exists()
-        for binary_name in tool_config.binary_name
-    )
+    all_exist = _exists_in_destination_dir(destination_dir, tool_config)
 
-    # Check if update is needed
     if tool_info and tool_info["version"] == version and all_exist and not force:
         log(
             f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']})"
@@ -385,7 +385,6 @@ def _prepare_download_task(
         return None
 
     try:
-        release, version = _get_release_info(tool_config)
         tool_platform, tool_arch = _map_platform_and_arch(platform, arch, tool_config)
         asset = _find_matching_asset(
             tool_config,
