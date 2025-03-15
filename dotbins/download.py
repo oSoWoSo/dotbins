@@ -313,30 +313,19 @@ def _find_matching_asset(
     return asset
 
 
-def get_asset_pattern(tool_config: ToolConfig, platform: str, arch: str) -> str | None:
+def get_asset_pattern(
+    tool_config: ToolConfig,
+    platform: str,
+    arch: str,
+) -> str | None:
     """Get the asset pattern for a tool, platform, and architecture."""
-    # No asset patterns defined
-    if not tool_config.asset_patterns:
-        log("No asset patterns defined", "warning")
-        return None
-
     patterns = tool_config.asset_patterns
 
-    # Try exact platform/arch match
+    # Direct lookup by platform and architecture
     if platform in patterns and arch in patterns[platform]:
-        return patterns[platform][arch]
-
-    # Try platform with wildcard arch
-    if platform in patterns and "*" in patterns[platform]:
-        return patterns[platform]["*"]
-
-    # Try wildcard platform with exact arch
-    if "*" in patterns and arch in patterns["*"]:
-        return patterns["*"][arch]
-
-    # Try wildcard platform with wildcard arch
-    if "*" in patterns and "*" in patterns["*"]:
-        return patterns["*"]["*"]
+        pattern = patterns[platform][arch]
+        if pattern:  # Check for empty string
+            return pattern
 
     # No valid pattern found
     return None

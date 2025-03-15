@@ -14,37 +14,53 @@ from .utils import log
 DEFAULT_TOOLS_DIR = "~/.dotfiles/tools"
 DEFAULT_PLATFORMS = {
     "linux": ["amd64", "arm64"],
-    "macos": ["amd64", "arm64"],
+    "macos": ["arm64"],
 }
 
 
-def _normalize_asset_patterns(
+def _normalize_asset_patterns(  # noqa: PLR0912
     patterns: str | dict[str, Any] | None,
+    platforms: dict[str, list[str]],
 ) -> dict[str, dict[str, str]]:
-    """Normalize asset patterns to dict[str, dict[str, str]] format."""
+    """Normalize asset patterns to dict[str, dict[str, str]] format for all supported platforms and architectures."""
     normalized: dict[str, dict[str, str]] = {}
 
     if patterns is None:
         return normalized
 
+    # Initialize the structure with all supported platforms and architectures
+    for platform, architectures in platforms.items():
+        normalized[platform] = {arch: "" for arch in architectures}
+
     # Case 1: String pattern (global pattern for all platforms/architectures)
     if isinstance(patterns, str):
-        normalized["*"] = {"*": patterns}
+        # Apply the global pattern to all platforms and architectures
+        for platform, architectures in platforms.items():
+            for arch in architectures:
+                normalized[platform][arch] = patterns
         return normalized
 
     # Case 2 & 3: Dict of patterns
     if isinstance(patterns, dict):
         for platform, platform_patterns in patterns.items():
-            if platform not in normalized:
-                normalized[platform] = {}
+            # Skip if platform not supported
+            if platform not in platforms:
+                continue
+
+            target_platforms = [platform]
 
             # Case 2: String pattern for this platform
             if isinstance(platform_patterns, str):
-                normalized[platform]["*"] = platform_patterns
+                for target_platform in target_platforms:
+                    for arch in platforms[target_platform]:
+                        normalized[target_platform][arch] = platform_patterns
+
             # Case 3: Dict of patterns by architecture
             elif isinstance(platform_patterns, dict):
-                for arch, pattern in platform_patterns.items():
-                    normalized[platform][arch] = pattern
+                for arch_pattern, pattern in platform_patterns.items():
+                    for target_platform in target_platforms:
+                        if arch_pattern in platforms[target_platform]:
+                            normalized[target_platform][arch_pattern] = pattern
 
     return normalized
 
@@ -63,6 +79,7 @@ class ToolConfig:
         asset_patterns: str | dict[str, Any] | None = None,
         platform_map: dict[str, str] | None = None,
         arch_map: dict[str, str] | None = None,
+        platforms: dict[str, list[str]] = DEFAULT_PLATFORMS,
     ) -> None:
         """Initialize the tool config."""
         self.tool_name: str = tool_name
@@ -72,6 +89,7 @@ class ToolConfig:
         self.extract_binary: bool = extract_binary
         self.asset_patterns: dict[str, dict[str, str]] = _normalize_asset_patterns(
             asset_patterns,
+            platforms,
         )
         self.platform_map: dict[str, str] | None = platform_map
         self.arch_map: dict[str, str] | None = arch_map

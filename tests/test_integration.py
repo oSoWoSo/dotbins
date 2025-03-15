@@ -96,8 +96,7 @@ def test_update_tool(
         binary_name="test-tool",
         binary_path="*",
         asset_patterns={
-            "linux": "test-tool-{version}-{platform}_{arch}.tar.gz",
-            "macos": "test-tool-{version}-{platform}_{arch}.tar.gz",
+            "linux": {"amd64": "test-tool-{version}-{platform}_{arch}.tar.gz"},
         },
         platform_map={"macos": "darwin"},
     )
