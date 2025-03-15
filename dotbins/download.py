@@ -333,13 +333,7 @@ def _prepare_download_task(
         return None
 
     try:
-        asset = _find_matching_asset(
-            tool_config,
-            release,
-            version,
-            platform,
-            arch,
-        )
+        asset = _find_matching_asset(tool_config, release, version, platform, arch)
         if not asset:
             return None
 
