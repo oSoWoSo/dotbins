@@ -81,11 +81,7 @@ def analyze_tool(repo: str, name: str | None = None) -> None:
         # Output YAML
         log("Suggested configuration for YAML tools file:", "info", "📋")
         # Convert ToolConfig to dict for YAML serialization
-        tool_config_dict = {
-            k: v
-            for k, v in tool_config.__dict__.items()
-            if v is not None and k not in ["version", "arch", "tool_name"]
-        }
+        tool_config_dict = {k: v for k, v in tool_config.__dict__.items() if v is not None}
         yaml_config = {tool_name: tool_config_dict}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
         log("Please review and adjust the configuration as needed!", "warning", "# ⚠️")
