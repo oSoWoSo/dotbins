@@ -266,8 +266,6 @@ def _find_matching_asset(
     version: str,
     platform: str,
     arch: str,
-    tool_platform: str,
-    tool_arch: str,
 ) -> dict | None:
     """Find a matching asset for the tool."""
     asset_pattern = _get_asset_pattern(tool_config, platform, arch)
@@ -276,8 +274,8 @@ def _find_matching_asset(
         return None
     search_pattern = asset_pattern.format(
         version=version,
-        platform=tool_platform,
-        arch=tool_arch,
+        platform=tool_config.tool_platform(platform),
+        arch=tool_config.tool_arch(arch),
     )
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
@@ -306,16 +304,18 @@ def make_binaries_executable(config: Config) -> None:
 class _DownloadTask(NamedTuple):
     """Represents a single download task."""
 
-    tool_name: str
+    tool_config: ToolConfig
     platform: str
     arch: str
-    tool_arch: str
     version: str
     asset_url: str
     asset_name: str
-    tool_config: ToolConfig
     destination_dir: Path
     temp_path: Path
+
+    @property
+    def tool_name(self) -> str:
+        return self.tool_config.tool_name
 
 
 def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
@@ -367,16 +367,12 @@ def _prepare_download_task(
         return None
 
     try:
-        tool_arch = tool_config.tool_arch(arch)
-        tool_platform = tool_config.tool_platform(platform)
         asset = _find_matching_asset(
             tool_config,
             release,
             version,
             platform,
             arch,
-            tool_platform,
-            tool_arch,
         )
         if not asset:
             return None
@@ -385,14 +381,12 @@ def _prepare_download_task(
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
 
         return _DownloadTask(
-            tool_name=tool_name,
+            tool_config=tool_config,
             platform=platform,
             arch=arch,
             version=version,
-            tool_arch=tool_arch,
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
-            tool_config=tool_config,
             destination_dir=destination_dir,
             temp_path=temp_path,
         )
@@ -428,7 +422,7 @@ def _process_downloaded_task(
                 task.tool_config,
                 task.platform,
                 task.version,
-                task.tool_arch,
+                task.tool_config.tool_arch(task.arch),
             )
         else:
             binary_names = task.tool_config.binary_name
