@@ -58,7 +58,7 @@ def _extract_from_archive(
     tool_config: ToolConfig,
     platform: str,
     version: str,
-    tool_arch: str,
+    arch: str,
 ) -> None:
     """Extract binaries from an archive."""
     log(f"Extracting from {archive_path} for {platform}", "info", "📦")
@@ -67,7 +67,6 @@ def _extract_from_archive(
     try:
         extract_archive(str(archive_path), str(temp_dir))
         log(f"Archive extracted to {temp_dir}", "success", "📦")
-        # Debug: List the extracted files
         _log_extracted_files(temp_dir)
         binary_paths = tool_config.binary_path or _detect_binary_paths(
             temp_dir,
@@ -80,7 +79,7 @@ def _extract_from_archive(
             tool_config.binary_name,
             binary_paths,
             version,
-            tool_arch,
+            tool_config.tool_arch(arch),
         )
 
     except Exception as e:
@@ -389,7 +388,7 @@ def _process_downloaded_task(
                 task.tool_config,
                 task.platform,
                 task.version,
-                task.tool_config.tool_arch(task.arch),
+                task.arch,
             )
         else:
             binary_names = task.tool_config.binary_name

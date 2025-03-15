@@ -12,10 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dotbins.config import build_tool_config
-from dotbins.download import (
-    _auto_detect_binary_paths,
-    _extract_from_archive,
-)
+from dotbins.download import _auto_detect_binary_paths, _extract_from_archive
 
 
 @pytest.fixture
