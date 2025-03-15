@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import concurrent.futures
 import os
 import re
 import shutil
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -452,13 +452,11 @@ def download_files_in_parallel(
     """Download files in parallel using ThreadPoolExecutor."""
     log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
     downloaded_tasks = []
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=min(8, len(download_tasks) or 1),
-    ) as executor:
+    with ThreadPoolExecutor(max_workers=min(8, len(download_tasks) or 1)) as ex:
         future_to_task = {
-            executor.submit(_download_task, task): task for task in download_tasks
+            ex.submit(_download_task, task): task for task in download_tasks
         }
-        for future in concurrent.futures.as_completed(future_to_task):
+        for future in as_completed(future_to_task):
             task, success = future.result()
             downloaded_tasks.append((task, success))
 
@@ -482,7 +480,6 @@ def prepare_download_tasks(
                 log(f"Skipping unknown platform: {platform}", "warning")
                 continue
 
-            # Get architectures to update
             archs_to_update = _determine_architectures(platform, architecture, config)
             if not archs_to_update:
                 continue
