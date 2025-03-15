@@ -28,7 +28,7 @@ def _list_tools(config: Config) -> None:
 
 def _update_tools(
     config: Config,
-    tools: list[str] | None,
+    tools: list[str],
     platform: str | None,
     architecture: str | None,
     current: bool,
@@ -61,7 +61,7 @@ def _update_tools(
 
 def _determine_update_targets(
     config: Config,
-    tools: list[str] | None,
+    tools: list[str],
     platform: str | None,
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
