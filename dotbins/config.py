@@ -157,13 +157,6 @@ class Config:
                 "⚠️",
             )
 
-        if not tool_config.binary_name:
-            log(
-                f"Tool {tool_name} is missing required field 'binary_name'",
-                "error",
-                "⚠️",
-            )
-
         if not tool_config.binary_path:
             log(
                 f"Tool {tool_name} has no binary_path specified - will attempt auto-detection",
@@ -221,28 +214,24 @@ class Config:
         tool_config: ToolConfig,
     ) -> None:
         """Validate asset_patterns structure."""
-        if not tool_config.asset_patterns:
-            return
-
         patterns = tool_config.asset_patterns
-        if isinstance(patterns, dict):
-            for platform, platform_patterns in patterns.items():
-                if platform not in self.platforms and platform != "default":
-                    log(
-                        f"Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'",
-                        "error",
-                        "⚠️",
-                    )
-                if isinstance(platform_patterns, dict):
-                    # Get architectures for this platform
-                    valid_architectures = self.get_architectures(platform)
-                    for arch in platform_patterns:
-                        if arch not in valid_architectures and arch != "default":
-                            log(
-                                f"Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'",
-                                "error",
-                                "⚠️",
-                            )
+        for platform, platform_patterns in patterns.items():
+            if platform not in self.platforms:
+                log(
+                    f"Tool {tool_name}: 'asset_patterns' contains unknown platform '{platform}'",
+                    "error",
+                    "⚠️",
+                )
+            if isinstance(platform_patterns, dict):
+                # Get architectures for this platform
+                valid_architectures = self.get_architectures(platform)
+                for arch in platform_patterns:
+                    if arch not in valid_architectures:
+                        log(
+                            f"Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'",
+                            "error",
+                            "⚠️",
+                        )
 
     @classmethod
     def load_from_file(cls, config_path: str | Path | None = None) -> Config:
@@ -256,34 +245,11 @@ class Config:
         5. ~/.dotbins.yaml (home directory)
         6. ~/.dotfiles/dotbins.yaml (default dotfiles location)
         """
-        if config_path:
-            config_paths = [Path(config_path)]
-        else:
-            # Define common configuration file locations
-            home = Path.home()
-            config_paths = [
-                Path.cwd() / "dotbins.yaml",
-                home / ".config" / "dotbins" / "config.yaml",
-                home / ".config" / "dotbins.yaml",
-                home / ".dotbins.yaml",
-                home / ".dotfiles" / "dotbins.yaml",
-            ]
-            # Find the first existing config file
-            for path in config_paths:
-                if path.exists():
-                    log(f"Loading configuration from: {path}", "success", "📝")
-                    config_paths = [path]
-                    break
-            else:
-                # No config file found
-                log("No configuration file found, using default settings", "warning")
-                return cls()
-
-        # At this point, config_paths only contains one path that's either:
-        # - the explicitly provided path, or
-        # - the first existing path from the common locations
+        config_path = _find_config_file(config_path)
+        if config_path is None:
+            return cls()
         try:
-            with open(config_paths[0]) as file:
+            with open(config_path) as file:
                 config_data = yaml.safe_load(file)
 
             # Expand paths
@@ -295,7 +261,11 @@ class Config:
             # Convert tools dictionaries to ToolConfig objects
             if "tools" in config_data:
                 config_data["tools"] = {
-                    tool_name: ToolConfig(tool_name, **tool_data)
+                    tool_name: ToolConfig(
+                        tool_name,
+                        **tool_data,
+                        platforms=config_data.get("platforms", DEFAULT_PLATFORMS),
+                    )
                     for tool_name, tool_data in config_data["tools"].items()
                 }
 
@@ -304,11 +274,11 @@ class Config:
             return config
 
         except FileNotFoundError:
-            log(f"Configuration file not found: {config_paths[0]}", "warning")
+            log(f"Configuration file not found: {config_path}", "warning")
             return cls()
         except yaml.YAMLError:
             log(
-                f"Invalid YAML in configuration file: {config_paths[0]}",
+                f"Invalid YAML in configuration file: {config_path}",
                 "error",
                 print_exception=True,
             )
@@ -316,3 +286,22 @@ class Config:
         except Exception as e:
             log(f"Error loading configuration: {e}", "error", print_exception=True)
             return cls()
+
+
+def _find_config_file(config_path: str | Path | None) -> Path | None:
+    if config_path is not None:
+        return Path(config_path)
+    home = Path.home()
+    config_paths = [
+        Path.cwd() / "dotbins.yaml",
+        home / ".config" / "dotbins" / "config.yaml",
+        home / ".config" / "dotbins.yaml",
+        home / ".dotbins.yaml",
+        home / ".dotfiles" / "dotbins.yaml",
+    ]
+    for path in config_paths:
+        if path.exists():
+            log(f"Loading configuration from: {path}", "success", "📝")
+            return path
+    log("No configuration file found, using default settings", "warning")
+    return None
