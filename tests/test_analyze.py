@@ -233,9 +233,7 @@ def test_download_and_find_binary(
 
     # Use secure temporary paths
     with patch("tempfile.NamedTemporaryFile") as mock_temp_file:
-        mock_temp_file.return_value.__enter__.return_value.name = (
-            "/secure/temp/file.tar.gz"
-        )
+        mock_temp_file.return_value.__enter__.return_value.name = "/secure/temp/file.tar.gz"
         with patch("tempfile.mkdtemp", return_value="/secure/temp/extracted"):
             result = analyze._download_and_find_binary(mock_asset, "tool")
 
@@ -301,9 +299,7 @@ def test_analyze_tool(
     assert "Suggested configuration for YAML tools file:" in captured.out
 
     # Verify we can parse the output as valid YAML
-    yaml_section = captured.out.split("Suggested configuration for YAML tools file:")[
-        1
-    ].strip()
+    yaml_section = captured.out.split("Suggested configuration for YAML tools file:")[1].strip()
     parsed = yaml.safe_load(yaml_section)
     assert "tool" in parsed
     assert ToolConfig("tool", **parsed["tool"]) == tool_config

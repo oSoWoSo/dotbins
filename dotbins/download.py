@@ -22,9 +22,7 @@ if TYPE_CHECKING:
 def _find_asset(assets: list[dict], pattern: str) -> dict | None:
     """Find an asset that matches the given pattern."""
     regex_pattern = (
-        pattern.replace("{version}", ".*")
-        .replace("{arch}", ".*")
-        .replace("{platform}", ".*")
+        pattern.replace("{version}", ".*").replace("{arch}", ".*").replace("{platform}", ".*")
     )
     log(f"Looking for asset with pattern: {regex_pattern}", "info", "🔍")
 
@@ -295,19 +293,12 @@ def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
         download_file(task.asset_url, str(task.temp_path))
         return task, True
     except Exception as e:
-        log(
-            f"Error downloading {task.asset_name}: {e!s}",
-            "error",
-            print_exception=True,
-        )
+        log(f"Error downloading {task.asset_name}: {e!s}", "error", print_exception=True)
         return task, False
 
 
 def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -> bool:
-    return all(
-        (destination_dir / binary_name).exists()
-        for binary_name in tool_config.binary_name
-    )
+    return all((destination_dir / binary_name).exists() for binary_name in tool_config.binary_name)
 
 
 def _should_download(
@@ -453,9 +444,7 @@ def download_files_in_parallel(
     log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
     downloaded_tasks = []
     with ThreadPoolExecutor(max_workers=min(8, len(download_tasks) or 1)) as ex:
-        future_to_task = {
-            ex.submit(_download_task, task): task for task in download_tasks
-        }
+        future_to_task = {ex.submit(_download_task, task): task for task in download_tasks}
         for future in as_completed(future_to_task):
             task, success = future.result()
             downloaded_tasks.append((task, success))

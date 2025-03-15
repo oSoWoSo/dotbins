@@ -280,17 +280,11 @@ def generate_tool_config(
     processed_binary_path: str | list[str] | None = None
     if binary_path:
         if isinstance(binary_path, list):
-            processed_binary_path = [
-                _generalize_binary_path(path) for path in binary_path
-            ]
+            processed_binary_path = [_generalize_binary_path(path) for path in binary_path]
         else:
             processed_binary_path = _generalize_binary_path(binary_path)
 
-    arch_map = (
-        {"amd64": "x86_64", "arm64": "aarch64"}
-        if _needs_arch_conversion(assets)
-        else {}
-    )
+    arch_map = {"amd64": "x86_64", "arm64": "aarch64"} if _needs_arch_conversion(assets) else {}
 
     asset_patterns = _get_asset_patterns(release, linux_assets, macos_assets)
 
@@ -344,9 +338,7 @@ def _generalize_binary_path(path: str) -> str:
 
 def _needs_arch_conversion(assets: list[dict]) -> bool:
     """Determine if we need architecture conversion."""
-    return any("x86_64" in a["name"] for a in assets) or any(
-        "aarch64" in a["name"] for a in assets
-    )
+    return any("x86_64" in a["name"] for a in assets) or any("aarch64" in a["name"] for a in assets)
 
 
 def generate_platform_specific_patterns(release: dict) -> dict[str, str | None]:
@@ -361,9 +353,7 @@ def generate_platform_specific_patterns(release: dict) -> dict[str, str | None]:
     # Find pattern for each platform
     for platform, platform_assets in [("linux", linux_assets), ("macos", macos_assets)]:
         amd64_assets = [
-            a
-            for a in platform_assets
-            if any(arch in a["name"] for arch in ["x86_64", "amd64"])
+            a for a in platform_assets if any(arch in a["name"] for arch in ["x86_64", "amd64"])
         ]
 
         if amd64_assets:

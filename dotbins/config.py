@@ -107,8 +107,7 @@ def _normalize_asset_patterns(
     """
     # Start by initializing empty patterns for each platform/arch
     normalized: dict[str, dict[str, str | None]] = {
-        platform: {arch: None for arch in arch_list}
-        for platform, arch_list in platforms.items()
+        platform: {arch: None for arch in arch_list} for platform, arch_list in platforms.items()
     }
     if not patterns:
         return normalized
@@ -190,10 +189,7 @@ class Config:
             )
 
         # If binary lists differ in length, log an error
-        if (
-            len(tool_config.binary_name) != len(tool_config.binary_path)
-            and tool_config.binary_path
-        ):
+        if len(tool_config.binary_name) != len(tool_config.binary_path) and tool_config.binary_path:
             log(
                 f"Tool {tool_name}: 'binary_name' and 'binary_path' must have the same length if both are specified as lists.",
                 "error",

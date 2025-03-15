@@ -121,6 +121,4 @@ def test_tool_config_has_asset_pattern(
             tool_config.asset_patterns.values(),
         ), f"Tool {tool_name} has empty asset_patterns dictionary"
     elif isinstance(tool_config.asset_patterns, str):
-        assert (
-            tool_config.asset_patterns
-        ), f"Tool {tool_name} has empty asset_patterns string"
+        assert tool_config.asset_patterns, f"Tool {tool_name} has empty asset_patterns string"

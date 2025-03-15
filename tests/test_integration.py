@@ -179,9 +179,7 @@ def test_analyze_tool(
     assert "extract_binary: true" in captured.out
 
     # Make sure the output is in valid YAML format
-    yaml_text = captured.out.split("Suggested configuration for YAML tools file:")[
-        1
-    ].strip()
+    yaml_text = captured.out.split("Suggested configuration for YAML tools file:")[1].strip()
     yaml.safe_load(yaml_text)
 
 
