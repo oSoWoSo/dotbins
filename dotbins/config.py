@@ -25,18 +25,19 @@ def _normalize_asset_patterns(  # noqa: PLR0912
     """Normalize asset patterns to dict[str, dict[str, str]] format for all supported platforms and architectures."""
     normalized: dict[str, dict[str, str]] = {}
 
-    if patterns is None:
-        return normalized
-
     # Initialize the structure with all supported platforms and architectures
     for platform, architectures in platforms.items():
         normalized[platform] = {arch: "" for arch in architectures}
 
+    # Handle empty patterns case
+    if patterns is None:
+        return normalized
+
     # Case 1: String pattern (global pattern for all platforms/architectures)
     if isinstance(patterns, str):
         # Apply the global pattern to all platforms and architectures
-        for platform, architectures in platforms.items():
-            for arch in architectures:
+        for platform, _architectures in normalized.items():
+            for arch in _architectures:
                 normalized[platform][arch] = patterns
         return normalized
 
@@ -47,20 +48,18 @@ def _normalize_asset_patterns(  # noqa: PLR0912
             if platform not in platforms:
                 continue
 
-            target_platforms = [platform]
-
             # Case 2: String pattern for this platform
             if isinstance(platform_patterns, str):
-                for target_platform in target_platforms:
-                    for arch in platforms[target_platform]:
-                        normalized[target_platform][arch] = platform_patterns
+                # Apply the pattern to all architectures of this platform
+                for arch in normalized[platform]:
+                    normalized[platform][arch] = platform_patterns
 
             # Case 3: Dict of patterns by architecture
             elif isinstance(platform_patterns, dict):
-                for arch_pattern, pattern in platform_patterns.items():
-                    for target_platform in target_platforms:
-                        if arch_pattern in platforms[target_platform]:
-                            normalized[target_platform][arch_pattern] = pattern
+                # Apply architecture-specific patterns
+                for arch, pattern in platform_patterns.items():
+                    if arch in normalized[platform]:
+                        normalized[platform][arch] = pattern
 
     return normalized
 
