@@ -260,7 +260,6 @@ def _get_release_info(tool_config: ToolConfig) -> tuple[dict, str]:
     repo = tool_config.repo
     release = get_latest_release(repo)
     version = release["tag_name"].lstrip("v")
-    tool_config.version = version  # Update the version field
     return release, version
 
 
@@ -274,7 +273,6 @@ def _map_platform_and_arch(
     tool_arch = arch
     if tool_config.arch_map and arch in tool_config.arch_map:
         tool_arch = tool_config.arch_map[arch]
-    tool_config.arch = tool_arch  # Update the arch field
 
     # Map platform if needed
     tool_platform = platform
