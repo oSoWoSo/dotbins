@@ -18,36 +18,6 @@ DEFAULT_PLATFORMS = {
 }
 
 
-def _normalize_asset_patterns(
-    patterns: str | dict[str, Any] | None,
-    platforms: dict[str, list[str]],
-) -> dict[str, dict[str, str]]:
-    """Normalize asset patterns to dict[str, dict[str, str]] format for all supported platforms and architectures."""
-    normalized: dict[str, dict[str, str]] = {
-        platform: {arch: "" for arch in architectures}
-        for platform, architectures in platforms.items()
-    }
-    if patterns is None:
-        return normalized
-    if isinstance(patterns, str):
-        for platform, _architectures in normalized.items():
-            for arch in _architectures:
-                normalized[platform][arch] = patterns
-        return normalized
-    if isinstance(patterns, dict):
-        for platform, platform_patterns in patterns.items():
-            if platform not in platforms:
-                continue
-            if isinstance(platform_patterns, str):
-                for arch in normalized[platform]:
-                    normalized[platform][arch] = platform_patterns
-            elif isinstance(platform_patterns, dict):
-                for arch, pattern in platform_patterns.items():
-                    if arch in normalized[platform]:
-                        normalized[platform][arch] = pattern
-    return normalized
-
-
 @dataclass
 class ToolConfig:
     """Configuration for a single tool."""
@@ -291,3 +261,33 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
             return path
     log("No configuration file found, using default settings", "warning")
     return None
+
+
+def _normalize_asset_patterns(
+    patterns: str | dict[str, Any] | None,
+    platforms: dict[str, list[str]],
+) -> dict[str, dict[str, str]]:
+    """Normalize asset patterns to dict[str, dict[str, str]] format for all supported platforms and architectures."""
+    normalized: dict[str, dict[str, str]] = {
+        platform: {arch: "" for arch in architectures}
+        for platform, architectures in platforms.items()
+    }
+    if patterns is None:
+        return normalized
+    if isinstance(patterns, str):
+        for platform, _architectures in normalized.items():
+            for arch in _architectures:
+                normalized[platform][arch] = patterns
+        return normalized
+    if isinstance(patterns, dict):
+        for platform, platform_patterns in patterns.items():
+            if platform not in platforms:
+                continue
+            if isinstance(platform_patterns, str):
+                for arch in normalized[platform]:
+                    normalized[platform][arch] = platform_patterns
+            elif isinstance(platform_patterns, dict):
+                for arch, pattern in platform_patterns.items():
+                    if arch in normalized[platform]:
+                        normalized[platform][arch] = pattern
+    return normalized
