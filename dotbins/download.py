@@ -328,7 +328,7 @@ def get_asset_pattern(
     # Direct lookup by platform and architecture
     if platform in patterns and arch in patterns[platform]:
         pattern = patterns[platform][arch]
-        if pattern:  # Check for empty string
+        if pattern and pattern != "?":
             return pattern
 
     # No valid pattern found
