@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
 
 from . import __version__
 from .analyze import analyze_tool
@@ -20,7 +19,7 @@ from .utils import current_platform, log, print_shell_setup
 from .versions import VersionStore
 
 
-def _list_tools(_args: Any, config: Config) -> None:
+def _list_tools(config: Config) -> None:
     """List available tools."""
     log("Available tools:", "info", "🔧")
     for tool, tool_config in config.tools.items():
@@ -91,7 +90,7 @@ def _print_completion_summary(
         print_shell_setup(config)
 
 
-def _initialize(_args: Any, config: Config) -> None:
+def _initialize(config: Config) -> None:
     """Initialize the tools directory structure."""
     for platform, architectures in config.platforms.items():
         for arch in architectures:
@@ -101,7 +100,7 @@ def _initialize(_args: Any, config: Config) -> None:
     print_shell_setup(config)
 
 
-def _show_versions(_args: Any, config: Config) -> None:
+def _show_versions(config: Config) -> None:
     """Show versions of installed tools."""
     version_store = VersionStore(config.tools_dir)
     versions = version_store.list_all()
@@ -149,8 +148,7 @@ def create_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # list command
-    list_parser = subparsers.add_parser("list", help="List available tools")
-    list_parser.set_defaults(func=_list_tools)
+    _list_parser = subparsers.add_parser("list", help="List available tools")
 
     # update command
     update_parser = subparsers.add_parser("update", help="Update tools")
@@ -189,11 +187,9 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print shell setup instructions",
     )
-    update_parser.set_defaults(func=_update_tools)
 
     # init command
-    init_parser = subparsers.add_parser("init", help="Initialize directory structure")
-    init_parser.set_defaults(func=_initialize)
+    _init_parser = subparsers.add_parser("init", help="Initialize directory structure")
 
     # analyze command for discovering new tools
     analyze_parser = subparsers.add_parser(
@@ -205,20 +201,15 @@ def create_parser() -> argparse.ArgumentParser:
         help="GitHub repository in the format 'owner/repo'",
     )
     analyze_parser.add_argument("--name", help="Name to use for the tool")
-    analyze_parser.set_defaults(func=analyze_tool)
 
     # version command
-    version_parser = subparsers.add_parser("version", help="Print version information")
-    version_parser.set_defaults(
-        func=lambda _, __: log(f"[yellow]dotbins[/] [bold]v{__version__}[/]"),
-    )
+    _version_parser = subparsers.add_parser("version", help="Print version information")
 
     # versions command
-    versions_parser = subparsers.add_parser(
+    _versions_parser = subparsers.add_parser(
         "versions",
         help="Show installed tool versions and their last update times",
     )
-    versions_parser.set_defaults(func=_show_versions)
 
     return parser
 
@@ -236,9 +227,18 @@ def main() -> None:
         if args.tools_dir:
             config.tools_dir = Path(args.tools_dir)
 
-        # Execute command or show help
-        if hasattr(args, "func"):
-            args.func(args, config)
+        if args.command == "init":
+            _initialize(config)
+        elif args.command == "list":
+            _list_tools(config)
+        elif args.command == "update":
+            _update_tools(args, config)
+        elif args.command == "analyze":
+            analyze_tool(args, config)
+        elif args.command == "versions":
+            _show_versions(config)
+        elif args.command == "version":
+            log(f"[yellow]dotbins[/] [bold]v{__version__}[/]")
         else:
             parser.print_help()
 

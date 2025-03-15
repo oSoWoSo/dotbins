@@ -40,7 +40,7 @@ def test_initialization(
     )
 
     # Call initialize with the config
-    cli._initialize(None, config=config)
+    cli._initialize(config=config)
 
     # Check if directories were created - only for valid platform/arch combinations
     platform_archs = [("linux", "amd64"), ("linux", "arm64"), ("macos", "arm64")]
@@ -76,7 +76,7 @@ def test_list_tools(
     )
 
     # Directly call the list_tools function
-    cli._list_tools(None, config)
+    cli._list_tools(config)
 
     # Check if tool was listed
     captured = capsys.readouterr()
