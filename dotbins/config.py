@@ -164,13 +164,6 @@ class Config:
                 "ℹ️",  # noqa: RUF001
             )
 
-        if not tool_config.asset_patterns:
-            log(
-                f"Tool {tool_name} is missing required field 'asset_patterns'",
-                "error",
-                "⚠️",
-            )
-
     def _validate_binary_fields(
         self,
         tool_name: str,
@@ -223,7 +216,6 @@ class Config:
                     "⚠️",
                 )
             if isinstance(platform_patterns, dict):
-                # Get architectures for this platform
                 valid_architectures = self.get_architectures(platform)
                 for arch in platform_patterns:
                     if arch not in valid_architectures:
@@ -251,14 +243,10 @@ class Config:
         try:
             with open(config_path) as file:
                 config_data = yaml.safe_load(file)
-
-            # Expand paths
             if isinstance(config_data.get("tools_dir"), str):
                 config_data["tools_dir"] = Path(
                     os.path.expanduser(config_data["tools_dir"]),
                 )
-
-            # Convert tools dictionaries to ToolConfig objects
             if "tools" in config_data:
                 config_data["tools"] = {
                     tool_name: ToolConfig(
@@ -268,7 +256,6 @@ class Config:
                     )
                     for tool_name, tool_data in config_data["tools"].items()
                 }
-
             config = cls(**config_data)
             config.validate()
             return config
