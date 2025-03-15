@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from pytest_mock import MockFixture
 
 import dotbins
-from dotbins.config import Config, ToolConfig, build_tool_config
+from dotbins.config import Config, build_tool_config
 from dotbins.versions import VersionStore
 
 
@@ -476,11 +476,13 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
             tar.add(primary_dir, arcname="test-1.0.0")
 
     # Setup tool config with multiple binaries
-    test_tool_config = ToolConfig(
+    test_tool_config = build_tool_config(
         tool_name="test-tool",
-        repo="test/tool",
-        binary_name=["primary-tool", "secondary-tool"],
-        binary_path=["test-1.0.0/primary-bin", "test-1.0.0/secondary-bin"],
+        raw_data={
+            "repo": "test/tool",
+            "binary_name": ["primary-tool", "secondary-tool"],
+            "binary_path": ["test-1.0.0/primary-bin", "test-1.0.0/secondary-bin"],
+        },
     )
 
     # Create destination directory

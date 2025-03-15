@@ -30,8 +30,16 @@ class ToolConfig:
     binary_path: list[str] = field(default_factory=list)
     extract_binary: bool = True
     asset_patterns: dict[str, dict[str, str]] = field(default_factory=dict)
-    platform_map: dict[str, str] | None = None
-    arch_map: dict[str, str] | None = None
+    platform_map: dict[str, str] = field(default_factory=dict)
+    arch_map: dict[str, str] = field(default_factory=dict)
+
+    def tool_arch(self, arch: str) -> str:
+        """Get the architecture for the tool."""
+        return self.arch_map.get(arch, arch)
+
+    def tool_platform(self, platform: str) -> str:
+        """Get the platform for the tool."""
+        return self.platform_map.get(platform, platform)
 
 
 def build_tool_config(
@@ -50,8 +58,8 @@ def build_tool_config(
     # Safely grab data from raw_data (or set default if missing).
     repo = raw_data.get("repo") or ""
     extract_binary = raw_data.get("extract_binary", True)
-    platform_map = raw_data.get("platform_map")
-    arch_map = raw_data.get("arch_map")
+    platform_map = raw_data.get("platform_map", {})
+    arch_map = raw_data.get("arch_map", {})
     # Might be str or list
     raw_binary_name = raw_data.get("binary_name", tool_name)
     raw_binary_path = raw_data.get("binary_path", [])

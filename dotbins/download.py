@@ -260,23 +260,6 @@ def _get_release_info(tool_config: ToolConfig) -> tuple[dict, str]:
     return release, version
 
 
-def _map_platform_and_arch(
-    platform: str,
-    arch: str,
-    tool_config: ToolConfig,
-) -> tuple[str, str]:
-    """Map platform and architecture names."""
-    tool_arch = arch
-    if tool_config.arch_map and arch in tool_config.arch_map:
-        tool_arch = tool_config.arch_map[arch]
-
-    tool_platform = platform
-    if tool_config.platform_map and platform in tool_config.platform_map:
-        tool_platform = tool_config.platform_map[platform]
-
-    return tool_platform, tool_arch
-
-
 def _find_matching_asset(
     tool_config: ToolConfig,
     release: dict,
@@ -378,14 +361,14 @@ def _prepare_download_task(
 
     if tool_info and tool_info["version"] == version and all_exist and not force:
         log(
-            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']})"
-            " use --force to re-download.",
+            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
             "success",
         )
         return None
 
     try:
-        tool_platform, tool_arch = _map_platform_and_arch(platform, arch, tool_config)
+        tool_arch = tool_config.tool_arch(arch)
+        tool_platform = tool_config.tool_platform(platform)
         asset = _find_matching_asset(
             tool_config,
             release,
