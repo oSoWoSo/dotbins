@@ -385,10 +385,7 @@ def _prepare_download_task(
     if not tool_config:
         return None
 
-    # Get current version info
     tool_info = version_store.get_tool_info(tool_name, platform, arch)
-
-    # Get latest release info
     release, version = _get_release_info(tool_config)
 
     # Check if update is needed
@@ -400,14 +397,10 @@ def _prepare_download_task(
         return None
 
     destination_dir = config.tools_dir / platform / arch / "bin"
-
-    all_exist = True
-    for binary_name in tool_config.binary_name:
-        binary_path = destination_dir / binary_name
-        if not binary_path.exists():
-            all_exist = False
-            break
-
+    all_exist = all(
+        (destination_dir / binary_name).exists()
+        for binary_name in tool_config.binary_name
+    )
     if all_exist:
         log(
             f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
