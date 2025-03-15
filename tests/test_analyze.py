@@ -165,8 +165,8 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert isinstance(config, ToolConfig)
     assert config.repo == "test/repo"
     assert config.extract_binary is True
-    assert config.binary_name == "tool"
-    assert config.binary_path == "*/tool"
+    assert config.binary_name == ["tool"]
+    assert config.binary_path == ["*/tool"]
     assert config.arch_map
     assert config.asset_patterns
     assert isinstance(config.asset_patterns, dict)
@@ -189,7 +189,7 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
         mock_release,
         "tool-1.0.0/bin/tool",
     )
-    assert config.binary_path == "*/bin/tool"
+    assert config.binary_path == ["*/bin/tool"]
 
 
 def test_generate_platform_specific_patterns(mock_release: dict[str, Any]) -> None:
@@ -280,6 +280,7 @@ def test_analyze_tool(
     mock_download_find.return_value = "bin/tool"
 
     tool_config = ToolConfig(
+        tool_name="tool",
         repo="test/repo",
         extract_binary=True,
         binary_name="tool",
@@ -308,7 +309,7 @@ def test_analyze_tool(
     ].strip()
     parsed = yaml.safe_load(yaml_section)
     assert "tool" in parsed
-    assert ToolConfig(**parsed["tool"]) == tool_config
+    assert ToolConfig("tool", **parsed["tool"]) == tool_config
 
 
 def test_extract_archive(temp_dir: Path) -> None:

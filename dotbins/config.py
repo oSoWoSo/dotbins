@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import yaml
 
@@ -22,21 +22,59 @@ DEFAULT_PLATFORMS = {
 class ToolConfig:
     """Configuration for a single tool."""
 
-    repo: str
-    binary_name: str | list[str]
-    binary_path: str | list[str] | None = None
-    extract_binary: bool = True
-    asset_patterns: str | dict[str, Any] | None = None
-    platform_map: dict[str, str] | None = None
-    arch_map: dict[str, str] | None = None
-    # Runtime fields - not required for initialization
-    version: str | None = None
-    arch: str | None = None
+    def __init__(
+        self,
+        tool_name: str,
+        repo: str,
+        binary_name: str | list[str] | None = None,
+        binary_path: str | list[str] | None = None,
+        extract_binary: bool = True,
+        asset_patterns: str | dict[str, Any] | None = None,
+        platform_map: dict[str, str] | None = None,
+        arch_map: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize the tool config."""
+        self.tool_name: str = tool_name
+        self.repo: str = repo
+        self.binary_name: list[str] = _ensure_list(binary_name) or [tool_name]
+        self.binary_path: list[str] = _ensure_list(binary_path)
+        self.extract_binary: bool = extract_binary
+        self.asset_patterns: str | dict[str, Any] | None = asset_patterns
+        self.platform_map: dict[str, str] | None = platform_map
+        self.arch_map: dict[str, str] | None = arch_map
+        # Runtime fields - not required for initialization,
+        self.version: str | None = None
+        self.arch: str | None = None
 
     def copy(self, **updates: Any) -> ToolConfig:
         """Copy the tool config and update with new values."""
-        kwargs = asdict(self) | updates
-        return ToolConfig(**kwargs)
+        cfg = ToolConfig(
+            tool_name=self.tool_name,
+            repo=self.repo,
+            binary_name=self.binary_name,
+            binary_path=self.binary_path,
+            extract_binary=self.extract_binary,
+            asset_patterns=self.asset_patterns,
+            platform_map=self.platform_map,
+            arch_map=self.arch_map,
+        )
+        cfg.version = self.version
+        cfg.arch = self.arch
+        for key, value in updates.items():
+            setattr(cfg, key, value)
+        return cfg
+
+
+T = TypeVar("T")
+
+
+def _ensure_list(value: T | list[T] | None) -> list[T]:
+    """Ensure a value is a list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
 
 
 @dataclass
@@ -133,8 +171,8 @@ class DotbinsConfig:
     ) -> None:
         """Validate binary_name and binary_path lists have the same length."""
         if (
-            isinstance(tool_config.binary_name, list)
-            and isinstance(tool_config.binary_path, list)
+            tool_config.binary_name
+            and tool_config.binary_path
             and len(tool_config.binary_name) != len(tool_config.binary_path)
         ):
             log(
@@ -223,7 +261,7 @@ class DotbinsConfig:
             # Convert tools dictionaries to ToolConfig objects
             if "tools" in config_data:
                 config_data["tools"] = {
-                    tool_name: ToolConfig(**tool_data)
+                    tool_name: ToolConfig(tool_name, **tool_data)
                     for tool_name, tool_data in config_data["tools"].items()
                 }
 
