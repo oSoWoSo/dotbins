@@ -311,15 +311,17 @@ def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -
 
 
 def _should_download(
+    tool_name: str,
+    config: Config,
     platform: str,
     arch: str,
     version: str,
-    tool_config: ToolConfig,
     destination_dir: Path,
-    tool_info: dict | None,
     force: bool = False,
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
+    tool_info = config.version_store.get_tool_info(tool_name, platform, arch)
+    tool_config = config.tools[tool_name]
     all_exist = _exists_in_destination_dir(destination_dir, tool_config)
     if tool_info and tool_info["version"] == version and all_exist and not force:
         log(
@@ -341,15 +343,14 @@ def _prepare_download_task(
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
-    tool_info = config.version_store.get_tool_info(tool_name, platform, arch)
     destination_dir = config.bin_dir(platform, arch)
     if not _should_download(
+        tool_name,
+        config,
         platform,
         arch,
         version,
-        tool_config,
         destination_dir,
-        tool_info,
         force,
     ):
         return None
