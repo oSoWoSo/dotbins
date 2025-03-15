@@ -232,28 +232,17 @@ class Config:
             )
             return cls()
 
-        # Build up the Config fields from the raw data
         tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
         platforms = data.get("platforms", DEFAULT_PLATFORMS)
         raw_tools = data.get("tools", {})
 
-        # Convert to Path
         tools_dir_path = Path(os.path.expanduser(tools_dir))
 
-        # Build each ToolConfig
         tool_configs: dict[str, ToolConfig] = {}
         for tool_name, tool_data in raw_tools.items():
-            tool_configs[tool_name] = build_tool_config(
-                tool_name,
-                tool_data,
-                platforms,
-            )
+            tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
 
-        config_obj = cls(
-            tools_dir=tools_dir_path,
-            platforms=platforms,
-            tools=tool_configs,
-        )
+        config_obj = cls(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
         config_obj.validate()
         return config_obj
 
