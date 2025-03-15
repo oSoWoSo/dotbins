@@ -18,14 +18,15 @@ DEFAULT_PLATFORMS = {
 }
 
 
-def _normalize_asset_patterns(  # noqa: PLR0912
+def _normalize_asset_patterns(
     patterns: str | dict[str, Any] | None,
     platforms: dict[str, list[str]],
 ) -> dict[str, dict[str, str]]:
     """Normalize asset patterns to dict[str, dict[str, str]] format for all supported platforms and architectures."""
-    normalized: dict[str, dict[str, str]] = {}
-    for platform, architectures in platforms.items():
-        normalized[platform] = {arch: "" for arch in architectures}
+    normalized: dict[str, dict[str, str]] = {
+        platform: {arch: "" for arch in architectures}
+        for platform, architectures in platforms.items()
+    }
     if patterns is None:
         return normalized
     if isinstance(patterns, str):
