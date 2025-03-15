@@ -42,11 +42,9 @@ def download_file(url: str, destination: str) -> str:
     try:
         response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
-
         with open(destination, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-
         return destination
     except requests.RequestException as e:
         log(f"Download failed: {e}", "error", print_exception=True)
