@@ -16,7 +16,6 @@ from .download import (
     process_downloaded_files,
 )
 from .utils import current_platform, log, print_shell_setup
-from .versions import VersionStore
 
 
 def _list_tools(config: Config) -> None:
@@ -65,7 +64,7 @@ def _determine_update_targets(
     platform: str | None,
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
-    tools_to_update = tools if tools else list(config.tools.keys())
+    tools_to_update = tools or list(config.tools.keys())
     platforms_to_update = [platform] if platform else config.platform_names
     return tools_to_update, platforms_to_update
 
@@ -114,8 +113,7 @@ def _initialize(config: Config) -> None:
 
 def _show_versions(config: Config) -> None:
     """Show versions of installed tools."""
-    version_store = VersionStore(config.tools_dir)
-    versions = version_store.list_all()
+    versions = config.version_store.list_all()
 
     if not versions:
         log("No tool versions recorded yet.", "info")

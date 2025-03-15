@@ -60,23 +60,6 @@ def current_platform() -> tuple[str, str]:
     return platform, arch
 
 
-def get_platform_map(platform: str, platform_map: dict) -> str:
-    """Map dotbins platform names to tool-specific platform names.
-
-    Args:
-        platform: Platform name used by dotbins (e.g., 'macos')
-        platform_map: Dictionary mapping platform names
-
-    Returns:
-        Mapped platform name
-
-    """
-    if not platform_map or not isinstance(platform_map, dict):
-        return platform
-
-    return platform_map.get(platform, platform)
-
-
 def print_shell_setup(config: Config) -> None:
     """Print shell setup instructions."""
     tools_path = config.tools_dir.absolute()
