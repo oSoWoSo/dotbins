@@ -310,6 +310,27 @@ def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -
     )
 
 
+def _should_download(
+    platform: str,
+    arch: str,
+    version: str,
+    tool_config: ToolConfig,
+    destination_dir: Path,
+    tool_info: dict | None,
+    force: bool = False,
+) -> bool:
+    """Check if download should be skipped (binary already exists)."""
+    all_exist = _exists_in_destination_dir(destination_dir, tool_config)
+    if tool_info and tool_info["version"] == version and all_exist and not force:
+        log(
+            f"{tool_config.tool_name} {version} for {platform}/{arch} is already"
+            f" up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
+            "success",
+        )
+        return False
+    return True
+
+
 def _prepare_download_task(
     tool_name: str,
     platform: str,
@@ -323,23 +344,23 @@ def _prepare_download_task(
     release, version = _get_release_info(tool_config)
     tool_info = version_store.get_tool_info(tool_name, platform, arch)
     destination_dir = config.bin_dir(platform, arch)
-    all_exist = _exists_in_destination_dir(destination_dir, tool_config)
-
-    if tool_info and tool_info["version"] == version and all_exist and not force:
-        log(
-            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
-            "success",
-        )
+    if not _should_download(
+        platform,
+        arch,
+        version,
+        tool_config,
+        destination_dir,
+        tool_info,
+        force,
+    ):
         return None
 
     try:
         asset = _find_matching_asset(tool_config, release, version, platform, arch)
         if not asset:
             return None
-
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
-
         return _DownloadTask(
             tool_config=tool_config,
             platform=platform,
