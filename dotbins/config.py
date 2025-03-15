@@ -145,6 +145,13 @@ class Config:
     platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
     tools: dict[str, ToolConfig] = field(default_factory=dict)
 
+    def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
+        """Return the bin directory for a given platform and architecture."""
+        bin_dir = self.tools_dir / platform / arch / "bin"
+        if create:
+            bin_dir.mkdir(parents=True, exist_ok=True)
+        return bin_dir
+
     @property
     def platform_names(self) -> list[str]:
         """Return a list of platform names."""

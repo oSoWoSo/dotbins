@@ -97,10 +97,7 @@ def _initialize(_args: Any, config: Config) -> None:
     """Initialize the tools directory structure."""
     for platform, architectures in config.platforms.items():
         for arch in architectures:
-            (config.tools_dir / platform / arch / "bin").mkdir(
-                parents=True,
-                exist_ok=True,
-            )
+            config.bin_dir(platform, arch, create=True)
 
     log("dotbins initialized tools directory structure", "success", "🛠️")
     print_shell_setup(config)

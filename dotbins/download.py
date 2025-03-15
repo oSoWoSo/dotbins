@@ -226,32 +226,6 @@ def _replace_variables_in_path(path: str, version: str, arch: str) -> str:
     return path
 
 
-def should_skip_download(
-    tool_name: str,
-    platform: str,
-    arch: str,
-    config: Config,
-    force: bool,
-) -> bool:
-    """Check if download should be skipped (binary already exists)."""
-    destination_dir = config.tools_dir / platform / arch / "bin"
-    tool_config = config.tools[tool_name]
-    all_exist = True
-    for binary_name in tool_config.binary_name:
-        binary_path = destination_dir / binary_name
-        if not binary_path.exists():
-            all_exist = False
-            break
-
-    if all_exist and not force:
-        log(
-            f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
-            "success",
-        )
-        return True
-    return False
-
-
 def _get_release_info(tool_config: ToolConfig) -> tuple[dict, str]:
     """Get release information for a tool."""
     repo = tool_config.repo
@@ -269,7 +243,7 @@ def _find_matching_asset(
 ) -> dict | None:
     """Find a matching asset for the tool."""
     asset_pattern = tool_config.asset_patterns[platform][arch]
-    if not asset_pattern:
+    if asset_pattern is None:
         log(f"No asset pattern found for {platform}/{arch}", "warning")
         return None
     search_pattern = asset_pattern.format(
@@ -289,7 +263,7 @@ def make_binaries_executable(config: Config) -> None:
     """Make all binaries executable."""
     for platform, architectures in config.platforms.items():
         for arch in architectures:
-            bin_dir = config.tools_dir / platform / arch / "bin"
+            bin_dir = config.bin_dir(platform, arch)
             if bin_dir.exists():
                 for binary in bin_dir.iterdir():
                     if binary.is_file():
@@ -351,7 +325,7 @@ def _prepare_download_task(
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
     tool_info = version_store.get_tool_info(tool_name, platform, arch)
-    destination_dir = config.tools_dir / platform / arch / "bin"
+    destination_dir = config.bin_dir(platform, arch)
     all_exist = _exists_in_destination_dir(destination_dir, tool_config)
 
     if tool_info and tool_info["version"] == version and all_exist and not force:
