@@ -108,11 +108,7 @@ def _process_binaries(
     tool_config: ToolConfig,
 ) -> None:
     """Process each binary by finding it and copying to destination."""
-    for i, binary_path_pattern in enumerate(binary_paths):
-        # Get corresponding binary name (use last name for extra paths)
-        binary_name = binary_names[min(i, len(binary_names) - 1)]
-
-        # Find and copy each binary
+    for binary_path_pattern, binary_name in zip(binary_paths, binary_names):
         source_path = _find_binary_in_extracted_files(
             temp_dir,
             tool_config,
