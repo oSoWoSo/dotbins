@@ -173,8 +173,14 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download._extract_from_archive(archive_path, dest_dir, tool_config, "linux")
-
+    dotbins.download._extract_from_archive(
+        archive_path,
+        dest_dir,
+        tool_config,
+        "linux",
+        "1.0.0",
+        "amd64",
+    )
     # Verify the binary was extracted and renamed
     extracted_bin = dest_dir / "test-tool"
     assert extracted_bin.exists()
@@ -214,7 +220,14 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download._extract_from_archive(archive_path, dest_dir, tool_config, "linux")
+    dotbins.download._extract_from_archive(
+        archive_path,
+        dest_dir,
+        tool_config,
+        "linux",
+        "1.0.0",
+        "amd64",
+    )
 
     # Verify the binary was extracted and renamed
     extracted_bin = dest_dir / "test-tool"
@@ -384,6 +397,8 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
             dest_dir,
             test_tool_config,
             "linux",
+            "1.0.0",
+            "amd64",
         )
 
 
@@ -422,6 +437,8 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
             dest_dir,
             test_tool_config,
             "linux",
+            "1.0.0",
+            "amd64",
         )
 
 
@@ -469,6 +486,8 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
         dest_dir,
         test_tool_config,
         "linux",
+        "1.0.0",
+        "amd64",
     )
 
     # Verify both binaries were extracted and renamed correctly

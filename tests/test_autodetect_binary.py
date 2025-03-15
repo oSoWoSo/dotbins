@@ -227,6 +227,8 @@ def test_extract_from_archive_with_auto_detection(
             destination_dir,
             tool_config,
             "linux",
+            "1.0.0",
+            "amd64",
         )
 
     # Check that the binary was copied correctly
@@ -272,4 +274,6 @@ def test_extract_from_archive_auto_detection_failure(
             destination_dir,
             tool_config,
             "linux",
+            "1.0.0",
+            "amd64",
         )

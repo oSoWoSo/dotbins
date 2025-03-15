@@ -33,10 +33,6 @@ class ToolConfig:
     platform_map: dict[str, str] | None = None
     arch_map: dict[str, str] | None = None
 
-    # Runtime fields - optional, can be filled later
-    version: str | None = None
-    arch: str | None = None
-
 
 def build_tool_config(
     tool_name: str,

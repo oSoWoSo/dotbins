@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import tempfile
-from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -60,6 +59,8 @@ def _extract_from_archive(
     destination_dir: Path,
     tool_config: ToolConfig,
     platform: str,
+    version: str,
+    tool_arch: str,
 ) -> None:
     """Extract binaries from an archive."""
     log(f"Extracting from {archive_path} for {platform}", "info", "📦")
@@ -80,7 +81,8 @@ def _extract_from_archive(
             destination_dir,
             tool_config.binary_name,
             binary_paths,
-            tool_config,
+            version,
+            tool_arch,
         )
 
     except Exception as e:
@@ -106,14 +108,16 @@ def _process_binaries(
     destination_dir: Path,
     binary_names: list[str],
     binary_paths: list[str],
-    tool_config: ToolConfig,
+    version: str,
+    tool_arch: str,
 ) -> None:
     """Process each binary by finding it and copying to destination."""
     for binary_path_pattern, binary_name in zip(binary_paths, binary_names):
         source_path = _find_binary_in_extracted_files(
             temp_dir,
-            tool_config,
             binary_path_pattern,
+            version,
+            tool_arch,
         )
         _copy_binary_to_destination(source_path, destination_dir, binary_name)
 
@@ -172,12 +176,13 @@ def _log_extracted_files(temp_dir: Path) -> None:
 
 def _find_binary_in_extracted_files(
     temp_dir: Path,
-    tool_config: ToolConfig,
     binary_path: str,
+    version: str,
+    tool_arch: str,
 ) -> Path:
     """Find a specific binary in the extracted files."""
     # Replace variables in the binary path
-    binary_path = _replace_variables_in_path(binary_path, tool_config)
+    binary_path = _replace_variables_in_path(binary_path, version, tool_arch)
 
     # Handle glob patterns in binary path
     if "*" in binary_path:
@@ -210,13 +215,13 @@ def _copy_binary_to_destination(
     log(f"Copied binary to {dest_path}", "success")
 
 
-def _replace_variables_in_path(path: str, tool_config: ToolConfig) -> str:
+def _replace_variables_in_path(path: str, version: str, arch: str) -> str:
     """Replace variables in a path with their values."""
-    if "{version}" in path and tool_config.version:
-        path = path.replace("{version}", tool_config.version)
+    if "{version}" in path and version:
+        path = path.replace("{version}", version)
 
-    if "{arch}" in path and tool_config.arch:
-        path = path.replace("{arch}", tool_config.arch)
+    if "{arch}" in path and arch:
+        path = path.replace("{arch}", arch)
 
     return path
 
@@ -347,6 +352,8 @@ class _DownloadTask(NamedTuple):
     tool_name: str
     platform: str
     arch: str
+    tool_arch: str
+    version: str
     asset_url: str
     asset_name: str
     tool_config: ToolConfig
@@ -431,14 +438,11 @@ def _prepare_download_task(
             tool_name=tool_name,
             platform=platform,
             arch=arch,
+            version=version,
+            tool_arch=tool_arch,
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
-            # Make a copy of tool_config because we'll modify it
-            tool_config=_new_tool_config(
-                tool_config=tool_config,
-                version=version,
-                arch=tool_arch,
-            ),
+            tool_config=tool_config,
             destination_dir=destination_dir,
             temp_path=temp_path,
         )
@@ -450,14 +454,6 @@ def _prepare_download_task(
             print_exception=True,
         )
         return None
-
-
-def _new_tool_config(tool_config: ToolConfig, version: str, arch: str) -> ToolConfig:
-    """Create a new tool config with the given version and architecture."""
-    cfg = deepcopy(tool_config)
-    cfg.version = version
-    cfg.arch = arch
-    return cfg
 
 
 def _process_downloaded_task(
@@ -481,6 +477,8 @@ def _process_downloaded_task(
                 task.destination_dir,
                 task.tool_config,
                 task.platform,
+                task.version,
+                task.tool_arch,
             )
         else:
             binary_names = task.tool_config.binary_name
@@ -500,12 +498,12 @@ def _process_downloaded_task(
             task.tool_name,
             task.platform,
             task.arch,
-            task.tool_config.version or "unknown",
+            task.version,
             sha256=sha256_hash,
         )
 
         log(
-            f"Successfully processed {task.tool_name} v{task.tool_config.version} for {task.platform}/{task.arch}",
+            f"Successfully processed {task.tool_name} v{task.version} for {task.platform}/{task.arch}",
             "success",
         )
         return True
