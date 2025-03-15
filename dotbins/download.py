@@ -226,15 +226,6 @@ def _replace_variables_in_path(path: str, version: str, arch: str) -> str:
     return path
 
 
-def _validate_tool_config(tool_name: str, config: Config) -> ToolConfig | None:
-    """Validate that the tool exists in configuration."""
-    tool_config = config.tools.get(tool_name)
-    if not tool_config:
-        log(f"Tool '{tool_name}' not found in configuration", "error")
-        return None
-    return tool_config
-
-
 def should_skip_download(
     tool_name: str,
     platform: str,
@@ -302,13 +293,11 @@ def _find_matching_asset(
     if not asset_pattern:
         log(f"No asset pattern found for {platform}/{arch}", "warning")
         return None
-
     search_pattern = asset_pattern.format(
         version=version,
         platform=tool_platform,
         arch=tool_arch,
     )
-
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
         log(f"No asset matching '{search_pattern}' found", "warning")
@@ -376,29 +365,21 @@ def _prepare_download_task(
     force: bool = False,
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
-    tool_config = _validate_tool_config(tool_name, config)
-    if not tool_config:
-        return None
-
+    tool_config = config.tools[tool_name]
     tool_info = version_store.get_tool_info(tool_name, platform, arch)
     release, version = _get_release_info(tool_config)
-
-    # Check if update is needed
-    if tool_info and tool_info["version"] == version and not force:
-        log(
-            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']})",
-            "success",
-        )
-        return None
 
     destination_dir = config.tools_dir / platform / arch / "bin"
     all_exist = all(
         (destination_dir / binary_name).exists()
         for binary_name in tool_config.binary_name
     )
-    if all_exist:
+
+    # Check if update is needed
+    if tool_info and tool_info["version"] == version and all_exist and not force:
         log(
-            f"{tool_name} for {platform}/{arch} already exists (use --force to update)",
+            f"{tool_name} {version} for {platform}/{arch} is already up to date (installed on {tool_info['updated_at']})"
+            " use --force to re-download.",
             "success",
         )
         return None

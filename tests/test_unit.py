@@ -286,6 +286,13 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
     )
 
     version_store = VersionStore(temp_dir)
+    version_store.update_tool_info(
+        "test-tool",
+        "linux",
+        "amd64",
+        "1.0.0",
+        "sha256",
+    )
 
     config = Config(
         tools_dir=temp_dir,
