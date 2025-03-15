@@ -318,11 +318,7 @@ def _get_asset_patterns(
     platform_specific = bool(linux_assets and macos_assets)
     if platform_specific:
         return generate_platform_specific_patterns(release)
-    # Single pattern for all platforms
-    pattern = generate_single_pattern(release)
-    if pattern != "?":
-        return pattern
-    return None
+    return generate_single_pattern(release)
 
 
 def _generalize_binary_path(path: str) -> str:
@@ -355,14 +351,14 @@ def _needs_arch_conversion(assets: list[dict]) -> bool:
     )
 
 
-def generate_platform_specific_patterns(release: dict) -> dict:
+def generate_platform_specific_patterns(release: dict) -> dict[str, str | None]:
     """Generate platform-specific asset patterns."""
     assets = release["assets"]
     linux_assets = get_platform_assets(assets, "linux")
     macos_assets = get_platform_assets(assets, "macos")
     version = release["tag_name"].lstrip("v")
 
-    patterns = {"linux": "?", "macos": "?"}
+    patterns: dict[str, str | None] = {"linux": None, "macos": None}
 
     # Find pattern for each platform
     for platform, platform_assets in [("linux", linux_assets), ("macos", macos_assets)]:
@@ -429,10 +425,10 @@ def _replace_pattern_placeholders(
     return pattern
 
 
-def generate_single_pattern(release: dict) -> str:
+def generate_single_pattern(release: dict) -> str | None:
     """Generate a single asset pattern for all platforms."""
     if not release["assets"]:
-        return "?"
+        return None
 
     asset_name = release["assets"][0]["name"]
     version = release["tag_name"].lstrip("v")

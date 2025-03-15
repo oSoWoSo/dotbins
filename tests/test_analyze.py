@@ -11,7 +11,7 @@ import yaml
 from _pytest.capture import CaptureFixture
 
 from dotbins import analyze
-from dotbins.config import ToolConfig
+from dotbins.config import ToolConfig, build_tool_config
 from dotbins.download import extract_archive
 
 
@@ -170,8 +170,8 @@ def test_generate_tool_config(mock_release: dict[str, Any]) -> None:
     assert config.arch_map
     assert config.asset_patterns
     assert isinstance(config.asset_patterns, dict)
-    assert config.asset_patterns["linux"] != "?"
-    assert config.asset_patterns["macos"] != "?"
+    assert config.asset_patterns["linux"] is not None
+    assert config.asset_patterns["macos"] is not None
 
     # Test without binary path
     config = analyze.generate_tool_config(
@@ -210,7 +210,7 @@ def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:
     # Test with empty assets
     empty_release = {"tag_name": "v1.0.0", "assets": []}
     pattern = analyze.generate_single_pattern(empty_release)
-    assert pattern == "?"
+    assert pattern is None
 
 
 @patch("dotbins.analyze.download_file")
@@ -279,13 +279,15 @@ def test_analyze_tool(
     }
     mock_download_find.return_value = "bin/tool"
 
-    tool_config = ToolConfig(
+    tool_config = build_tool_config(
         tool_name="tool",
-        repo="test/repo",
-        extract_binary=True,
-        binary_name="tool",
-        binary_path="bin/tool",
-        asset_patterns="test-{version}.tar.gz",
+        raw_data={
+            "repo": "test/repo",
+            "extract_binary": True,
+            "binary_name": "tool",
+            "binary_path": "bin/tool",
+            "asset_patterns": "test-{version}.tar.gz",
+        },
     )
     mock_gen_config.return_value = tool_config
 

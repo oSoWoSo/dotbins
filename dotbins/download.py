@@ -268,7 +268,7 @@ def _find_matching_asset(
     arch: str,
 ) -> dict | None:
     """Find a matching asset for the tool."""
-    asset_pattern = _get_asset_pattern(tool_config, platform, arch)
+    asset_pattern = tool_config.asset_patterns[platform][arch]
     if not asset_pattern:
         log(f"No asset pattern found for {platform}/{arch}", "warning")
         return None
@@ -283,11 +283,6 @@ def _find_matching_asset(
         return None
 
     return asset
-
-
-def _get_asset_pattern(tool_config: ToolConfig, platform: str, arch: str) -> str | None:
-    pattern = tool_config.asset_patterns[platform][arch]
-    return pattern if pattern != "?" else None
 
 
 def make_binaries_executable(config: Config) -> None:

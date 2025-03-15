@@ -29,7 +29,7 @@ class ToolConfig:
     binary_name: list[str] = field(default_factory=list)
     binary_path: list[str] = field(default_factory=list)
     extract_binary: bool = True
-    asset_patterns: dict[str, dict[str, str]] = field(default_factory=dict)
+    asset_patterns: dict[str, dict[str, str | None]] = field(default_factory=dict)
     platform_map: dict[str, str] = field(default_factory=dict)
     arch_map: dict[str, str] = field(default_factory=dict)
 
@@ -97,15 +97,15 @@ def _ensure_list(value: T | list[T] | None) -> list[T]:
 def _normalize_asset_patterns(
     patterns: str | dict[str, Any] | None,
     platforms: dict[str, list[str]],
-) -> dict[str, dict[str, str]]:
+) -> dict[str, dict[str, str | None]]:
     """Normalize the asset_patterns into a dict.
 
     Of the form:
     ```{ platform: { arch: pattern_str } }```.
     """
     # Start by initializing empty patterns for each platform/arch
-    normalized: dict[str, dict[str, str]] = {
-        platform: {arch: "?" for arch in arch_list}
+    normalized: dict[str, dict[str, str | None]] = {
+        platform: {arch: None for arch in arch_list}
         for platform, arch_list in platforms.items()
     }
     if not patterns:
