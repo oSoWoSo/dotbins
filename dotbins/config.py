@@ -11,7 +11,7 @@ import yaml
 
 from .utils import log
 
-DEFAULT_TOOLS_DIR = "~/.dotfiles/tools"
+DEFAULT_TOOLS_DIR = "~/.mydotbins/tools"
 DEFAULT_PLATFORMS = {
     "linux": ["amd64", "arm64"],
     "macos": ["arm64"],
@@ -235,7 +235,7 @@ class Config:
         3. ~/.config/dotbins/config.yaml (XDG config directory)
         4. ~/.config/dotbins.yaml (XDG config directory, flat)
         5. ~/.dotbins.yaml (home directory)
-        6. ~/.dotfiles/dotbins.yaml (default dotfiles location)
+        6. ~/.mydotbins/dotbins.yaml (default dotfiles location)
         """
         config_path = _find_config_file(config_path)
         if config_path is None:
@@ -284,7 +284,7 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
         home / ".config" / "dotbins" / "config.yaml",
         home / ".config" / "dotbins.yaml",
         home / ".dotbins.yaml",
-        home / ".dotfiles" / "dotbins.yaml",
+        home / ".mydotbins" / "dotbins.yaml",
     ]
     for path in config_paths:
         if path.exists():

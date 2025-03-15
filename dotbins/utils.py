@@ -79,7 +79,7 @@ def get_platform_map(platform: str, platform_map: dict) -> str:
 
 def print_shell_setup(config: Config) -> None:
     """Print shell setup instructions."""
-    tools_path = config.tools_dir.resolve()
+    tools_path = config.tools_dir.absolute()
     tools_dir = str(tools_path).replace(os.path.expanduser("~"), "$HOME")
     print("\n# Add this to your shell configuration file (e.g., .bashrc, .zshrc):")
     print(

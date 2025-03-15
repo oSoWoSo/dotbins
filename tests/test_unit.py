@@ -60,7 +60,7 @@ def test_load_config_fallback() -> None:
         config = Config.load_from_file("nonexistent.yaml")
 
     # Verify default config is returned
-    assert config.tools_dir == Path(os.path.expanduser("~/.dotfiles/tools"))
+    assert config.tools_dir == Path(os.path.expanduser("~/.mydotbins/tools"))
 
 
 def test_current_platform(monkeypatch: MonkeyPatch) -> None:
@@ -248,9 +248,10 @@ def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     """Test printing shell setup instructions."""
     config = Config()
     dotbins.utils.print_shell_setup(config)
+    assert config.tools_dir == Path(os.path.expanduser("~/.mydotbins/tools"))
     captured = capsys.readouterr()
     assert "Add this to your shell configuration file" in captured.out
-    assert 'export PATH="$HOME/.dotfiles/tools/$_os/$_arch/bin:$PATH"' in captured.out
+    assert 'export PATH="$HOME/.mydotbins/tools/$_os/$_arch/bin:$PATH"' in captured.out
 
 
 def test_download_tool_already_exists(temp_dir: Path) -> None:

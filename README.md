@@ -162,7 +162,7 @@ dotbins uses a YAML configuration file to define the tools and settings. The con
 3. `~/.config/dotbins/config.yaml` (XDG config directory)
 4. `~/.config/dotbins.yaml` (XDG config directory, flat)
 5. `~/.dotbins.yaml` (home directory)
-6. `~/.dotfiles/dotbins.yaml` (default dotfiles location)
+6. `~/.mydotbins/dotbins.yaml` (default dotfiles location)
 
 The first valid configuration file found will be used. If no configuration file is found, default settings will be used.
 
