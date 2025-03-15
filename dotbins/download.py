@@ -298,7 +298,7 @@ def _find_matching_asset(
     tool_arch: str,
 ) -> dict | None:
     """Find a matching asset for the tool."""
-    asset_pattern = get_asset_pattern(tool_config, platform, arch)
+    asset_pattern = _get_asset_pattern(tool_config, platform, arch)
     if not asset_pattern:
         log(f"No asset pattern found for {platform}/{arch}", "warning")
         return None
@@ -317,22 +317,9 @@ def _find_matching_asset(
     return asset
 
 
-def get_asset_pattern(
-    tool_config: ToolConfig,
-    platform: str,
-    arch: str,
-) -> str | None:
-    """Get the asset pattern for a tool, platform, and architecture."""
-    patterns = tool_config.asset_patterns
-
-    # Direct lookup by platform and architecture
-    if platform in patterns and arch in patterns[platform]:
-        pattern = patterns[platform][arch]
-        if pattern and pattern != "?":
-            return pattern
-
-    # No valid pattern found
-    return None
+def _get_asset_pattern(tool_config: ToolConfig, platform: str, arch: str) -> str | None:
+    pattern = tool_config.asset_patterns[platform][arch]
+    return pattern if pattern != "?" else None
 
 
 def make_binaries_executable(config: Config) -> None:
