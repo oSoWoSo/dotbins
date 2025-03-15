@@ -316,12 +316,12 @@ def _should_download(
     platform: str,
     arch: str,
     version: str,
-    destination_dir: Path,
-    force: bool = False,
+    force: bool,
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
     tool_info = config.version_store.get_tool_info(tool_name, platform, arch)
     tool_config = config.tools[tool_name]
+    destination_dir = config.bin_dir(platform, arch)
     all_exist = _exists_in_destination_dir(destination_dir, tool_config)
     if tool_info and tool_info["version"] == version and all_exist and not force:
         log(
@@ -338,21 +338,12 @@ def _prepare_download_task(
     platform: str,
     arch: str,
     config: Config,
-    force: bool = False,
+    force: bool,
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
-    destination_dir = config.bin_dir(platform, arch)
-    if not _should_download(
-        tool_name,
-        config,
-        platform,
-        arch,
-        version,
-        destination_dir,
-        force,
-    ):
+    if not _should_download(tool_name, config, platform, arch, version, force):
         return None
 
     try:
@@ -368,7 +359,7 @@ def _prepare_download_task(
             version=version,
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
-            destination_dir=destination_dir,
+            destination_dir=config.bin_dir(platform, arch),
             temp_path=temp_path,
         )
 
@@ -498,13 +489,7 @@ def prepare_download_tasks(
 
             for arch in archs_to_update:
                 total_count += 1
-                task = _prepare_download_task(
-                    tool_name,
-                    platform,
-                    arch,
-                    config,
-                    force,
-                )
+                task = _prepare_download_task(tool_name, platform, arch, config, force)
                 if task:
                     download_tasks.append(task)
 
