@@ -29,7 +29,6 @@ def _list_tools(_args: Any, config: Config) -> None:
 
 def _update_tools(args: argparse.Namespace, config: Config) -> None:
     """Update tools based on command line arguments."""
-    version_store = VersionStore(config.tools_dir)
     tools_to_update, platforms_to_update = _determine_update_targets(args, config)
     architecture = args.architecture
     if args.current:
@@ -42,11 +41,10 @@ def _update_tools(args: argparse.Namespace, config: Config) -> None:
         platforms_to_update,
         architecture,
         config,
-        version_store,
         args.force,
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
-    success_count = process_downloaded_files(downloaded_tasks, version_store)
+    success_count = process_downloaded_files(downloaded_tasks, config.version_store)
     make_binaries_executable(config)
     _print_completion_summary(config, success_count, total_count, args.shell_setup)
 

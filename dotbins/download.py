@@ -336,13 +336,12 @@ def _prepare_download_task(
     platform: str,
     arch: str,
     config: Config,
-    version_store: VersionStore,
     force: bool = False,
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
-    tool_info = version_store.get_tool_info(tool_name, platform, arch)
+    tool_info = config.version_store.get_tool_info(tool_name, platform, arch)
     destination_dir = config.bin_dir(platform, arch)
     if not _should_download(
         platform,
@@ -479,7 +478,6 @@ def prepare_download_tasks(
     platforms_to_update: list[str],
     architecture: str,
     config: Config,
-    version_store: VersionStore,
     force: bool = False,
 ) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
@@ -504,7 +502,6 @@ def prepare_download_tasks(
                     platform,
                     arch,
                     config,
-                    version_store,
                     force,
                 )
                 if task:

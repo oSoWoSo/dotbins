@@ -316,7 +316,6 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
             "linux",
             "amd64",
             config,
-            version_store,
         )
 
     # Should return None (skip download) since file exists
@@ -366,7 +365,6 @@ def test_download_tool_asset_not_found(
             "linux",
             "amd64",
             config,
-            version_store=VersionStore(temp_dir),
         )
 
         # Verify find_asset was called with the correct pattern

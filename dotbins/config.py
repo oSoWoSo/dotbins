@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path
 from typing import Any, TypeVar
 
 import yaml
 
 from .utils import log
+from .versions import VersionStore
 
 DEFAULT_TOOLS_DIR = "~/.mydotbins/tools"
 DEFAULT_PLATFORMS = {
@@ -156,6 +158,11 @@ class Config:
     def platform_names(self) -> list[str]:
         """Return a list of platform names."""
         return list(self.platforms.keys())
+
+    @cached_property
+    def version_store(self) -> VersionStore:
+        """Return the VersionStore object."""
+        return VersionStore(self.tools_dir)
 
     def get_architectures(self, platform: str) -> list[str]:
         """Return the list of architectures for a given platform."""
