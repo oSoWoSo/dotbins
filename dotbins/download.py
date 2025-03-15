@@ -410,11 +410,7 @@ def _prepare_download_task(
 
     try:
         release, version = _get_release_info(tool_config)
-        tool_platform, tool_arch = _map_platform_and_arch(
-            platform,
-            arch,
-            tool_config,
-        )
+        tool_platform, tool_arch = _map_platform_and_arch(platform, arch, tool_config)
         asset = _find_matching_asset(
             tool_config,
             release,
