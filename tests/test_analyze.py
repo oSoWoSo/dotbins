@@ -259,11 +259,6 @@ def test_analyze_tool(
     capsys: CaptureFixture[str],
 ) -> None:
     """Test the analyze_tool function."""
-    # Setup mocks
-    mock_args = MagicMock()
-    mock_args.repo = "test/repo"
-    mock_args.name = "tool"
-
     mock_release = {
         "tag_name": "v1.0.0",
         "name": "Release 1.0.0",
@@ -292,7 +287,7 @@ def test_analyze_tool(
     mock_gen_config.return_value = tool_config
 
     # Call the function
-    analyze.analyze_tool(mock_args)
+    analyze.analyze_tool(repo="test/repo", name="tool")
 
     # Check results
     mock_get_release.assert_called_once_with("test/repo")

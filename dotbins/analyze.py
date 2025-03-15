@@ -8,7 +8,7 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -59,10 +59,8 @@ def generate_tool_configuration(
     return generate_tool_config(repo, tool_name, release, binary_path)
 
 
-def analyze_tool(args: Any, _config: Any = None) -> None:
+def analyze_tool(repo: str, name: str | None = None) -> None:
     """Analyze GitHub releases for a tool to help determine patterns."""
-    repo = args.repo
-
     try:
         log(f"Analyzing releases for {repo}...", "info", "🔍")
         release = get_latest_release(repo)
@@ -75,7 +73,7 @@ def analyze_tool(args: Any, _config: Any = None) -> None:
         _print_assets_info(release["assets"])
 
         # Extract tool name from repo or use provided name
-        tool_name = args.name or repo.split("/")[-1]
+        tool_name = name or repo.split("/")[-1]
 
         # Generate tool configuration
         tool_config = generate_tool_configuration(repo, tool_name, release)

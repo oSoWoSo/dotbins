@@ -6,7 +6,7 @@ import tempfile
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -121,17 +121,16 @@ def test_update_tool(
     # Mock download and extraction to avoid actual downloads
     monkeypatch.setattr("dotbins.download.download_file", mock_download_file)
 
-    # Create a mock args object
-    mock_args = MagicMock()
-    mock_args.tools = ["test-tool"]
-    mock_args.platform = "linux"  # Specify platform to avoid skipping
-    mock_args.architecture = "amd64"
-    mock_args.force = False
-    mock_args.shell_setup = False
-    mock_args.current = False
-
     # Directly call update_tools
-    cli._update_tools(mock_args, config)
+    cli._update_tools(
+        config,
+        tools=["test-tool"],
+        platform="linux",
+        architecture="amd64",
+        current=False,
+        force=False,
+        shell_setup=False,
+    )
 
     # Check if binary was installed
     assert (tmp_dir / "tools" / "linux" / "amd64" / "bin" / "test-tool").exists()

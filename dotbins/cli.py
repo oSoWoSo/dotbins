@@ -26,11 +26,22 @@ def _list_tools(config: Config) -> None:
         log(f"  {tool} (from {tool_config.repo})", "success")
 
 
-def _update_tools(args: argparse.Namespace, config: Config) -> None:
+def _update_tools(
+    config: Config,
+    tools: list[str] | None,
+    platform: str | None,
+    architecture: str | None,
+    current: bool,
+    force: bool,
+    shell_setup: bool,
+) -> None:
     """Update tools based on command line arguments."""
-    tools_to_update, platforms_to_update = _determine_update_targets(args, config)
-    architecture = args.architecture
-    if args.current:
+    tools_to_update, platforms_to_update = _determine_update_targets(
+        config,
+        tools,
+        platform,
+    )
+    if current:
         platform, architecture = current_platform()
         platforms_to_update = [platform]
     _validate_tools(tools_to_update, config)
@@ -40,21 +51,22 @@ def _update_tools(args: argparse.Namespace, config: Config) -> None:
         platforms_to_update,
         architecture,
         config,
-        args.force,
+        force,
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
     success_count = process_downloaded_files(downloaded_tasks, config.version_store)
     make_binaries_executable(config)
-    _print_completion_summary(config, success_count, total_count, args.shell_setup)
+    _print_completion_summary(config, success_count, total_count, shell_setup)
 
 
 def _determine_update_targets(
-    args: argparse.Namespace,
     config: Config,
+    tools: list[str] | None,
+    platform: str | None,
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
-    tools_to_update = args.tools if args.tools else list(config.tools.keys())
-    platforms_to_update = [args.platform] if args.platform else config.platform_names
+    tools_to_update = tools if tools else list(config.tools.keys())
+    platforms_to_update = [platform] if platform else config.platform_names
     return tools_to_update, platforms_to_update
 
 
@@ -224,7 +236,7 @@ def main() -> None:
         config = Config.load_from_file(args.config_file)
 
         # Override tools directory if specified
-        if args.tools_dir:
+        if args.tools_dir is not None:
             config.tools_dir = Path(args.tools_dir)
 
         if args.command == "init":
@@ -232,9 +244,17 @@ def main() -> None:
         elif args.command == "list":
             _list_tools(config)
         elif args.command == "update":
-            _update_tools(args, config)
+            _update_tools(
+                config,
+                args.tools,
+                args.platform,
+                args.architecture,
+                args.current,
+                args.force,
+                args.shell_setup,
+            )
         elif args.command == "analyze":
-            analyze_tool(args, config)
+            analyze_tool(args.repo, args.name)
         elif args.command == "versions":
             _show_versions(config)
         elif args.command == "version":
