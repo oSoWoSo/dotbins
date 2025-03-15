@@ -20,7 +20,7 @@ DEFAULT_PLATFORMS = {
 T = TypeVar("T")
 
 
-@dataclass
+@dataclass(frozen=True)
 class ToolConfig:
     """Holds all config data for a single tool, without doing heavy logic."""
 
