@@ -215,15 +215,14 @@ class Config:
                     "error",
                     "⚠️",
                 )
-            if isinstance(platform_patterns, dict):
-                valid_architectures = self.get_architectures(platform)
-                for arch in platform_patterns:
-                    if arch not in valid_architectures:
-                        log(
-                            f"Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'",
-                            "error",
-                            "⚠️",
-                        )
+            valid_architectures = self.get_architectures(platform)
+            for arch in platform_patterns:
+                if arch not in valid_architectures:
+                    log(
+                        f"Tool {tool_name}: 'asset_patterns[{platform}]' contains unknown architecture '{arch}'",
+                        "error",
+                        "⚠️",
+                    )
 
     @classmethod
     def load_from_file(cls, config_path: str | Path | None = None) -> Config:
