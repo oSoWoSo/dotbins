@@ -14,7 +14,7 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 from dotbins import cli
-from dotbins.config import Config, ToolConfig
+from dotbins.config import Config, build_tool_config
 
 
 class TestIntegration:
@@ -58,13 +58,15 @@ def test_list_tools(
 ) -> None:
     """Test the 'list' command."""
     # Create a test tool configuration
-    test_tool_config = ToolConfig(
+    test_tool_config = build_tool_config(
         tool_name="test-tool",
-        repo="test/tool",
-        extract_binary=True,
-        binary_name="test-tool",
-        binary_path="test-tool",
-        asset_patterns="test-tool-{version}-{platform}_{arch}.tar.gz",
+        raw_data={
+            "repo": "test/tool",
+            "extract_binary": True,
+            "binary_name": "test-tool",
+            "binary_path": "test-tool",
+            "asset_patterns": "test-tool-{version}-{platform}_{arch}.tar.gz",
+        },
     )
 
     # Create config with our test tools
@@ -89,16 +91,16 @@ def test_update_tool(
 ) -> None:
     """Test updating a specific tool."""
     # Set up mock environment
-    test_tool_config = ToolConfig(
+    test_tool_config = build_tool_config(
         tool_name="test-tool",
-        repo="test/tool",
-        extract_binary=True,
-        binary_name="test-tool",
-        binary_path="*",
-        asset_patterns={
-            "linux": {"amd64": "test-tool-{version}-{platform}_{arch}.tar.gz"},
+        raw_data={
+            "repo": "test/tool",
+            "extract_binary": True,
+            "binary_name": "test-tool",
+            "binary_path": "*",
+            "asset_patterns": "test-tool-{version}-{platform}_{arch}.tar.gz",
+            "platform_map": {"macos": "darwin"},
         },
-        platform_map={"macos": "darwin"},
     )
 
     # Create config with our test tool - use new format

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from .config import ToolConfig
+from .config import ToolConfig, build_tool_config
 from .download import download_file, extract_archive
 from .utils import get_latest_release, log
 
@@ -296,14 +296,16 @@ def generate_tool_config(
 
     asset_patterns = _get_asset_patterns(release, linux_assets, macos_assets)
 
-    return ToolConfig(
+    return build_tool_config(
         tool_name=tool_name,
-        repo=repo,
-        binary_name=tool_name,
-        binary_path=processed_binary_path,
-        extract_binary=True,
-        asset_patterns=asset_patterns,
-        arch_map=arch_map,
+        raw_data={
+            "repo": repo,
+            "binary_name": tool_name,
+            "binary_path": processed_binary_path,
+            "extract_binary": True,
+            "asset_patterns": asset_patterns,
+            "arch_map": arch_map,
+        },
     )
 
 

@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -433,7 +434,8 @@ def _prepare_download_task(
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
             # Make a copy of tool_config because we'll modify it
-            tool_config=tool_config.copy(
+            tool_config=_new_tool_config(
+                tool_config=tool_config,
                 version=version,
                 arch=tool_arch,
             ),
@@ -448,6 +450,14 @@ def _prepare_download_task(
             print_exception=True,
         )
         return None
+
+
+def _new_tool_config(tool_config: ToolConfig, version: str, arch: str) -> ToolConfig:
+    """Create a new tool config with the given version and architecture."""
+    cfg = deepcopy(tool_config)
+    cfg.version = version
+    cfg.arch = arch
+    return cfg
 
 
 def _process_downloaded_task(
