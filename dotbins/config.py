@@ -18,6 +18,37 @@ DEFAULT_PLATFORMS = {
 }
 
 
+def _normalize_asset_patterns(
+    patterns: str | dict[str, Any] | None,
+) -> dict[str, dict[str, str]]:
+    """Normalize asset patterns to dict[str, dict[str, str]] format."""
+    normalized: dict[str, dict[str, str]] = {}
+
+    if patterns is None:
+        return normalized
+
+    # Case 1: String pattern (global pattern for all platforms/architectures)
+    if isinstance(patterns, str):
+        normalized["*"] = {"*": patterns}
+        return normalized
+
+    # Case 2 & 3: Dict of patterns
+    if isinstance(patterns, dict):
+        for platform, platform_patterns in patterns.items():
+            if platform not in normalized:
+                normalized[platform] = {}
+
+            # Case 2: String pattern for this platform
+            if isinstance(platform_patterns, str):
+                normalized[platform]["*"] = platform_patterns
+            # Case 3: Dict of patterns by architecture
+            elif isinstance(platform_patterns, dict):
+                for arch, pattern in platform_patterns.items():
+                    normalized[platform][arch] = pattern
+
+    return normalized
+
+
 @dataclass
 class ToolConfig:
     """Configuration for a single tool."""
@@ -39,7 +70,9 @@ class ToolConfig:
         self.binary_name: list[str] = _ensure_list(binary_name) or [tool_name]
         self.binary_path: list[str] = _ensure_list(binary_path)
         self.extract_binary: bool = extract_binary
-        self.asset_patterns: str | dict[str, Any] | None = asset_patterns
+        self.asset_patterns: dict[str, dict[str, str]] = _normalize_asset_patterns(
+            asset_patterns,
+        )
         self.platform_map: dict[str, str] | None = platform_map
         self.arch_map: dict[str, str] | None = arch_map
         # Runtime fields - not required for initialization,

@@ -313,11 +313,7 @@ def _find_matching_asset(
     return asset
 
 
-def get_asset_pattern(  # noqa: PLR0911
-    tool_config: ToolConfig,
-    platform: str,
-    arch: str,
-) -> str | None:
+def get_asset_pattern(tool_config: ToolConfig, platform: str, arch: str) -> str | None:
     """Get the asset pattern for a tool, platform, and architecture."""
     # No asset patterns defined
     if not tool_config.asset_patterns:
@@ -326,29 +322,21 @@ def get_asset_pattern(  # noqa: PLR0911
 
     patterns = tool_config.asset_patterns
 
-    # Case 1: String pattern (global pattern for all platforms/architectures)
-    if isinstance(patterns, str):
-        return patterns
+    # Try exact platform/arch match
+    if platform in patterns and arch in patterns[platform]:
+        return patterns[platform][arch]
 
-    # Case 2: Dict of patterns by platform
-    if isinstance(patterns, dict):
-        # If platform not in dict or explicitly set to null, no pattern for this platform
-        if platform not in patterns or patterns[platform] is None:
-            return None
+    # Try platform with wildcard arch
+    if platform in patterns and "*" in patterns[platform]:
+        return patterns[platform]["*"]
 
-        platform_patterns = patterns[platform]
+    # Try wildcard platform with exact arch
+    if "*" in patterns and arch in patterns["*"]:
+        return patterns["*"][arch]
 
-        # Case 2a: String pattern for this platform
-        if isinstance(platform_patterns, str):
-            return platform_patterns
-
-        # Case 3: Dict of patterns by platform and architecture
-        if isinstance(platform_patterns, dict):
-            # If arch not in dict or explicitly set to null, no pattern for this arch
-            if arch not in platform_patterns or platform_patterns[arch] is None:
-                return None
-
-            return platform_patterns[arch]
+    # Try wildcard platform with wildcard arch
+    if "*" in patterns and "*" in patterns["*"]:
+        return patterns["*"]["*"]
 
     # No valid pattern found
     return None
