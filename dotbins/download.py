@@ -466,7 +466,7 @@ def download_files_in_parallel(
 def prepare_download_tasks(
     tools_to_update: list[str],
     platforms_to_update: list[str],
-    architecture: str,
+    architecture: str | None,
     config: Config,
     force: bool = False,
 ) -> tuple[list[_DownloadTask], int]:
@@ -495,11 +495,11 @@ def prepare_download_tasks(
 
 def _determine_architectures(
     platform: str,
-    architecture: str,
+    architecture: str | None,
     config: Config,
 ) -> list[str]:
     """Determine which architectures to update for a platform."""
-    if architecture:
+    if architecture is not None:
         # Filter to only include the specified architecture if it's supported
         if architecture in config.platforms[platform]:
             return [architecture]

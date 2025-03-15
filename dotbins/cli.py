@@ -163,11 +163,13 @@ def create_parser() -> argparse.ArgumentParser:
         "-p",
         "--platform",
         help="Only update for specific platform",
+        type=str,
     )
     update_parser.add_argument(
         "-a",
         "--architecture",
         help="Only update for specific architecture",
+        type=str,
     )
     update_parser.add_argument(
         "-f",
