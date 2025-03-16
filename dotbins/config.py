@@ -39,14 +39,6 @@ class ToolConfig:
         """Get a BinSpec object for the tool."""
         return BinSpec(tool_config=self, version=self.latest_version, arch=arch, platform=platform)
 
-    def tool_arch(self, arch: str) -> str:
-        """Get the architecture for the tool."""
-        return self.arch_map.get(arch, arch)
-
-    def tool_platform(self, platform: str) -> str:
-        """Get the platform for the tool."""
-        return self.platform_map.get(platform, platform)
-
     @cached_property
     def latest_release(self) -> dict:
         """Get the latest release for the tool."""
@@ -127,12 +119,12 @@ class BinSpec:
     @property
     def tool_arch(self) -> str:
         """Get the architecture in the tool's convention."""
-        return self.tool_config.tool_arch(self.arch)
+        return self.tool_config.arch_map.get(self.arch, self.arch)
 
     @property
     def tool_platform(self) -> str:
         """Get the platform in the tool's convention."""
-        return self.tool_config.tool_platform(self.platform)
+        return self.tool_config.platform_map.get(self.platform, self.platform)
 
     @property
     def asset_pattern(self) -> str | None:
