@@ -99,15 +99,6 @@ def build_tool_config(
     )
 
 
-def _ensure_list(value: T | list[T] | None) -> list[T]:
-    """Convert a single value or None into a list, if not already a list."""
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return value
-    return [value]
-
-
 @dataclass
 class BinSpec:
     """Represents a single binary specification."""
@@ -126,6 +117,76 @@ class BinSpec:
     def tool_platform(self) -> str:
         """Get the platform in the tool's convention."""
         return self.tool_config.tool_platform(self.platform)
+
+
+@dataclass
+class Config:
+    """Overall configuration for dotbins."""
+
+    tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
+    platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
+    tools: dict[str, ToolConfig] = field(default_factory=dict)
+
+    def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
+        """Return the bin directory for a given platform and architecture."""
+        bin_dir = self.tools_dir / platform / arch / "bin"
+        if create:
+            bin_dir.mkdir(parents=True, exist_ok=True)
+        return bin_dir
+
+    @property
+    def platform_names(self) -> list[str]:
+        """Return a list of platform names."""
+        return list(self.platforms.keys())
+
+    @cached_property
+    def version_store(self) -> VersionStore:
+        """Return the VersionStore object."""
+        return VersionStore(self.tools_dir)
+
+    def get_architectures(self, platform: str) -> list[str]:
+        """Return the list of architectures for a given platform."""
+        return self.platforms.get(platform, [])
+
+    def validate(self) -> None:
+        """Check for missing repos, unknown platforms, etc."""
+        for tool_name, tool_config in self.tools.items():
+            _validate_tool_config(self.platforms, tool_name, tool_config)
+
+    @classmethod
+    def load_from_file(cls, config_path: str | Path | None = None) -> Config:
+        """Load configuration from YAML, or return defaults if no file found."""
+        path = _find_config_file(config_path)
+        if path is None:
+            return cls()
+
+        try:
+            with open(path) as f:
+                data = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            log(f"Configuration file not found: {path}", "warning")
+            return cls()
+        except yaml.YAMLError:
+            log(
+                f"Invalid YAML in configuration file: {path}",
+                "error",
+                print_exception=True,
+            )
+            return cls()
+
+        tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
+        platforms = data.get("platforms", DEFAULT_PLATFORMS)
+        raw_tools = data.get("tools", {})
+
+        tools_dir_path = Path(os.path.expanduser(tools_dir))
+
+        tool_configs: dict[str, ToolConfig] = {}
+        for tool_name, tool_data in raw_tools.items():
+            tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
+
+        config_obj = cls(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
+        config_obj.validate()
+        return config_obj
 
 
 def _normalize_asset_patterns(
@@ -170,115 +231,6 @@ def _normalize_asset_patterns(
     return normalized
 
 
-@dataclass
-class Config:
-    """Overall configuration for dotbins."""
-
-    tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
-    platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
-    tools: dict[str, ToolConfig] = field(default_factory=dict)
-
-    def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
-        """Return the bin directory for a given platform and architecture."""
-        bin_dir = self.tools_dir / platform / arch / "bin"
-        if create:
-            bin_dir.mkdir(parents=True, exist_ok=True)
-        return bin_dir
-
-    @property
-    def platform_names(self) -> list[str]:
-        """Return a list of platform names."""
-        return list(self.platforms.keys())
-
-    @cached_property
-    def version_store(self) -> VersionStore:
-        """Return the VersionStore object."""
-        return VersionStore(self.tools_dir)
-
-    def get_architectures(self, platform: str) -> list[str]:
-        """Return the list of architectures for a given platform."""
-        return self.platforms.get(platform, [])
-
-    def validate(self) -> None:
-        """Check for missing repos, unknown platforms, etc."""
-        for tool_name, tool_config in self.tools.items():
-            self._validate_tool_config(tool_name, tool_config)
-
-    def _validate_tool_config(
-        self,
-        tool_name: str,
-        tool_config: ToolConfig,
-    ) -> None:
-        # Basic checks
-        if not tool_config.repo:
-            log(f"Tool {tool_name} is missing required field 'repo'", "error")
-
-        # If no binary_path, we rely on auto-detection (just an info, not fatal):
-        if not tool_config.binary_path:
-            log(
-                f"Tool {tool_name} has no binary_path specified - will attempt auto-detection",
-                "info",
-            )
-
-        # If binary lists differ in length, log an error
-        if len(tool_config.binary_name) != len(tool_config.binary_path) and tool_config.binary_path:
-            log(
-                f"Tool {tool_name}: 'binary_name' and 'binary_path' must have the same length if both are specified as lists.",
-                "error",
-            )
-
-        # Check for unknown platforms/arch in asset_patterns
-        for platform, pattern_map in tool_config.asset_patterns.items():
-            if platform not in self.platforms:
-                log(
-                    f"Tool {tool_name}: 'asset_patterns' uses unknown platform '{platform}'",
-                    "error",
-                )
-                continue
-
-            for arch in pattern_map:
-                if arch not in self.platforms[platform]:
-                    log(
-                        f"Tool {tool_name}: 'asset_patterns[{platform}]' uses unknown arch '{arch}'",
-                        "error",
-                    )
-
-    @classmethod
-    def load_from_file(cls, config_path: str | Path | None = None) -> Config:
-        """Load configuration from YAML, or return defaults if no file found."""
-        path = _find_config_file(config_path)
-        if path is None:
-            return cls()
-
-        try:
-            with open(path) as f:
-                data = yaml.safe_load(f) or {}
-        except FileNotFoundError:
-            log(f"Configuration file not found: {path}", "warning")
-            return cls()
-        except yaml.YAMLError:
-            log(
-                f"Invalid YAML in configuration file: {path}",
-                "error",
-                print_exception=True,
-            )
-            return cls()
-
-        tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
-        platforms = data.get("platforms", DEFAULT_PLATFORMS)
-        raw_tools = data.get("tools", {})
-
-        tools_dir_path = Path(os.path.expanduser(tools_dir))
-
-        tool_configs: dict[str, ToolConfig] = {}
-        for tool_name, tool_data in raw_tools.items():
-            tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
-
-        config_obj = cls(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
-        config_obj.validate()
-        return config_obj
-
-
 def _find_config_file(config_path: str | Path | None) -> Path | None:
     """Look for the user-specified path or common defaults."""
     if config_path is not None:
@@ -304,3 +256,52 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
 
     log("No configuration file found, using default settings", "warning")
     return None
+
+
+def _ensure_list(value: T | list[T] | None) -> list[T]:
+    """Convert a single value or None into a list, if not already a list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def _validate_tool_config(
+    platforms: dict[str, list[str]],
+    tool_name: str,
+    tool_config: ToolConfig,
+) -> None:
+    # Basic checks
+    if not tool_config.repo:
+        log(f"Tool {tool_name} is missing required field 'repo'", "error")
+
+    # If no binary_path, we rely on auto-detection (just an info, not fatal):
+    if not tool_config.binary_path:
+        log(
+            f"Tool {tool_name} has no binary_path specified - will attempt auto-detection",
+            "info",
+        )
+
+    # If binary lists differ in length, log an error
+    if len(tool_config.binary_name) != len(tool_config.binary_path) and tool_config.binary_path:
+        log(
+            f"Tool {tool_name}: 'binary_name' and 'binary_path' must have the same length if both are specified as lists.",
+            "error",
+        )
+
+    # Check for unknown platforms/arch in asset_patterns
+    for platform, pattern_map in tool_config.asset_patterns.items():
+        if platform not in platforms:
+            log(
+                f"Tool {tool_name}: 'asset_patterns' uses unknown platform '{platform}'",
+                "error",
+            )
+            continue
+
+        for arch in pattern_map:
+            if arch not in platforms[platform]:
+                log(
+                    f"Tool {tool_name}: 'asset_patterns[{platform}]' uses unknown arch '{arch}'",
+                    "error",
+                )
