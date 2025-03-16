@@ -99,7 +99,7 @@ def test_get_latest_release(requests_mock: MockFixture) -> None:
 
 def test_find_asset() -> None:
     """Test finding an asset matching a pattern."""
-    with patch("dotbins.utils.get_latest_release") as mock_release:
+    with patch("dotbins.config.get_latest_release") as mock_release:
         mock_release.return_value = {
             "tag_name": "v1.0.0",
             "assets": [
@@ -372,7 +372,7 @@ def test_download_tool_asset_not_found(
         tools={"test-tool": test_tool_config},
     )
 
-    with patch("dotbins.utils.get_latest_release") as mock_release:
+    with patch("dotbins.config.get_latest_release") as mock_release:
         mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
 
         # Call the function
