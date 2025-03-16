@@ -24,7 +24,7 @@ def tools_config() -> dict[str, ToolConfig]:
     script_dir = Path(__file__).parent.parent
     tools_yaml_path = script_dir / "dotbins.yaml"
 
-    config = Config.load_from_file(tools_yaml_path)
+    config = Config.from_file(tools_yaml_path)
     return config.tools
 
 

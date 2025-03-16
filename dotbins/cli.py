@@ -229,7 +229,7 @@ def main() -> None:
 
     try:
         # Create config
-        config = Config.load_from_file(args.config_file)
+        config = Config.from_file(args.config_file)
 
         # Override tools directory if specified
         if args.tools_dir is not None:

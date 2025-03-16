@@ -171,39 +171,44 @@ class Config:
             _validate_tool_config(self.platforms, tool_name, tool_config)
 
     @classmethod
-    def load_from_file(cls, config_path: str | Path | None = None) -> Config:
+    def from_file(cls, config_path: str | Path | None = None) -> Config:
         """Load configuration from YAML, or return defaults if no file found."""
-        path = _find_config_file(config_path)
-        if path is None:
-            return cls()
+        return config_from_file(config_path)
 
-        try:
-            with open(path) as f:
-                data = yaml.safe_load(f) or {}
-        except FileNotFoundError:
-            log(f"Configuration file not found: {path}", "warning")
-            return cls()
-        except yaml.YAMLError:
-            log(
-                f"Invalid YAML in configuration file: {path}",
-                "error",
-                print_exception=True,
-            )
-            return cls()
 
-        tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
-        platforms = data.get("platforms", DEFAULT_PLATFORMS)
-        raw_tools = data.get("tools", {})
+def config_from_file(config_path: str | Path | None = None) -> Config:
+    """Load configuration from YAML, or return defaults if no file found."""
+    path = _find_config_file(config_path)
+    if path is None:
+        return Config()
 
-        tools_dir_path = Path(os.path.expanduser(tools_dir))
+    try:
+        with open(path) as f:
+            data = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        log(f"Configuration file not found: {path}", "warning")
+        return Config()
+    except yaml.YAMLError:
+        log(
+            f"Invalid YAML in configuration file: {path}",
+            "error",
+            print_exception=True,
+        )
+        return Config()
 
-        tool_configs: dict[str, ToolConfig] = {}
-        for tool_name, tool_data in raw_tools.items():
-            tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
+    tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
+    platforms = data.get("platforms", DEFAULT_PLATFORMS)
+    raw_tools = data.get("tools", {})
 
-        config_obj = cls(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
-        config_obj.validate()
-        return config_obj
+    tools_dir_path = Path(os.path.expanduser(tools_dir))
+
+    tool_configs: dict[str, ToolConfig] = {}
+    for tool_name, tool_data in raw_tools.items():
+        tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
+
+    config_obj = Config(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
+    config_obj.validate()
+    return config_obj
 
 
 def _normalize_asset_patterns(

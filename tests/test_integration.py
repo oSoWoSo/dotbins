@@ -200,7 +200,7 @@ def test_cli_unknown_tool() -> None:
         patch.object(sys, "argv", ["dotbins", "update", "unknown-tool"]),
         patch.object(
             Config,
-            "load_from_file",
+            "from_file",
             return_value=Config(tools={}),
         ),
     ):
@@ -224,7 +224,7 @@ def test_cli_tools_dir_override(tmp_dir: Path) -> None:
 
     # Patch config loading
     with (
-        patch.object(Config, "load_from_file", mock_load_config),
+        patch.object(Config, "from_file", mock_load_config),
         patch.object(sys, "argv", ["dotbins", "--tools-dir", str(custom_dir), "init"]),
     ):
         cli.main()

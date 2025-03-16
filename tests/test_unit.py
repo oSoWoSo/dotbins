@@ -41,7 +41,7 @@ def test_load_config(temp_dir: Path) -> None:
         f.write(config_content)
 
     # Load config and validate
-    config = Config.load_from_file(str(config_path))
+    config = Config.from_file(str(config_path))
 
     # Verify config was loaded correctly
     assert config.tools_dir == Path(os.path.expanduser("~/tools"))
@@ -57,7 +57,7 @@ def test_load_config_fallback() -> None:
     """Test config loading fallback when file not found."""
     # Mock open to raise FileNotFoundError
     with patch("builtins.open", side_effect=FileNotFoundError):
-        config = Config.load_from_file("nonexistent.yaml")
+        config = Config.from_file("nonexistent.yaml")
 
     # Verify default config is returned
     assert config.tools_dir == Path(os.path.expanduser("~/.mydotbins/tools"))
