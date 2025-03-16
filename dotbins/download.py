@@ -265,15 +265,19 @@ def _prepare_download_task(
 
 
 def prepare_download_tasks(
-    tools_to_update: list[str],
-    platforms_to_update: list[str],
-    architecture: str | None,
     config: Config,
+    tools_to_update: list[str] | None = None,
+    platforms_to_update: list[str] | None = None,
+    architecture: str | None = None,
     force: bool = False,
 ) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
     download_tasks = []
     total_count = 0
+    if tools_to_update is None:
+        tools_to_update = list(config.tools)
+    if platforms_to_update is None:
+        platforms_to_update = list(config.platforms)
 
     for tool_name in tools_to_update:
         for platform in platforms_to_update:

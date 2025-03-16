@@ -34,20 +34,18 @@ def _update_tools(
     shell_setup: bool,
 ) -> None:
     """Update tools based on command line arguments."""
-    tools_to_update, platforms_to_update = _determine_update_targets(
-        config,
-        tools,
-        platform,
-    )
+    tools_to_update = _tools_to_update(config, tools)
     if current:
         platform, architecture = current_platform()
         platforms_to_update = [platform]
+    else:
+        platforms_to_update = [platform] if platform else None  # type: ignore[assignment]
     config.tools_dir.mkdir(parents=True, exist_ok=True)
     download_tasks, total_count = prepare_download_tasks(
+        config,
         tools_to_update,
         platforms_to_update,
         architecture,
-        config,
         force,
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
@@ -56,22 +54,15 @@ def _update_tools(
     _print_completion_summary(config, success_count, total_count, shell_setup)
 
 
-def _determine_update_targets(
-    config: Config,
-    tools: list[str],
-    platform: str | None,
-) -> tuple[list[str], list[str]]:
+def _tools_to_update(config: Config, tools: list[str]) -> list[str] | None:
     """Determine which tools and platforms to update."""
     if tools:
         for tool in tools:
             if tool not in config.tools:
                 log(f"Unknown tool: {tool}", "error")
                 sys.exit(1)
-        tools_to_update = tools
-    else:
-        tools_to_update = list(config.tools.keys())
-    platforms_to_update = [platform] if platform else list(config.platforms.keys())
-    return tools_to_update, platforms_to_update
+        return tools
+    return None
 
 
 def _print_completion_summary(
