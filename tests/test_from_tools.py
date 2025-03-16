@@ -48,7 +48,7 @@ def test_tool_has_repo_defined(
 
 # Mock the GitHub API call to ensure tests pass consistently
 @pytest.mark.parametrize("tool_name", TOOLS)
-@patch("dotbins.utils.get_latest_release")
+@patch("dotbins.utils.latest_release_info")
 def test_config_generation_with_mocked_release(
     mock_get_latest_release: Any,
     tools_config: dict[str, ToolConfig],

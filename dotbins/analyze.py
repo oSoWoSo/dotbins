@@ -14,7 +14,7 @@ import yaml
 
 from .config import RawToolConfigDict, ToolConfig, build_tool_config
 from .download import download_file, extract_archive
-from .utils import get_latest_release, log
+from .utils import latest_release_info, log
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -46,7 +46,7 @@ def generate_tool_configuration(
 
     # Get latest release info if not provided
     if release is None:
-        release = get_latest_release(repo)
+        release = latest_release_info(repo)
 
     # Find sample asset and determine binary path
     sample_asset = _find_sample_asset(release["assets"])
@@ -63,7 +63,7 @@ def analyze_tool(repo: str, name: str | None = None) -> None:
     """Analyze GitHub releases for a tool to help determine patterns."""
     try:
         log(f"Analyzing releases for {repo}...", "info", "🔍")
-        release = get_latest_release(repo)
+        release = latest_release_info(repo)
 
         log(
             f"Latest release: {release['tag_name']} ({release['name']})",

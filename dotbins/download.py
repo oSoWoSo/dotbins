@@ -9,29 +9,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
-import requests
-
-from .utils import calculate_sha256, extract_archive, log
+from .utils import calculate_sha256, download_file, extract_archive, log
 
 if TYPE_CHECKING:
     from .config import BinSpec, Config, ToolConfig
     from .versions import VersionStore
-
-
-def download_file(url: str, destination: str) -> str:
-    """Download a file from a URL to a destination path."""
-    log(f"Downloading from {url}", "info", "📥")
-    try:
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()
-        with open(destination, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        return destination
-    except requests.RequestException as e:
-        log(f"Download failed: {e}", "error", print_exception=True)
-        msg = f"Failed to download {url}: {e}"
-        raise RuntimeError(msg) from e
 
 
 def _extract_from_archive(

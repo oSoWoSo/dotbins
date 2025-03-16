@@ -11,7 +11,7 @@ from typing import TypedDict, TypeVar
 
 import yaml
 
-from .utils import get_latest_release, log
+from .utils import latest_release_info, log
 from .versions import VersionStore
 
 DEFAULT_TOOLS_DIR = "~/.mydotbins/tools"
@@ -74,7 +74,7 @@ class ToolConfig:
     @cached_property
     def latest_release(self) -> dict:
         """Get the latest release for the tool."""
-        return get_latest_release(self.repo)
+        return latest_release_info(self.repo)
 
     @cached_property
     def latest_version(self) -> str:

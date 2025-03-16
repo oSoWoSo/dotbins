@@ -90,7 +90,7 @@ def test_get_latest_release(requests_mock: MockFixture) -> None:
     )
 
     # Call the function
-    result = dotbins.utils.get_latest_release("test/repo")
+    result = dotbins.utils.latest_release_info("test/repo")
 
     # Verify the result
     assert result["tag_name"] == "v1.0.0"
@@ -99,7 +99,7 @@ def test_get_latest_release(requests_mock: MockFixture) -> None:
 
 def test_find_asset() -> None:
     """Test finding an asset matching a pattern."""
-    with patch("dotbins.config.get_latest_release") as mock_release:
+    with patch("dotbins.config.latest_release_info") as mock_release:
         mock_release.return_value = {
             "tag_name": "v1.0.0",
             "assets": [
@@ -322,8 +322,8 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
     with open(bin_file, "w") as f:
         f.write("#!/bin/sh\necho test")
 
-    # Mock the get_latest_release function to avoid HTTP requests
-    with patch("dotbins.utils.get_latest_release") as mock_release:
+    # Mock the latest_release_info function to avoid HTTP requests
+    with patch("dotbins.utils.latest_release_info") as mock_release:
         mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
 
         # With prepare_download_task, it should return None if file exists
@@ -372,7 +372,7 @@ def test_download_tool_asset_not_found(
         tools={"test-tool": test_tool_config},
     )
 
-    with patch("dotbins.config.get_latest_release") as mock_release:
+    with patch("dotbins.config.latest_release_info") as mock_release:
         mock_release.return_value = {"tag_name": "v1.0.0", "assets": []}
 
         # Call the function

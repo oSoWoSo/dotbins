@@ -243,7 +243,7 @@ def test_download_and_find_binary(
     assert result == ["tool", "bin/tool"]
 
 
-@patch("dotbins.analyze.get_latest_release")
+@patch("dotbins.analyze.latest_release_info")
 @patch("dotbins.analyze._find_sample_asset")
 @patch("dotbins.analyze._download_and_find_binary")
 @patch("dotbins.analyze.generate_tool_config")

@@ -15,14 +15,13 @@ import requests
 from rich.console import Console
 
 if TYPE_CHECKING:
-
     from .config import Config
 
 console = Console()
 
 
 @functools.cache
-def get_latest_release(repo: str) -> dict:
+def latest_release_info(repo: str) -> dict:
     """Get the latest release information from GitHub."""
     url = f"https://api.github.com/repos/{repo}/releases/latest"
     log(f"Fetching latest release from {url}", "info", "🔍")
@@ -34,6 +33,22 @@ def get_latest_release(repo: str) -> dict:
     except requests.RequestException as e:
         log("Failed to fetch latest release.", "error", print_exception=True)
         msg = f"Failed to fetch latest release for {repo}: {e}"
+        raise RuntimeError(msg) from e
+
+
+def download_file(url: str, destination: str) -> str:
+    """Download a file from a URL to a destination path."""
+    log(f"Downloading from {url}", "info", "📥")
+    try:
+        response = requests.get(url, stream=True, timeout=30)
+        response.raise_for_status()
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        return destination
+    except requests.RequestException as e:
+        log(f"Download failed: {e}", "error", print_exception=True)
+        msg = f"Failed to download {url}: {e}"
         raise RuntimeError(msg) from e
 
 
@@ -142,7 +157,6 @@ def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
     archive_path = Path(archive_path)
     dest_dir = Path(dest_dir)
     try:
-        # Check file type
         is_gzip = False
         with archive_path.open("rb") as f:
             header = f.read(3)
