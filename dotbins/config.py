@@ -44,7 +44,7 @@ class ToolConfig:
         return self.platform_map.get(platform, platform)
 
 
-class ToolConfigDict(TypedDict, total=False):
+class RawToolConfigDict(TypedDict, total=False):
     """TypedDict for raw data passed to build_tool_config."""
 
     repo: str  # Repository in format "owner/repo"
@@ -58,7 +58,7 @@ class ToolConfigDict(TypedDict, total=False):
 
 def build_tool_config(
     tool_name: str,
-    raw_data: ToolConfigDict,
+    raw_data: RawToolConfigDict,
     platforms: dict[str, list[str]] | None = None,
 ) -> ToolConfig:
     """Create a ToolConfig object from raw YAML data.

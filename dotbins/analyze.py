@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from .config import ToolConfig, ToolConfigDict, build_tool_config
+from .config import RawToolConfigDict, ToolConfig, build_tool_config
 from .download import download_file, extract_archive
 from .utils import get_latest_release, log
 
@@ -285,7 +285,7 @@ def generate_tool_config(
     arch_map = {"amd64": "x86_64", "arm64": "aarch64"} if _needs_arch_conversion(assets) else {}
 
     asset_patterns = _get_asset_patterns(release, linux_assets, macos_assets)
-    raw_data: ToolConfigDict = {
+    raw_data: RawToolConfigDict = {
         "repo": repo,
         "binary_name": tool_name,
         "extract_binary": True,
