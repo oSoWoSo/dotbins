@@ -35,6 +35,10 @@ class ToolConfig:
     platform_map: dict[str, str] = field(default_factory=dict)
     arch_map: dict[str, str] = field(default_factory=dict)
 
+    def bin_spec(self, arch: str, platform: str) -> BinSpec:
+        """Get a BinSpec object for the tool."""
+        return BinSpec(tool_config=self, version=self.latest_version, arch=arch, platform=platform)
+
     def tool_arch(self, arch: str) -> str:
         """Get the architecture for the tool."""
         return self.arch_map.get(arch, arch)
@@ -42,6 +46,18 @@ class ToolConfig:
     def tool_platform(self, platform: str) -> str:
         """Get the platform for the tool."""
         return self.platform_map.get(platform, platform)
+
+    @cached_property
+    def latest_release(self) -> dict:
+        """Get the latest release for the tool."""
+        from .utils import get_latest_release
+
+        return get_latest_release(self.repo)
+
+    @cached_property
+    def latest_version(self) -> str:
+        """Get the latest version for the tool."""
+        return self.latest_release["tag_name"].lstrip("v")
 
 
 class RawToolConfigDict(TypedDict, total=False):

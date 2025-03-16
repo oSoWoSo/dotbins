@@ -12,11 +12,10 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 
-from .config import BinSpec
 from .utils import calculate_sha256, extract_archive, get_latest_release, log
 
 if TYPE_CHECKING:
-    from .config import Config, ToolConfig
+    from .config import BinSpec, Config, ToolConfig
     from .versions import VersionStore
 
 
@@ -331,18 +330,12 @@ def _prepare_download_task(
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
-    release, version = _get_release_info(tool_config)
-    bin_spec = BinSpec(
-        tool_config=tool_config,
-        version=version,
-        arch=arch,
-        platform=platform,
-    )
+    bin_spec = tool_config.bin_spec(arch, platform)
     if not _should_download(config, bin_spec, force):
         return None
 
     try:
-        asset = _find_matching_asset(release, bin_spec)
+        asset = _find_matching_asset(tool_config.latest_release, bin_spec)
         if not asset:
             return None
         tmp_dir = Path(tempfile.gettempdir())
