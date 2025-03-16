@@ -249,7 +249,10 @@ def config_from_file(config_path: str | Path | None = None) -> Config:
             print_exception=True,
         )
         return Config()
+    return _config_from_dict(data)
 
+
+def _config_from_dict(data: dict) -> Config:
     tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
     platforms = data.get("platforms", DEFAULT_PLATFORMS)
     raw_tools = data.get("tools", {})
