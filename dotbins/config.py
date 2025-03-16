@@ -134,19 +134,10 @@ class Config:
             bin_dir.mkdir(parents=True, exist_ok=True)
         return bin_dir
 
-    @property
-    def platform_names(self) -> list[str]:
-        """Return a list of platform names."""
-        return list(self.platforms.keys())
-
     @cached_property
     def version_store(self) -> VersionStore:
         """Return the VersionStore object."""
         return VersionStore(self.tools_dir)
-
-    def get_architectures(self, platform: str) -> list[str]:
-        """Return the list of architectures for a given platform."""
-        return self.platforms.get(platform, [])
 
     def validate(self) -> None:
         """Check for missing repos, unknown platforms, etc."""

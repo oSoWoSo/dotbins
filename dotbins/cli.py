@@ -65,7 +65,7 @@ def _determine_update_targets(
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
     tools_to_update = tools or list(config.tools.keys())
-    platforms_to_update = [platform] if platform else config.platform_names
+    platforms_to_update = [platform] if platform else list(config.platforms.keys())
     return tools_to_update, platforms_to_update
 
 
