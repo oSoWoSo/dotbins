@@ -177,42 +177,35 @@ class BinSpec:
         """Get the platform in the tool's convention."""
         return self.tool_config.platform_map.get(self.platform, self.platform)
 
-    @property
-    def asset_pattern(self) -> str | None:
-        """Get the asset pattern for the tool."""
-        return self.tool_config.asset_patterns[self.platform][self.arch]
-
-    def search_pattern(self) -> str | None:
+    def regex_pattern(self) -> str | None:
         """Get the formatted asset pattern for the tool."""
-        asset_pattern = self.asset_pattern
-        if asset_pattern is None:
+        search_pattern = self.tool_config.asset_patterns[self.platform][self.arch]
+        if search_pattern is None:
             log(f"No asset pattern found for {self.platform}/{self.arch}", "warning")
             return None
-        return asset_pattern.format(
-            version=self.version,
-            platform=self.tool_platform,
-            arch=self.tool_arch,
+        return (
+            search_pattern.format(
+                version=self.version,
+                platform=self.tool_platform,
+                arch=self.tool_arch,
+            )
+            .replace("{version}", ".*")
+            .replace("{arch}", ".*")
+            .replace("{platform}", ".*")
         )
 
     def matching_asset(self) -> _AssetDict | None:
         """Find a matching asset for the tool."""
-        search_pattern = self.search_pattern()
-        if search_pattern is None:
+        regex_pattern = self.regex_pattern()
+        if regex_pattern is None:
             return None
-        assets = self.tool_config.latest_release["assets"]
-
-        regex_pattern = (
-            search_pattern.replace("{version}", ".*")
-            .replace("{arch}", ".*")
-            .replace("{platform}", ".*")
-        )
         log(f"Looking for asset with pattern: {regex_pattern}", "info", "🔍")
-
+        assets = self.tool_config.latest_release["assets"]
         for asset in assets:
             if re.search(regex_pattern, asset["name"]):
                 log(f"Found matching asset: {asset['name']}", "success")
                 return asset
-        log(f"No asset matching '{search_pattern}' found", "warning")
+        log(f"No asset matching '{regex_pattern}' found", "warning")
         return None
 
     def skip_download(self, config: Config, force: bool) -> bool:
