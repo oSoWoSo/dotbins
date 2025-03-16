@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from .config import ToolConfig, build_tool_config
+from .config import ToolConfig, ToolConfigDict, build_tool_config
 from .download import download_file, extract_archive
 from .utils import get_latest_release, log
 
@@ -81,7 +81,9 @@ def analyze_tool(repo: str, name: str | None = None) -> None:
         # Output YAML
         log("Suggested configuration for YAML tools file:", "info", "📋")
         # Convert ToolConfig to dict for YAML serialization
-        tool_config_dict = {k: v for k, v in tool_config.__dict__.items() if v is not None}
+        tool_config_dict = {
+            k: v for k, v in tool_config.__dict__.items() if v is not None and k != "tool_name"
+        }
         yaml_config = {tool_name: tool_config_dict}
         print(yaml.dump(yaml_config, sort_keys=False, default_flow_style=False))
         log("Please review and adjust the configuration as needed!", "warning", "# ⚠️")
@@ -283,17 +285,18 @@ def generate_tool_config(
     arch_map = {"amd64": "x86_64", "arm64": "aarch64"} if _needs_arch_conversion(assets) else {}
 
     asset_patterns = _get_asset_patterns(release, linux_assets, macos_assets)
-
+    raw_data: ToolConfigDict = {
+        "repo": repo,
+        "binary_name": tool_name,
+        "extract_binary": True,
+        "asset_patterns": asset_patterns,  # type: ignore[typeddict-item]
+        "arch_map": arch_map,
+    }
+    if processed_binary_path is not None:
+        raw_data["binary_path"] = processed_binary_path
     return build_tool_config(
         tool_name=tool_name,
-        raw_data={
-            "repo": repo,
-            "binary_name": tool_name,
-            "binary_path": processed_binary_path,
-            "extract_binary": True,
-            "asset_patterns": asset_patterns,
-            "arch_map": arch_map,
-        },
+        raw_data=raw_data,
     )
 
 
@@ -301,7 +304,7 @@ def _get_asset_patterns(
     release: dict,
     linux_assets: list[dict],
     macos_assets: list[dict],
-) -> str | dict | None:
+) -> str | dict[str, str | None]:
     """Get asset patterns based on release info."""
     platform_specific = bool(linux_assets and macos_assets)
     if platform_specific:
@@ -409,10 +412,11 @@ def _replace_pattern_placeholders(
     return pattern
 
 
-def generate_single_pattern(release: dict) -> str | None:
+def generate_single_pattern(release: dict) -> str:
     """Generate a single asset pattern for all platforms."""
     if not release["assets"]:
-        return None
+        msg = "No assets found in the release."
+        raise ValueError(msg)
 
     asset_name = release["assets"][0]["name"]
     version = release["tag_name"].lstrip("v")

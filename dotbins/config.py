@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TypedDict, TypeVar
 
 import yaml
 
@@ -44,9 +44,21 @@ class ToolConfig:
         return self.platform_map.get(platform, platform)
 
 
+class ToolConfigDict(TypedDict, total=False):
+    """TypedDict for raw data passed to build_tool_config."""
+
+    repo: str  # Repository in format "owner/repo"
+    extract_binary: bool  # Whether to extract binary from archive
+    platform_map: dict[str, str]  # Map from system platform to tool's platform name
+    arch_map: dict[str, str]  # Map from system architecture to tool's architecture name
+    binary_name: str | list[str]  # Name(s) of the binary file(s)
+    binary_path: str | list[str]  # Path(s) to binary within archive
+    asset_patterns: str | dict[str, str] | dict[str, dict[str, str | None]]
+
+
 def build_tool_config(
     tool_name: str,
-    raw_data: dict[str, Any],
+    raw_data: ToolConfigDict,
     platforms: dict[str, list[str]] | None = None,
 ) -> ToolConfig:
     """Create a ToolConfig object from raw YAML data.
@@ -97,7 +109,7 @@ def _ensure_list(value: T | list[T] | None) -> list[T]:
 
 
 def _normalize_asset_patterns(
-    patterns: str | dict[str, Any] | None,
+    patterns: str | dict[str, str] | dict[str, dict[str, str | None]] | None,
     platforms: dict[str, list[str]],
 ) -> dict[str, dict[str, str | None]]:
     """Normalize the asset_patterns into a dict.

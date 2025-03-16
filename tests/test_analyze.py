@@ -209,8 +209,8 @@ def test_generate_single_pattern(mock_release: dict[str, Any]) -> None:
 
     # Test with empty assets
     empty_release = {"tag_name": "v1.0.0", "assets": []}
-    pattern = analyze.generate_single_pattern(empty_release)
-    assert pattern is None
+    with pytest.raises(ValueError, match="No assets found in the release."):
+        analyze.generate_single_pattern(empty_release)
 
 
 @patch("dotbins.analyze.download_file")
