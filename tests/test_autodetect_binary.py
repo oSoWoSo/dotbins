@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dotbins.config import build_tool_config
-from dotbins.download import _auto_detect_binary_paths, _extract_from_archive
+from dotbins.download import _auto_detect_binary_paths, _BinSpec, _extract_from_archive
 
 
 @pytest.fixture
@@ -222,10 +222,12 @@ def test_extract_from_archive_with_auto_detection(
         _extract_from_archive(
             str(mock_archive_simple),
             destination_dir,
-            tool_config,
-            "linux",
-            "1.0.0",
-            "amd64",
+            _BinSpec(
+                tool_config=tool_config,
+                version="1.0.0",
+                arch="amd64",
+                platform="linux",
+            ),
         )
 
     # Check that the binary was copied correctly
@@ -269,8 +271,10 @@ def test_extract_from_archive_auto_detection_failure(
         _extract_from_archive(
             str(mock_archive_no_match),
             destination_dir,
-            tool_config,
-            "linux",
-            "1.0.0",
-            "amd64",
+            _BinSpec(
+                tool_config=tool_config,
+                version="1.0.0",
+                arch="amd64",
+                platform="linux",
+            ),
         )

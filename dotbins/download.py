@@ -7,6 +7,7 @@ import re
 import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -17,6 +18,24 @@ from .utils import calculate_sha256, extract_archive, get_latest_release, log
 if TYPE_CHECKING:
     from .config import Config, ToolConfig
     from .versions import VersionStore
+
+
+@dataclass
+class _BinSpec:
+    """Represents a single binary specification."""
+
+    tool_config: ToolConfig
+    version: str
+    arch: str
+    platform: str
+
+    @property
+    def tool_arch(self) -> str:
+        return self.tool_config.tool_arch(self.arch)
+
+    @property
+    def tool_platform(self) -> str:
+        return self.tool_config.tool_platform(self.platform)
 
 
 def _find_asset(assets: list[dict], pattern: str) -> dict | None:
@@ -53,31 +72,28 @@ def download_file(url: str, destination: str) -> str:
 def _extract_from_archive(
     archive_path: str,
     destination_dir: Path,
-    tool_config: ToolConfig,
-    platform: str,
-    version: str,
-    arch: str,
+    bin_spec: _BinSpec,
 ) -> None:
     """Extract binaries from an archive."""
-    log(f"Extracting from {archive_path} for {platform}", "info", "📦")
+    log(f"Extracting from {archive_path} for {bin_spec.platform}", "info", "📦")
     temp_dir = Path(tempfile.mkdtemp())
 
     try:
         extract_archive(str(archive_path), str(temp_dir))
         log(f"Archive extracted to {temp_dir}", "success", "📦")
         _log_extracted_files(temp_dir)
-        binary_paths = tool_config.binary_path or _detect_binary_paths(
+        binary_paths = bin_spec.tool_config.binary_path or _detect_binary_paths(
             temp_dir,
-            tool_config.binary_name,
+            bin_spec.tool_config.binary_name,
         )
         destination_dir.mkdir(parents=True, exist_ok=True)
         _process_binaries(
             temp_dir,
             destination_dir,
-            tool_config.binary_name,
+            bin_spec.tool_config.binary_name,
             binary_paths,
-            version,
-            tool_config.tool_arch(arch),
+            bin_spec.version,
+            bin_spec.tool_arch,
         )
 
     except Exception as e:
@@ -268,10 +284,7 @@ def make_binaries_executable(config: Config) -> None:
 class _DownloadTask(NamedTuple):
     """Represents a single download task."""
 
-    tool_config: ToolConfig
-    platform: str
-    arch: str
-    version: str
+    bin_spec: _BinSpec
     asset_url: str
     asset_name: str
     destination_dir: Path
@@ -280,6 +293,22 @@ class _DownloadTask(NamedTuple):
     @property
     def tool_name(self) -> str:
         return self.tool_config.tool_name
+
+    @property
+    def tool_config(self) -> ToolConfig:
+        return self.bin_spec.tool_config
+
+    @property
+    def version(self) -> str:
+        return self.bin_spec.version
+
+    @property
+    def platform(self) -> str:
+        return self.bin_spec.platform
+
+    @property
+    def arch(self) -> str:
+        return self.bin_spec.arch
 
 
 def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
@@ -302,21 +331,21 @@ def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -
 
 
 def _should_download(
-    tool_name: str,
     config: Config,
-    platform: str,
-    arch: str,
-    version: str,
+    bin_spec: _BinSpec,
     force: bool,
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
-    tool_info = config.version_store.get_tool_info(tool_name, platform, arch)
-    tool_config = config.tools[tool_name]
-    destination_dir = config.bin_dir(platform, arch)
-    all_exist = _exists_in_destination_dir(destination_dir, tool_config)
-    if tool_info and tool_info["version"] == version and all_exist and not force:
+    tool_info = config.version_store.get_tool_info(
+        bin_spec.tool_config.tool_name,
+        bin_spec.platform,
+        bin_spec.arch,
+    )
+    destination_dir = config.bin_dir(bin_spec.platform, bin_spec.arch)
+    all_exist = _exists_in_destination_dir(destination_dir, bin_spec.tool_config)
+    if tool_info and tool_info["version"] == bin_spec.version and all_exist and not force:
         log(
-            f"{tool_config.tool_name} {version} for {platform}/{arch} is already"
+            f"{bin_spec.tool_config.tool_name} {bin_spec.version} for {bin_spec.platform}/{bin_spec.arch} is already"
             f" up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
             "success",
         )
@@ -334,7 +363,13 @@ def _prepare_download_task(
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
-    if not _should_download(tool_name, config, platform, arch, version, force):
+    bin_spec = _BinSpec(
+        tool_config=tool_config,
+        version=version,
+        arch=arch,
+        platform=platform,
+    )
+    if not _should_download(config, bin_spec, force):
         return None
 
     try:
@@ -344,10 +379,7 @@ def _prepare_download_task(
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
         return _DownloadTask(
-            tool_config=tool_config,
-            platform=platform,
-            arch=arch,
-            version=version,
+            bin_spec=bin_spec,
             asset_url=asset["browser_download_url"],
             asset_name=asset["name"],
             destination_dir=config.bin_dir(platform, arch),
@@ -382,10 +414,7 @@ def _process_downloaded_task(
             _extract_from_archive(
                 str(task.temp_path),
                 task.destination_dir,
-                task.tool_config,
-                task.platform,
-                task.version,
-                task.arch,
+                task.bin_spec,
             )
         else:
             binary_names = task.tool_config.binary_name

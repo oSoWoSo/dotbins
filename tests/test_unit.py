@@ -13,6 +13,7 @@ from pytest_mock import MockFixture
 
 import dotbins
 from dotbins.config import Config, build_tool_config
+from dotbins.download import _BinSpec
 from dotbins.versions import VersionStore
 
 
@@ -176,10 +177,12 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        tool_config,
-        "linux",
-        "1.0.0",
-        "amd64",
+        _BinSpec(
+            tool_config=tool_config,
+            version="1.0.0",
+            arch="amd64",
+            platform="linux",
+        ),
     )
     # Verify the binary was extracted and renamed
     extracted_bin = dest_dir / "test-tool"
@@ -223,10 +226,12 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        tool_config,
-        "linux",
-        "1.0.0",
-        "amd64",
+        _BinSpec(
+            tool_config=tool_config,
+            version="1.0.0",
+            arch="amd64",
+            platform="linux",
+        ),
     )
 
     # Verify the binary was extracted and renamed
@@ -402,10 +407,12 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
         dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
-            test_tool_config,
-            "linux",
-            "1.0.0",
-            "amd64",
+            _BinSpec(
+                tool_config=test_tool_config,
+                version="1.0.0",
+                arch="amd64",
+                platform="linux",
+            ),
         )
 
 
@@ -442,10 +449,12 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
         dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
-            test_tool_config,
-            "linux",
-            "1.0.0",
-            "amd64",
+            _BinSpec(
+                tool_config=test_tool_config,
+                version="1.0.0",
+                arch="amd64",
+                platform="linux",
+            ),
         )
 
 
@@ -493,10 +502,12 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        test_tool_config,
-        "linux",
-        "1.0.0",
-        "amd64",
+        _BinSpec(
+            tool_config=test_tool_config,
+            version="1.0.0",
+            arch="amd64",
+            platform="linux",
+        ),
     )
 
     # Verify both binaries were extracted and renamed correctly
