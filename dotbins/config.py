@@ -118,6 +118,24 @@ class BinSpec:
         """Get the platform in the tool's convention."""
         return self.tool_config.tool_platform(self.platform)
 
+    @property
+    def asset_pattern(self) -> str | None:
+        """Get the asset pattern for the tool."""
+        return self.tool_config.asset_patterns[self.platform][self.arch]
+
+    @property
+    def search_pattern(self) -> str | None:
+        """Get the formatted asset pattern for the tool."""
+        asset_pattern = self.asset_pattern
+        if asset_pattern is None:
+            log(f"No asset pattern found for {self.platform}/{self.arch}", "warning")
+            return None
+        return asset_pattern.format(
+            version=self.version,
+            platform=self.tool_platform,
+            arch=self.tool_arch,
+        )
+
 
 @dataclass
 class Config:

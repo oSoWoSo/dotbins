@@ -227,28 +227,15 @@ def _get_release_info(tool_config: ToolConfig) -> tuple[dict, str]:
     return release, version
 
 
-def _find_matching_asset(
-    tool_config: ToolConfig,
-    release: dict,
-    version: str,
-    platform: str,
-    arch: str,
-) -> dict | None:
+def _find_matching_asset(release: dict, bin_spec: BinSpec) -> dict | None:
     """Find a matching asset for the tool."""
-    asset_pattern = tool_config.asset_patterns[platform][arch]
-    if asset_pattern is None:
-        log(f"No asset pattern found for {platform}/{arch}", "warning")
+    search_pattern = bin_spec.search_pattern
+    if search_pattern is None:
         return None
-    search_pattern = asset_pattern.format(
-        version=version,
-        platform=tool_config.tool_platform(platform),
-        arch=tool_config.tool_arch(arch),
-    )
     asset = _find_asset(release["assets"], search_pattern)
     if not asset:
         log(f"No asset matching '{search_pattern}' found", "warning")
         return None
-
     return asset
 
 
@@ -355,7 +342,7 @@ def _prepare_download_task(
         return None
 
     try:
-        asset = _find_matching_asset(tool_config, release, version, platform, arch)
+        asset = _find_matching_asset(release, bin_spec)
         if not asset:
             return None
         tmp_dir = Path(tempfile.gettempdir())
