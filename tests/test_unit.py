@@ -12,8 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from pytest_mock import MockFixture
 
 import dotbins
-from dotbins.config import Config, build_tool_config
-from dotbins.download import _BinSpec
+from dotbins.config import BinSpec, Config, build_tool_config
 from dotbins.versions import VersionStore
 
 
@@ -177,7 +176,7 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        _BinSpec(
+        BinSpec(
             tool_config=tool_config,
             version="1.0.0",
             arch="amd64",
@@ -226,7 +225,7 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        _BinSpec(
+        BinSpec(
             tool_config=tool_config,
             version="1.0.0",
             arch="amd64",
@@ -407,7 +406,7 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
         dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
-            _BinSpec(
+            BinSpec(
                 tool_config=test_tool_config,
                 version="1.0.0",
                 arch="amd64",
@@ -449,7 +448,7 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
         dotbins.download._extract_from_archive(
             archive_path,
             dest_dir,
-            _BinSpec(
+            BinSpec(
                 tool_config=test_tool_config,
                 version="1.0.0",
                 arch="amd64",
@@ -502,7 +501,7 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
-        _BinSpec(
+        BinSpec(
             tool_config=test_tool_config,
             version="1.0.0",
             arch="amd64",

@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dotbins.config import build_tool_config
-from dotbins.download import _auto_detect_binary_paths, _BinSpec, _extract_from_archive
+from dotbins.config import BinSpec, build_tool_config
+from dotbins.download import _auto_detect_binary_paths, _extract_from_archive
 
 
 @pytest.fixture
@@ -222,7 +222,7 @@ def test_extract_from_archive_with_auto_detection(
         _extract_from_archive(
             str(mock_archive_simple),
             destination_dir,
-            _BinSpec(
+            BinSpec(
                 tool_config=tool_config,
                 version="1.0.0",
                 arch="amd64",
@@ -271,7 +271,7 @@ def test_extract_from_archive_auto_detection_failure(
         _extract_from_archive(
             str(mock_archive_no_match),
             destination_dir,
-            _BinSpec(
+            BinSpec(
                 tool_config=tool_config,
                 version="1.0.0",
                 arch="amd64",

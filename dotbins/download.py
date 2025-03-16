@@ -7,35 +7,17 @@ import re
 import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 
+from .config import BinSpec
 from .utils import calculate_sha256, extract_archive, get_latest_release, log
 
 if TYPE_CHECKING:
     from .config import Config, ToolConfig
     from .versions import VersionStore
-
-
-@dataclass
-class _BinSpec:
-    """Represents a single binary specification."""
-
-    tool_config: ToolConfig
-    version: str
-    arch: str
-    platform: str
-
-    @property
-    def tool_arch(self) -> str:
-        return self.tool_config.tool_arch(self.arch)
-
-    @property
-    def tool_platform(self) -> str:
-        return self.tool_config.tool_platform(self.platform)
 
 
 def _find_asset(assets: list[dict], pattern: str) -> dict | None:
@@ -72,7 +54,7 @@ def download_file(url: str, destination: str) -> str:
 def _extract_from_archive(
     archive_path: str,
     destination_dir: Path,
-    bin_spec: _BinSpec,
+    bin_spec: BinSpec,
 ) -> None:
     """Extract binaries from an archive."""
     log(f"Extracting from {archive_path} for {bin_spec.platform}", "info", "📦")
@@ -284,7 +266,7 @@ def make_binaries_executable(config: Config) -> None:
 class _DownloadTask(NamedTuple):
     """Represents a single download task."""
 
-    bin_spec: _BinSpec
+    bin_spec: BinSpec
     asset_url: str
     asset_name: str
     destination_dir: Path
@@ -332,7 +314,7 @@ def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -
 
 def _should_download(
     config: Config,
-    bin_spec: _BinSpec,
+    bin_spec: BinSpec,
     force: bool,
 ) -> bool:
     """Check if download should be skipped (binary already exists)."""
@@ -363,7 +345,7 @@ def _prepare_download_task(
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     release, version = _get_release_info(tool_config)
-    bin_spec = _BinSpec(
+    bin_spec = BinSpec(
         tool_config=tool_config,
         version=version,
         arch=arch,

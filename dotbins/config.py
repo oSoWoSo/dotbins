@@ -108,6 +108,26 @@ def _ensure_list(value: T | list[T] | None) -> list[T]:
     return [value]
 
 
+@dataclass
+class BinSpec:
+    """Represents a single binary specification."""
+
+    tool_config: ToolConfig
+    version: str
+    arch: str
+    platform: str
+
+    @property
+    def tool_arch(self) -> str:
+        """Get the architecture in the tool's convention."""
+        return self.tool_config.tool_arch(self.arch)
+
+    @property
+    def tool_platform(self) -> str:
+        """Get the platform in the tool's convention."""
+        return self.tool_config.tool_platform(self.platform)
+
+
 def _normalize_asset_patterns(
     patterns: str | dict[str, str] | dict[str, dict[str, str | None]] | None,
     platforms: dict[str, list[str]],
