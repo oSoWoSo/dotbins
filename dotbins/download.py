@@ -214,21 +214,6 @@ class _DownloadTask(NamedTuple):
         return self.bin_spec.arch
 
 
-def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
-    """Download a file for a DownloadTask."""
-    try:
-        log(
-            f"Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...",
-            "info",
-            "📥",
-        )
-        download_file(task.asset_url, str(task.temp_path))
-        return task, True
-    except Exception as e:
-        log(f"Error downloading {task.asset_name}: {e!s}", "error", print_exception=True)
-        return task, False
-
-
 def _prepare_download_task(
     tool_name: str,
     platform: str,
@@ -298,6 +283,35 @@ def prepare_download_tasks(
     return sorted(download_tasks, key=lambda t: t.asset_url), total_count
 
 
+def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
+    """Download a file for a DownloadTask."""
+    try:
+        log(
+            f"Downloading {task.asset_name} for {task.tool_name} ({task.platform}/{task.arch})...",
+            "info",
+            "📥",
+        )
+        download_file(task.asset_url, str(task.temp_path))
+        return task, True
+    except Exception as e:
+        log(f"Error downloading {task.asset_name}: {e!s}", "error", print_exception=True)
+        return task, False
+
+
+def download_files_in_parallel(
+    download_tasks: list[_DownloadTask],
+) -> list[tuple[_DownloadTask, bool]]:
+    """Download files in parallel using ThreadPoolExecutor."""
+    log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
+    downloaded_tasks = []
+    with ThreadPoolExecutor(max_workers=min(8, len(download_tasks) or 1)) as ex:
+        future_to_task = {ex.submit(_download_task, task): task for task in download_tasks}
+        for future in as_completed(future_to_task):
+            task, success = future.result()
+            downloaded_tasks.append((task, success))
+    return downloaded_tasks
+
+
 def _process_downloaded_task(
     task: _DownloadTask,
     success: bool,
@@ -360,20 +374,6 @@ def process_downloaded_files(
         if _process_downloaded_task(task, download_success, version_store):
             success_count += 1
     return success_count
-
-
-def download_files_in_parallel(
-    download_tasks: list[_DownloadTask],
-) -> list[tuple[_DownloadTask, bool]]:
-    """Download files in parallel using ThreadPoolExecutor."""
-    log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
-    downloaded_tasks = []
-    with ThreadPoolExecutor(max_workers=min(8, len(download_tasks) or 1)) as ex:
-        future_to_task = {ex.submit(_download_task, task): task for task in download_tasks}
-        for future in as_completed(future_to_task):
-            task, success = future.result()
-            downloaded_tasks.append((task, success))
-    return downloaded_tasks
 
 
 def _determine_architectures(
