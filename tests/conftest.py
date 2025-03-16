@@ -2,7 +2,6 @@
 
 import tarfile
 import tempfile
-from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -10,14 +9,7 @@ from requests_mock import Mocker
 
 
 @pytest.fixture
-def temp_dir() -> Generator[Path, None, None]:
-    """Create a temporary directory for tests."""
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        yield Path(tmpdirname)
-
-
-@pytest.fixture
-def mock_github_api(requests_mock: Mocker, temp_dir: Path) -> Mocker:
+def mock_github_api(requests_mock: Mocker, tmp_path: Path) -> Mocker:
     """Mock GitHub API responses."""
     # Mock the latest release endpoint
     release_data = {
@@ -49,7 +41,7 @@ def mock_github_api(requests_mock: Mocker, temp_dir: Path) -> Mocker:
     )
 
     # Create a temporary file for our test binary
-    test_binary = temp_dir / "test_binary.tar.gz"
+    test_binary = tmp_path / "test_binary.tar.gz"
 
     # Create a simple binary file inside a tarball
     with tempfile.TemporaryDirectory() as tmpdir:

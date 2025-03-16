@@ -16,7 +16,7 @@ from dotbins.config import BinSpec, Config, build_tool_config
 from dotbins.versions import VersionStore
 
 
-def test_load_config(temp_dir: Path) -> None:
+def test_load_config(tmp_path: Path) -> None:
     """Test loading configuration from YAML."""
     # Create a sample config file - updated to new format
     config_content = """
@@ -36,7 +36,7 @@ def test_load_config(temp_dir: Path) -> None:
             asset_patterns: sample-{version}-{platform}_{arch}.tar.gz
     """
 
-    config_path = temp_dir / "dotbins.yaml"
+    config_path = tmp_path / "dotbins.yaml"
     with open(config_path, "w") as f:
         f.write(config_content)
 
@@ -133,7 +133,7 @@ def test_find_asset() -> None:
         assert bin_spec.matching_asset() == assets[1]
 
 
-def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:
+def test_download_file(requests_mock: MockFixture, tmp_path: Path) -> None:
     """Test downloading a file from URL."""
     # Setup mock response
     test_content = b"test file content"
@@ -141,7 +141,7 @@ def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:
     requests_mock.get(url, content=test_content)
 
     # Call the function
-    dest_path = str(temp_dir / "downloaded.tar.gz")
+    dest_path = str(tmp_path / "downloaded.tar.gz")
     result = dotbins.download.download_file(url, dest_path)
 
     # Verify the file was downloaded correctly
@@ -150,12 +150,12 @@ def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:
         assert f.read() == test_content
 
 
-def test_extract_from_archive_tar(temp_dir: Path) -> None:
+def test_extract_from_archive_tar(tmp_path: Path) -> None:
     """Test extracting binary from tar.gz archive."""
     # Create a test tarball
     import tarfile
 
-    archive_path = temp_dir / "test.tar.gz"
+    archive_path = tmp_path / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a tarball with a binary inside
@@ -179,7 +179,7 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     )
 
     # Create destination directory
-    dest_dir = temp_dir / "bin"
+    dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
     # Call the function
@@ -199,12 +199,12 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     assert extracted_bin.stat().st_mode & 0o100  # Check if executable
 
 
-def test_extract_from_archive_zip(temp_dir: Path) -> None:
+def test_extract_from_archive_zip(tmp_path: Path) -> None:
     """Test extracting binary from zip archive."""
     # Create a test zip file
     import zipfile
 
-    archive_path = temp_dir / "test.zip"
+    archive_path = tmp_path / "test.zip"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a zip with a binary inside
@@ -228,7 +228,7 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     )
 
     # Create destination directory
-    dest_dir = temp_dir / "bin"
+    dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
     # Call the function
@@ -249,16 +249,16 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     assert extracted_bin.stat().st_mode & 0o100  # Check if executable
 
 
-def test_make_binaries_executable(temp_dir: Path) -> None:
+def test_make_binaries_executable(tmp_path: Path) -> None:
     """Test making binaries executable."""
     # Setup mock environment
     config = Config(
-        tools_dir=temp_dir,
+        tools_dir=tmp_path,
         platforms={"linux": ["amd64"]},  # Use new format
     )
 
     # Create test binary
-    bin_dir = temp_dir / "linux" / "amd64" / "bin"
+    bin_dir = tmp_path / "linux" / "amd64" / "bin"
     bin_dir.mkdir(parents=True)
     bin_file = bin_dir / "test-bin"
     with open(bin_file, "w") as f:
@@ -284,7 +284,7 @@ def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     assert 'export PATH="$HOME/.mydotbins/tools/$_os/$_arch/bin:$PATH"' in captured.out
 
 
-def test_download_tool_already_exists(temp_dir: Path) -> None:
+def test_download_tool_already_exists(tmp_path: Path) -> None:
     """Test prepare_download_task when binary already exists."""
     # Setup environment with complete tool config
     test_tool_config = build_tool_config(
@@ -298,7 +298,7 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
         },
     )
 
-    version_store = VersionStore(temp_dir)
+    version_store = VersionStore(tmp_path)
     version_store.update_tool_info(
         "test-tool",
         "linux",
@@ -308,12 +308,12 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
     )
 
     config = Config(
-        tools_dir=temp_dir,
+        tools_dir=tmp_path,
         tools={"test-tool": test_tool_config},
     )
 
     # Create the binary directory and file
-    bin_dir = temp_dir / "linux" / "amd64" / "bin"
+    bin_dir = tmp_path / "linux" / "amd64" / "bin"
     bin_dir.mkdir(parents=True)
     bin_file = bin_dir / "test-tool"
     with open(bin_file, "w") as f:
@@ -337,7 +337,7 @@ def test_download_tool_already_exists(temp_dir: Path) -> None:
 
 
 def test_download_tool_asset_not_found(
-    temp_dir: Path,
+    tmp_path: Path,
     requests_mock: MockFixture,
 ) -> None:
     """Test prepare_download_task when asset is not found."""
@@ -365,7 +365,7 @@ def test_download_tool_asset_not_found(
     )
     # Setup environment
     config = Config(
-        tools_dir=temp_dir,
+        tools_dir=tmp_path,
         tools={"test-tool": test_tool_config},
     )
 
@@ -385,10 +385,10 @@ def test_download_tool_asset_not_found(
         assert result is None
 
 
-def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
+def test_extract_from_archive_unknown_type(tmp_path: Path) -> None:
     """Test extract_from_archive with unknown archive type."""
     # Create a dummy file with unknown extension
-    archive_path = temp_dir / "test.xyz"
+    archive_path = tmp_path / "test.xyz"
     with open(archive_path, "w") as f:
         f.write("dummy content")
 
@@ -403,7 +403,7 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
     )
 
     # Create destination directory
-    dest_dir = temp_dir / "bin"
+    dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
     # Call the function and check for exception
@@ -420,19 +420,19 @@ def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
         )
 
 
-def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
+def test_extract_from_archive_missing_binary(tmp_path: Path) -> None:
     """Test extract_from_archive when binary is not in archive."""
     # Create a test tarball without the binary
     import tarfile
 
-    archive_path = temp_dir / "test.tar.gz"
+    archive_path = tmp_path / "test.tar.gz"
     with tarfile.open(archive_path, "w:gz") as tar:
         # Create a dummy file instead of the binary
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(b"dummy content")
-            tmp_path = tmp.name
-        tar.add(tmp_path, arcname="dummy-file")
-        os.unlink(tmp_path)
+            tmp_path2 = tmp.name
+        tar.add(tmp_path2, arcname="dummy-file")
+        os.unlink(tmp_path2)
 
     # Setup tool config
     test_tool_config = build_tool_config(
@@ -445,7 +445,7 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
     )
 
     # Create destination directory
-    dest_dir = temp_dir / "bin"
+    dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
     # Call the function and check for exception
@@ -462,12 +462,12 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
         )
 
 
-def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
+def test_extract_from_archive_multiple_binaries(tmp_path: Path) -> None:
     """Test extracting multiple binaries from an archive."""
     # Create a test tarball with multiple binaries
     import tarfile
 
-    archive_path = temp_dir / "test.tar.gz"
+    archive_path = tmp_path / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a tarball with two binaries inside
@@ -499,7 +499,7 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
     )
 
     # Create destination directory
-    dest_dir = temp_dir / "bin"
+    dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
     # Call the function

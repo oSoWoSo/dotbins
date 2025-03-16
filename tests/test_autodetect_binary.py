@@ -1,11 +1,8 @@
 """Tests for the auto_detect_binary_paths function."""
 
 import os
-import shutil
 import tarfile
-import tempfile
 import zipfile
-from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -16,18 +13,10 @@ from dotbins.download import _auto_detect_binary_paths, _extract_from_archive
 
 
 @pytest.fixture
-def temp_dir() -> Generator[Path, None, None]:
-    """Create a temporary directory for testing."""
-    temp_dir = Path(tempfile.mkdtemp())
-    yield temp_dir
-    shutil.rmtree(temp_dir)
-
-
-@pytest.fixture
-def mock_archive_simple(temp_dir: Path) -> Path:
+def mock_archive_simple(tmp_path: Path) -> Path:
     """Create a mock archive with a simple binary that exactly matches the name."""
-    archive_path = temp_dir / "simple.tar.gz"
-    extract_dir = temp_dir / "extract_simple"
+    archive_path = tmp_path / "simple.tar.gz"
+    extract_dir = tmp_path / "extract_simple"
     extract_dir.mkdir()
 
     # Create a binary file
@@ -43,10 +32,10 @@ def mock_archive_simple(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def mock_archive_nested(temp_dir: Path) -> Path:
+def mock_archive_nested(tmp_path: Path) -> Path:
     """Create a mock archive with a nested binary structure."""
-    archive_path = temp_dir / "nested.zip"
-    extract_dir = temp_dir / "extract_nested"
+    archive_path = tmp_path / "nested.zip"
+    extract_dir = tmp_path / "extract_nested"
     extract_dir.mkdir()
     bin_dir = extract_dir / "bin"
     bin_dir.mkdir()
@@ -70,10 +59,10 @@ def mock_archive_nested(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def mock_archive_multiple(temp_dir: Path) -> Path:
+def mock_archive_multiple(tmp_path: Path) -> Path:
     """Create a mock archive with multiple binaries."""
-    archive_path = temp_dir / "multiple.tar.gz"
-    extract_dir = temp_dir / "extract_multiple"
+    archive_path = tmp_path / "multiple.tar.gz"
+    extract_dir = tmp_path / "extract_multiple"
     extract_dir.mkdir()
 
     # Create multiple binary files
@@ -94,10 +83,10 @@ def mock_archive_multiple(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def mock_archive_no_match(temp_dir: Path) -> Path:
+def mock_archive_no_match(tmp_path: Path) -> Path:
     """Create a mock archive with no matching binaries."""
-    archive_path = temp_dir / "nomatch.tar.gz"
-    extract_dir = temp_dir / "extract_nomatch"
+    archive_path = tmp_path / "nomatch.tar.gz"
+    extract_dir = tmp_path / "extract_nomatch"
     extract_dir.mkdir()
 
     # Create a non-matching binary file
@@ -113,12 +102,12 @@ def mock_archive_no_match(temp_dir: Path) -> Path:
 
 
 def test_auto_detect_binary_paths_simple(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_simple: Path,
 ) -> None:
     """Test auto-detection with a simple binary match."""
     # Set up test environment
-    extract_dir = temp_dir / "test_extract_simple"
+    extract_dir = tmp_path / "test_extract_simple"
     extract_dir.mkdir()
 
     # Extract archive
@@ -134,12 +123,12 @@ def test_auto_detect_binary_paths_simple(
 
 
 def test_auto_detect_binary_paths_nested(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_nested: Path,
 ) -> None:
     """Test auto-detection with a nested binary structure."""
     # Set up test environment
-    extract_dir = temp_dir / "test_extract_nested"
+    extract_dir = tmp_path / "test_extract_nested"
     extract_dir.mkdir()
 
     # Extract archive
@@ -155,12 +144,12 @@ def test_auto_detect_binary_paths_nested(
 
 
 def test_auto_detect_binary_paths_multiple(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_multiple: Path,
 ) -> None:
     """Test auto-detection with multiple binaries."""
     # Set up test environment
-    extract_dir = temp_dir / "test_extract_multiple"
+    extract_dir = tmp_path / "test_extract_multiple"
     extract_dir.mkdir()
 
     # Extract archive
@@ -177,12 +166,12 @@ def test_auto_detect_binary_paths_multiple(
 
 
 def test_auto_detect_binary_paths_no_match(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_no_match: Path,
 ) -> None:
     """Test auto-detection with no matching binaries."""
     # Set up test environment
-    extract_dir = temp_dir / "test_extract_nomatch"
+    extract_dir = tmp_path / "test_extract_nomatch"
     extract_dir.mkdir()
 
     # Extract archive
@@ -197,11 +186,11 @@ def test_auto_detect_binary_paths_no_match(
 
 
 def test_extract_from_archive_with_auto_detection(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_simple: Path,
 ) -> None:
     """Test the extract_from_archive function with auto-detection."""
-    destination_dir = temp_dir / "bin"
+    destination_dir = tmp_path / "bin"
     destination_dir.mkdir()
 
     # Mock config without binary_path
@@ -244,11 +233,11 @@ def test_extract_from_archive_with_auto_detection(
 
 
 def test_extract_from_archive_auto_detection_failure(
-    temp_dir: Path,
+    tmp_path: Path,
     mock_archive_no_match: Path,
 ) -> None:
     """Test the extract_from_archive function when auto-detection fails."""
-    destination_dir = temp_dir / "bin"
+    destination_dir = tmp_path / "bin"
     destination_dir.mkdir()
 
     # Mock config without binary_path

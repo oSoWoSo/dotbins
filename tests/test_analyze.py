@@ -101,13 +101,13 @@ def test_find_sample_asset(mock_assets: list[dict[str, str]]) -> None:
     assert no_sample is None
 
 
-def test_find_executables(temp_dir: Path) -> None:
+def test_find_executables(tmp_path: Path) -> None:
     """Test finding executable files in a directory."""
     # Create test executable files
-    bin_dir = os.path.join(temp_dir, "bin")
+    bin_dir = os.path.join(tmp_path, "bin")
     os.makedirs(bin_dir)
 
-    exe_path1 = os.path.join(temp_dir, "tool")
+    exe_path1 = os.path.join(tmp_path, "tool")
     with open(exe_path1, "w") as f:
         f.write("#!/bin/sh\necho test")
     os.chmod(exe_path1, 0o700)  # More restrictive permissions
@@ -118,14 +118,14 @@ def test_find_executables(temp_dir: Path) -> None:
     os.chmod(exe_path2, 0o700)  # More restrictive permissions
 
     # Create a non-executable file
-    non_exe = os.path.join(temp_dir, "README")
+    non_exe = os.path.join(tmp_path, "README")
     with open(non_exe, "w") as f:
         f.write("Documentation")
 
     # Constants for expected counts
     expected_executables = 2
 
-    executables = analyze.find_executables(temp_dir)
+    executables = analyze.find_executables(tmp_path)
     assert len(executables) == expected_executables
     assert "tool" in executables
     assert os.path.join("bin", "tool-helper") in executables
@@ -305,24 +305,24 @@ def test_analyze_tool(
     assert ToolConfig("tool", **parsed["tool"]) == tool_config
 
 
-def test_extract_archive(temp_dir: Path) -> None:
+def test_extract_archive(tmp_path: Path) -> None:
     """Test extracting different archive types."""
     # Test with zip file
-    zip_path = os.path.join(temp_dir, "test.zip")
+    zip_path = os.path.join(tmp_path, "test.zip")
     with zipfile.ZipFile(zip_path, "w") as zipf:
         zipf.writestr("test.txt", "test content")
 
-    extract_dir = os.path.join(temp_dir, "extract_zip")
+    extract_dir = os.path.join(tmp_path, "extract_zip")
     os.makedirs(extract_dir)
     extract_archive(zip_path, extract_dir)
     assert os.path.exists(os.path.join(extract_dir, "test.txt"))
 
     # Test with unsupported format
-    unsupported_path = os.path.join(temp_dir, "test.bin")
+    unsupported_path = os.path.join(tmp_path, "test.bin")
     with open(unsupported_path, "w") as f:
         f.write("binary content")
 
-    extract_dir = os.path.join(temp_dir, "extract_unsupported")
+    extract_dir = os.path.join(tmp_path, "extract_unsupported")
     os.makedirs(extract_dir)
     with pytest.raises(ValueError, match="Unsupported archive format"):
         extract_archive(unsupported_path, extract_dir)
