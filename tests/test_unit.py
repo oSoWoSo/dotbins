@@ -157,7 +157,7 @@ def test_extract_from_archive_tar(temp_dir: Path) -> None:
     # Create a test tarball
     import tarfile
 
-    archive_path = str(temp_dir / "test.tar.gz")
+    archive_path = temp_dir / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a tarball with a binary inside
@@ -206,7 +206,7 @@ def test_extract_from_archive_zip(temp_dir: Path) -> None:
     # Create a test zip file
     import zipfile
 
-    archive_path = str(temp_dir / "test.zip")
+    archive_path = temp_dir / "test.zip"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a zip with a binary inside
@@ -391,7 +391,7 @@ def test_download_tool_asset_not_found(
 def test_extract_from_archive_unknown_type(temp_dir: Path) -> None:
     """Test extract_from_archive with unknown archive type."""
     # Create a dummy file with unknown extension
-    archive_path = str(temp_dir / "test.xyz")
+    archive_path = temp_dir / "test.xyz"
     with open(archive_path, "w") as f:
         f.write("dummy content")
 
@@ -428,7 +428,7 @@ def test_extract_from_archive_missing_binary(temp_dir: Path) -> None:
     # Create a test tarball without the binary
     import tarfile
 
-    archive_path = str(temp_dir / "test.tar.gz")
+    archive_path = temp_dir / "test.tar.gz"
     with tarfile.open(archive_path, "w:gz") as tar:
         # Create a dummy file instead of the binary
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -470,7 +470,7 @@ def test_extract_from_archive_multiple_binaries(temp_dir: Path) -> None:
     # Create a test tarball with multiple binaries
     import tarfile
 
-    archive_path = str(temp_dir / "test.tar.gz")
+    archive_path = temp_dir / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
 
     # Create a tarball with two binaries inside

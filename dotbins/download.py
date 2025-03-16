@@ -35,7 +35,7 @@ def download_file(url: str, destination: str) -> str:
 
 
 def _extract_from_archive(
-    archive_path: str,
+    archive_path: Path,
     destination_dir: Path,
     bin_spec: BinSpec,
 ) -> None:
@@ -44,7 +44,7 @@ def _extract_from_archive(
     temp_dir = Path(tempfile.mkdtemp())
 
     try:
-        extract_archive(str(archive_path), str(temp_dir))
+        extract_archive(archive_path, temp_dir)
         log(f"Archive extracted to {temp_dir}", "success", "📦")
         _log_extracted_files(temp_dir)
         binary_paths = bin_spec.tool_config.binary_path or _detect_binary_paths(
@@ -338,7 +338,7 @@ def _process_downloaded_task(
 
         task.destination_dir.mkdir(parents=True, exist_ok=True)
         if task.tool_config.extract_binary:
-            _extract_from_archive(str(task.temp_path), task.destination_dir, task.bin_spec)
+            _extract_from_archive(task.temp_path, task.destination_dir, task.bin_spec)
         else:
             binary_names = task.tool_config.binary_name
             if len(binary_names) != 1:

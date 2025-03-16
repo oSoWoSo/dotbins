@@ -220,7 +220,7 @@ def test_extract_from_archive_with_auto_detection(
     with patch("dotbins.utils.console", mock_console):
         # Call the function
         _extract_from_archive(
-            str(mock_archive_simple),
+            mock_archive_simple,
             destination_dir,
             BinSpec(
                 tool_config=tool_config,
@@ -269,7 +269,7 @@ def test_extract_from_archive_auto_detection_failure(
         pytest.raises(ValueError, match="Could not auto-detect binary paths"),
     ):
         _extract_from_archive(
-            str(mock_archive_no_match),
+            mock_archive_no_match,
             destination_dir,
             BinSpec(
                 tool_config=tool_config,

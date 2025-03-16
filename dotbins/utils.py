@@ -137,8 +137,10 @@ def calculate_sha256(file_path: str | Path) -> str:
     return sha256_hash.hexdigest()
 
 
-def extract_archive(archive_path: str, dest_dir: str) -> None:
+def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
     """Extract an archive to a destination directory."""
+    archive_path = str(archive_path)
+    dest_dir = str(dest_dir)
     try:
         # Check file type
         is_gzip = False
