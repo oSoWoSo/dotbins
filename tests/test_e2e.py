@@ -148,7 +148,7 @@ def run_e2e_test(
             architecture=filter_arch,
             current=False,
             force=force,
-            shell_setup=False,
+            shell_setup=True,
         )
 
     return config
