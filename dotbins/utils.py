@@ -8,13 +8,13 @@ import os
 import sys
 import tarfile
 import zipfile
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
 from rich.console import Console
 
 if TYPE_CHECKING:
+    from pathlib import Path
 
     from .config import Config
 
@@ -139,8 +139,8 @@ def calculate_sha256(file_path: str | Path) -> str:
 
 def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
     """Extract an archive to a destination directory."""
-    archive_path = Path(archive_path)
-    dest_dir = Path(dest_dir)
+    archive_path = str(archive_path)
+    dest_dir = str(dest_dir)
     try:
         # Check file type
         is_gzip = False
@@ -149,13 +149,13 @@ def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
             if header.startswith(b"\x1f\x8b"):
                 is_gzip = True
 
-        if is_gzip or archive_path.suffix in (".tar.gz", ".tgz"):
+        if is_gzip or archive_path.endswith((".tar.gz", ".tgz")):
             with tarfile.open(archive_path, mode="r:gz") as tar:
                 tar.extractall(path=dest_dir)
-        elif archive_path.suffix in (".tar.bz2", ".tbz2"):
+        elif archive_path.endswith((".tar.bz2", ".tbz2")):
             with tarfile.open(archive_path, mode="r:bz2") as tar:
                 tar.extractall(path=dest_dir)
-        elif archive_path.suffix == ".zip":
+        elif archive_path.endswith(".zip"):
             with zipfile.ZipFile(archive_path) as zip_file:
                 zip_file.extractall(path=dest_dir)
         else:
