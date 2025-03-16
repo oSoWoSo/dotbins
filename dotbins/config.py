@@ -22,6 +22,37 @@ DEFAULT_PLATFORMS = {
 T = TypeVar("T")
 
 
+@dataclass
+class Config:
+    """Overall configuration for dotbins."""
+
+    tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
+    platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
+    tools: dict[str, ToolConfig] = field(default_factory=dict)
+
+    def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
+        """Return the bin directory for a given platform and architecture."""
+        bin_dir = self.tools_dir / platform / arch / "bin"
+        if create:
+            bin_dir.mkdir(parents=True, exist_ok=True)
+        return bin_dir
+
+    @cached_property
+    def version_store(self) -> VersionStore:
+        """Return the VersionStore object."""
+        return VersionStore(self.tools_dir)
+
+    def validate(self) -> None:
+        """Check for missing repos, unknown platforms, etc."""
+        for tool_name, tool_config in self.tools.items():
+            _validate_tool_config(self.platforms, tool_name, tool_config)
+
+    @classmethod
+    def from_file(cls, config_path: str | Path | None = None) -> Config:
+        """Load configuration from YAML, or return defaults if no file found."""
+        return config_from_file(config_path)
+
+
 @dataclass(frozen=True)
 class ToolConfig:
     """Holds all config data for a single tool, without doing heavy logic."""
@@ -50,6 +81,44 @@ class ToolConfig:
     def latest_version(self) -> str:
         """Get the latest version for the tool."""
         return self.latest_release["tag_name"].lstrip("v")
+
+
+@dataclass
+class BinSpec:
+    """Specific arch and platform for a tool."""
+
+    tool_config: ToolConfig
+    version: str
+    arch: str
+    platform: str
+
+    @property
+    def tool_arch(self) -> str:
+        """Get the architecture in the tool's convention."""
+        return self.tool_config.arch_map.get(self.arch, self.arch)
+
+    @property
+    def tool_platform(self) -> str:
+        """Get the platform in the tool's convention."""
+        return self.tool_config.platform_map.get(self.platform, self.platform)
+
+    @property
+    def asset_pattern(self) -> str | None:
+        """Get the asset pattern for the tool."""
+        return self.tool_config.asset_patterns[self.platform][self.arch]
+
+    @property
+    def search_pattern(self) -> str | None:
+        """Get the formatted asset pattern for the tool."""
+        asset_pattern = self.asset_pattern
+        if asset_pattern is None:
+            log(f"No asset pattern found for {self.platform}/{self.arch}", "warning")
+            return None
+        return asset_pattern.format(
+            version=self.version,
+            platform=self.tool_platform,
+            arch=self.tool_arch,
+        )
 
 
 class RawToolConfigDict(TypedDict, total=False):
@@ -105,75 +174,6 @@ def build_tool_config(
         platform_map=platform_map,
         arch_map=arch_map,
     )
-
-
-@dataclass
-class BinSpec:
-    """Represents a single binary specification."""
-
-    tool_config: ToolConfig
-    version: str
-    arch: str
-    platform: str
-
-    @property
-    def tool_arch(self) -> str:
-        """Get the architecture in the tool's convention."""
-        return self.tool_config.arch_map.get(self.arch, self.arch)
-
-    @property
-    def tool_platform(self) -> str:
-        """Get the platform in the tool's convention."""
-        return self.tool_config.platform_map.get(self.platform, self.platform)
-
-    @property
-    def asset_pattern(self) -> str | None:
-        """Get the asset pattern for the tool."""
-        return self.tool_config.asset_patterns[self.platform][self.arch]
-
-    @property
-    def search_pattern(self) -> str | None:
-        """Get the formatted asset pattern for the tool."""
-        asset_pattern = self.asset_pattern
-        if asset_pattern is None:
-            log(f"No asset pattern found for {self.platform}/{self.arch}", "warning")
-            return None
-        return asset_pattern.format(
-            version=self.version,
-            platform=self.tool_platform,
-            arch=self.tool_arch,
-        )
-
-
-@dataclass
-class Config:
-    """Overall configuration for dotbins."""
-
-    tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
-    platforms: dict[str, list[str]] = field(default_factory=lambda: DEFAULT_PLATFORMS)
-    tools: dict[str, ToolConfig] = field(default_factory=dict)
-
-    def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
-        """Return the bin directory for a given platform and architecture."""
-        bin_dir = self.tools_dir / platform / arch / "bin"
-        if create:
-            bin_dir.mkdir(parents=True, exist_ok=True)
-        return bin_dir
-
-    @cached_property
-    def version_store(self) -> VersionStore:
-        """Return the VersionStore object."""
-        return VersionStore(self.tools_dir)
-
-    def validate(self) -> None:
-        """Check for missing repos, unknown platforms, etc."""
-        for tool_name, tool_config in self.tools.items():
-            _validate_tool_config(self.platforms, tool_name, tool_config)
-
-    @classmethod
-    def from_file(cls, config_path: str | Path | None = None) -> Config:
-        """Load configuration from YAML, or return defaults if no file found."""
-        return config_from_file(config_path)
 
 
 def config_from_file(config_path: str | Path | None = None) -> Config:
