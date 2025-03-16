@@ -46,20 +46,7 @@ def _initialize(config: Config) -> None:
 
 def _show_versions(config: Config) -> None:
     """Show versions of installed tools."""
-    versions = config.version_store.list_all()
-
-    if not versions:
-        log("No tool versions recorded yet.", "info")
-        return
-
-    log("Installed tool versions:", "info", "📋")
-    for key, info in versions.items():
-        tool, platform, arch = key.split("/")
-        sha256_info = f" [SHA256: {info.get('sha256', 'N/A')}]" if info.get("sha256") else ""
-        log(
-            f"  {tool} ({platform}/{arch}): {info['version']} - Updated on {info['updated_at']}{sha256_info}",
-            "success",
-        )
+    config.version_store.print()
 
 
 def create_parser() -> argparse.ArgumentParser:
