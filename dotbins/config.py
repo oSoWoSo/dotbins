@@ -82,11 +82,11 @@ class Config:
 
         """
         tools_to_update = _tools_to_update(self, tools)
-        if current:
-            platform, architecture = current_platform()
-            platforms_to_update = [platform]
-        else:
-            platforms_to_update = [platform] if platform else None  # type: ignore[assignment]
+        platforms_to_update, architecture = _platforms_and_archs_to_update(
+            platform,
+            architecture,
+            current,
+        )
         download_tasks, total_count = prepare_download_tasks(
             self,
             tools_to_update,
@@ -98,6 +98,19 @@ class Config:
         success_count = process_downloaded_files(downloaded_tasks, self.version_store)
         self.make_binaries_executable()
         _print_completion_summary(success_count, total_count)
+
+
+def _platforms_and_archs_to_update(
+    platform: str | None,
+    architecture: str | None,
+    current: bool,
+) -> tuple[list[str] | None, str | None]:
+    if current:
+        platform, architecture = current_platform()
+        platforms_to_update = [platform]
+    else:
+        platforms_to_update = [platform] if platform else None  # type: ignore[assignment]
+    return platforms_to_update, architecture
 
 
 def _tools_to_update(config: Config, tools: list[str] | None) -> list[str] | None:
