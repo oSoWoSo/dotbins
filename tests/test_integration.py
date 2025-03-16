@@ -26,7 +26,6 @@ def test_initialization(
     config = Config(
         tools_dir=tmp_path / "tools",
         platforms={"linux": ["amd64", "arm64"], "macos": ["arm64"]},
-        tools={},
     )
 
     # Call initialize with the config
@@ -170,7 +169,7 @@ def test_cli_unknown_tool() -> None:
         patch.object(
             Config,
             "from_file",
-            return_value=Config(tools={}),
+            return_value=Config(),
         ),
     ):
         cli.main()
@@ -188,7 +187,6 @@ def test_cli_tools_dir_override(tmp_path: Path) -> None:
         return Config(
             tools_dir=tmp_path / "default_tools",  # Default dir
             platforms={"linux": ["amd64"]},  # Use new format
-            tools={},
         )
 
     # Patch config loading
