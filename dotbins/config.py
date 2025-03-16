@@ -120,7 +120,7 @@ class BinSpec:
             arch=self.tool_arch,
         )
 
-    def matching_asset(self) -> dict | None:
+    def matching_asset(self) -> _AssetDict | None:
         """Find a matching asset for the tool."""
         search_pattern = self.search_pattern()
         if search_pattern is None:
@@ -138,7 +138,6 @@ class BinSpec:
             if re.search(regex_pattern, asset["name"]):
                 log(f"Found matching asset: {asset['name']}", "success")
                 return asset
-
         log(f"No asset matching '{search_pattern}' found", "warning")
         return None
 
@@ -171,6 +170,13 @@ class RawToolConfigDict(TypedDict, total=False):
     binary_name: str | list[str]  # Name(s) of the binary file(s)
     binary_path: str | list[str]  # Path(s) to binary within archive
     asset_patterns: str | dict[str, str] | dict[str, dict[str, str | None]]
+
+
+class _AssetDict(TypedDict):
+    """TypedDict for an asset in the latest_release."""
+
+    name: str
+    browser_download_url: str
 
 
 def build_tool_config(
