@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,26 +11,11 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 
-from .utils import calculate_sha256, extract_archive, get_latest_release, log
+from .utils import calculate_sha256, extract_archive, log
 
 if TYPE_CHECKING:
     from .config import BinSpec, Config, ToolConfig
     from .versions import VersionStore
-
-
-def _find_asset(assets: list[dict], pattern: str) -> dict | None:
-    """Find an asset that matches the given pattern."""
-    regex_pattern = (
-        pattern.replace("{version}", ".*").replace("{arch}", ".*").replace("{platform}", ".*")
-    )
-    log(f"Looking for asset with pattern: {regex_pattern}", "info", "🔍")
-
-    for asset in assets:
-        if re.search(regex_pattern, asset["name"]):
-            log(f"Found matching asset: {asset['name']}", "success")
-            return asset
-
-    return None
 
 
 def download_file(url: str, destination: str) -> str:
@@ -218,26 +202,6 @@ def _replace_variables_in_path(path: str, version: str, arch: str) -> str:
     return path
 
 
-def _get_release_info(tool_config: ToolConfig) -> tuple[dict, str]:
-    """Get release information for a tool."""
-    repo = tool_config.repo
-    release = get_latest_release(repo)
-    version = release["tag_name"].lstrip("v")
-    return release, version
-
-
-def _find_matching_asset(release: dict, bin_spec: BinSpec) -> dict | None:
-    """Find a matching asset for the tool."""
-    search_pattern = bin_spec.search_pattern
-    if search_pattern is None:
-        return None
-    asset = _find_asset(release["assets"], search_pattern)
-    if not asset:
-        log(f"No asset matching '{search_pattern}' found", "warning")
-        return None
-    return asset
-
-
 def make_binaries_executable(config: Config) -> None:
     """Make all binaries executable."""
     for platform, architectures in config.platforms.items():
@@ -294,33 +258,6 @@ def _download_task(task: _DownloadTask) -> tuple[_DownloadTask, bool]:
         return task, False
 
 
-def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -> bool:
-    return all((destination_dir / binary_name).exists() for binary_name in tool_config.binary_name)
-
-
-def _should_download(
-    config: Config,
-    bin_spec: BinSpec,
-    force: bool,
-) -> bool:
-    """Check if download should be skipped (binary already exists)."""
-    tool_info = config.version_store.get_tool_info(
-        bin_spec.tool_config.tool_name,
-        bin_spec.platform,
-        bin_spec.arch,
-    )
-    destination_dir = config.bin_dir(bin_spec.platform, bin_spec.arch)
-    all_exist = _exists_in_destination_dir(destination_dir, bin_spec.tool_config)
-    if tool_info and tool_info["version"] == bin_spec.version and all_exist and not force:
-        log(
-            f"{bin_spec.tool_config.tool_name} {bin_spec.version} for {bin_spec.platform}/{bin_spec.arch} is already"
-            f" up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
-            "success",
-        )
-        return False
-    return True
-
-
 def _prepare_download_task(
     tool_name: str,
     platform: str,
@@ -331,11 +268,11 @@ def _prepare_download_task(
     """Prepare a download task, checking if update is needed based on version."""
     tool_config = config.tools[tool_name]
     bin_spec = tool_config.bin_spec(arch, platform)
-    if not _should_download(config, bin_spec, force):
+    if bin_spec.skip_download(config, force):
         return None
 
     try:
-        asset = _find_matching_asset(tool_config.latest_release, bin_spec)
+        asset = bin_spec.matching_asset
         if not asset:
             return None
         tmp_dir = Path(tempfile.gettempdir())
