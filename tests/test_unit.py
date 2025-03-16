@@ -84,17 +84,12 @@ def test_current_platform(monkeypatch: MonkeyPatch) -> None:
 
 def test_get_latest_release(requests_mock: MockFixture) -> None:
     """Test fetching latest release from GitHub."""
-    # Mock GitHub API response
     response_data = {"tag_name": "v1.0.0", "assets": [{"name": "test-1.0.0.tar.gz"}]}
     requests_mock.get(
         "https://api.github.com/repos/test/repo/releases/latest",
         json=response_data,
     )
-
-    # Call the function
     result = dotbins.utils.latest_release_info("test/repo")
-
-    # Verify the result
     assert result["tag_name"] == "v1.0.0"
     assert len(result["assets"]) == 1
 
