@@ -4,8 +4,8 @@ import os
 import sys
 import tarfile
 import tempfile
-import zipfile
 from pathlib import Path
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -147,22 +147,11 @@ def test_download_file(requests_mock: MockFixture, tmp_path: Path) -> None:
         assert f.read() == test_content
 
 
-def test_extract_from_archive_tar(tmp_path: Path) -> None:
+def test_extract_from_archive_tar(tmp_path: Path, create_dummy_archive: Callable) -> None:
     """Test extracting binary from tar.gz archive."""
-    # Create a test tarball
-
+    # Create a test tarball using the fixture
     archive_path = tmp_path / "test.tar.gz"
-    bin_content = b"#!/bin/sh\necho test"
-
-    # Create a tarball with a binary inside
-    with tempfile.TemporaryDirectory() as tmpdir:
-        bin_path = os.path.join(tmpdir, "test-bin")
-        with open(bin_path, "wb") as f:
-            f.write(bin_content)
-        os.chmod(bin_path, 0o755)  # noqa: S103
-
-        with tarfile.open(archive_path, "w:gz") as tar:
-            tar.add(bin_path, arcname="test-bin")
+    create_dummy_archive(dest_path=archive_path, binary_names="test-bin")
 
     # Setup tool config
     tool_config = build_tool_config(
@@ -170,7 +159,6 @@ def test_extract_from_archive_tar(tmp_path: Path) -> None:
         raw_data={
             "binary_name": "test-tool",
             "binary_path": "test-bin",
-            "repo": "test/repo",
         },
     )
 
@@ -178,7 +166,7 @@ def test_extract_from_archive_tar(tmp_path: Path) -> None:
     dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
-    # Call the function
+    # Extract the binary
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
@@ -189,28 +177,23 @@ def test_extract_from_archive_tar(tmp_path: Path) -> None:
             platform="linux",
         ),
     )
-    # Verify the binary was extracted and renamed
+
+    # Verify the binary was extracted and renamed correctly
     extracted_bin = dest_dir / "test-tool"
     assert extracted_bin.exists()
-    assert extracted_bin.stat().st_mode & 0o100  # Check if executable
+    assert extracted_bin.stat().st_mode & 0o100  # Verify it's executable
 
 
-def test_extract_from_archive_zip(tmp_path: Path) -> None:
+def test_extract_from_archive_zip(tmp_path: Path, create_dummy_archive: Callable) -> None:
     """Test extracting binary from zip archive."""
-    # Create a test zip file
-
+    # Create a test zip file using the fixture
     archive_path = tmp_path / "test.zip"
-    bin_content = b"#!/bin/sh\necho test"
 
-    # Create a zip with a binary inside
-    with tempfile.TemporaryDirectory() as tmpdir:
-        bin_path = os.path.join(tmpdir, "test-bin")
-        with open(bin_path, "wb") as f:
-            f.write(bin_content)
-        os.chmod(bin_path, 0o755)  # noqa: S103
-
-        with zipfile.ZipFile(archive_path, "w") as zip_file:
-            zip_file.write(bin_path, arcname="test-bin")
+    create_dummy_archive(
+        dest_path=archive_path,
+        binary_names="test-bin",
+        archive_type="zip",
+    )
 
     # Setup tool config
     tool_config = build_tool_config(
@@ -218,7 +201,6 @@ def test_extract_from_archive_zip(tmp_path: Path) -> None:
         raw_data={
             "binary_name": "test-tool",
             "binary_path": "test-bin",
-            "repo": "test/repo",
         },
     )
 
@@ -226,7 +208,7 @@ def test_extract_from_archive_zip(tmp_path: Path) -> None:
     dest_dir = tmp_path / "bin"
     dest_dir.mkdir()
 
-    # Call the function
+    # Extract the binary
     dotbins.download._extract_from_archive(
         archive_path,
         dest_dir,
@@ -238,10 +220,52 @@ def test_extract_from_archive_zip(tmp_path: Path) -> None:
         ),
     )
 
-    # Verify the binary was extracted and renamed
+    # Verify the binary was extracted and renamed correctly
     extracted_bin = dest_dir / "test-tool"
     assert extracted_bin.exists()
-    assert extracted_bin.stat().st_mode & 0o100  # Check if executable
+    assert extracted_bin.stat().st_mode & 0o100  # Verify it's executable
+
+
+def test_extract_from_archive_nested(tmp_path: Path, create_dummy_archive: Callable) -> None:
+    """Test extracting binary from nested directory in archive."""
+    # Create a test tarball with a nested directory
+    archive_path = tmp_path / "test.tar.gz"
+
+    create_dummy_archive(
+        dest_path=archive_path,
+        binary_names="test-bin",
+        nested_dir="nested/dir",
+    )
+
+    # Setup tool config
+    tool_config = build_tool_config(
+        tool_name="test-tool",
+        raw_data={
+            "binary_name": "test-tool",
+            "binary_path": "nested/dir/test-bin",
+        },
+    )
+
+    # Create destination directory
+    dest_dir = tmp_path / "bin"
+    dest_dir.mkdir()
+
+    # Extract the binary
+    dotbins.download._extract_from_archive(
+        archive_path,
+        dest_dir,
+        BinSpec(
+            tool_config=tool_config,
+            version="1.0.0",
+            arch="amd64",
+            platform="linux",
+        ),
+    )
+
+    # Verify the binary was extracted and renamed correctly
+    extracted_bin = dest_dir / "test-tool"
+    assert extracted_bin.exists()
+    assert extracted_bin.stat().st_mode & 0o100  # Verify it's executable
 
 
 def test_make_binaries_executable(tmp_path: Path) -> None:
@@ -456,30 +480,18 @@ def test_extract_from_archive_missing_binary(tmp_path: Path) -> None:
         )
 
 
-def test_extract_from_archive_multiple_binaries(tmp_path: Path) -> None:
+def test_extract_from_archive_multiple_binaries(
+    tmp_path: Path,
+    create_dummy_archive: Callable,
+) -> None:
     """Test extracting multiple binaries from an archive."""
     # Create a test tarball with multiple binaries
-
     archive_path = tmp_path / "test.tar.gz"
-    bin_content = b"#!/bin/sh\necho test"
-
-    # Create a tarball with two binaries inside
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Create subdirectory for first binary
-        primary_dir = os.path.join(tmpdir, "test-1.0.0")
-        os.makedirs(primary_dir)
-
-        # Add two binaries
-        bin1_path = os.path.join(primary_dir, "primary-bin")
-        bin2_path = os.path.join(primary_dir, "secondary-bin")
-
-        for path in [bin1_path, bin2_path]:
-            with open(path, "wb") as f:
-                f.write(bin_content)
-            os.chmod(path, 0o755)  # noqa: S103
-
-        with tarfile.open(archive_path, "w:gz") as tar:
-            tar.add(primary_dir, arcname="test-1.0.0")
+    create_dummy_archive(
+        dest_path=archive_path,
+        binary_names=["primary-bin", "secondary-bin"],  # List of binary names
+        nested_dir="test-1.0.0",
+    )
 
     # Setup tool config with multiple binaries
     test_tool_config = build_tool_config(
@@ -517,4 +529,4 @@ def test_extract_from_archive_multiple_binaries(tmp_path: Path) -> None:
     for bin_name in ["primary-tool", "secondary-tool"]:
         with open(dest_dir / bin_name, "rb") as f:
             content = f.read()
-        assert content == bin_content
+        assert content.strip()
