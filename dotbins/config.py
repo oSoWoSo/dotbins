@@ -216,7 +216,9 @@ class BinSpec:
             self.arch,
         )
         destination_dir = config.bin_dir(self.platform, self.arch)
-        all_exist = _exists_in_destination_dir(destination_dir, self.tool_config)
+        all_exist = all(
+            (destination_dir / binary_name).exists() for binary_name in self.tool_config.binary_name
+        )
         if tool_info and tool_info["version"] == self.version and all_exist and not force:
             log(
                 f"{self.tool_config.tool_name} {self.version} for {self.platform}/{self.arch} is already"
@@ -446,7 +448,3 @@ def _validate_tool_config(
                     f"Tool {tool_name}: 'asset_patterns[{platform}]' uses unknown arch '{arch}'",
                     "error",
                 )
-
-
-def _exists_in_destination_dir(destination_dir: Path, tool_config: ToolConfig) -> bool:
-    return all((destination_dir / binary_name).exists() for binary_name in tool_config.binary_name)
