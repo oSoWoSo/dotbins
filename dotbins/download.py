@@ -266,14 +266,13 @@ def _prepare_download_task(
     force: bool,
 ) -> _DownloadTask | None:
     """Prepare a download task, checking if update is needed based on version."""
-    tool_config = config.tools[tool_name]
-    bin_spec = tool_config.bin_spec(arch, platform)
-    if bin_spec.skip_download(config, force):
-        return None
-
     try:
+        tool_config = config.tools[tool_name]
+        bin_spec = tool_config.bin_spec(arch, platform)
+        if bin_spec.skip_download(config, force):
+            return None
         asset = bin_spec.matching_asset()
-        if not asset:
+        if asset is None:
             return None
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
@@ -294,6 +293,36 @@ def _prepare_download_task(
         return None
 
 
+def prepare_download_tasks(
+    tools_to_update: list[str],
+    platforms_to_update: list[str],
+    architecture: str | None,
+    config: Config,
+    force: bool = False,
+) -> tuple[list[_DownloadTask], int]:
+    """Prepare download tasks for all tools and platforms."""
+    download_tasks = []
+    total_count = 0
+
+    for tool_name in tools_to_update:
+        for platform in platforms_to_update:
+            if platform not in config.platforms:
+                log(f"Skipping unknown platform: {platform}", "warning")
+                continue
+
+            archs_to_update = _determine_architectures(platform, architecture, config)
+            if not archs_to_update:
+                continue
+
+            for arch in archs_to_update:
+                total_count += 1
+                task = _prepare_download_task(tool_name, platform, arch, config, force)
+                if task:
+                    download_tasks.append(task)
+
+    return sorted(download_tasks, key=lambda t: t.asset_url), total_count
+
+
 def _process_downloaded_task(
     task: _DownloadTask,
     success: bool,
@@ -302,7 +331,6 @@ def _process_downloaded_task(
     """Process a downloaded file."""
     if not success:
         return False
-
     try:
         # Calculate SHA256 hash before extraction
         sha256_hash = calculate_sha256(task.temp_path)
@@ -310,11 +338,7 @@ def _process_downloaded_task(
 
         task.destination_dir.mkdir(parents=True, exist_ok=True)
         if task.tool_config.extract_binary:
-            _extract_from_archive(
-                str(task.temp_path),
-                task.destination_dir,
-                task.bin_spec,
-            )
+            _extract_from_archive(str(task.temp_path), task.destination_dir, task.bin_spec)
         else:
             binary_names = task.tool_config.binary_name
             if len(binary_names) != 1:
@@ -357,11 +381,9 @@ def process_downloaded_files(
     """Process downloaded files and return success count."""
     log(f"\nProcessing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
-
     for task, download_success in downloaded_tasks:
         if _process_downloaded_task(task, download_success, version_store):
             success_count += 1
-
     return success_count
 
 
@@ -376,38 +398,7 @@ def download_files_in_parallel(
         for future in as_completed(future_to_task):
             task, success = future.result()
             downloaded_tasks.append((task, success))
-
     return downloaded_tasks
-
-
-def prepare_download_tasks(
-    tools_to_update: list[str],
-    platforms_to_update: list[str],
-    architecture: str | None,
-    config: Config,
-    force: bool = False,
-) -> tuple[list[_DownloadTask], int]:
-    """Prepare download tasks for all tools and platforms."""
-    download_tasks = []
-    total_count = 0
-
-    for tool_name in tools_to_update:
-        for platform in platforms_to_update:
-            if platform not in config.platforms:
-                log(f"Skipping unknown platform: {platform}", "warning")
-                continue
-
-            archs_to_update = _determine_architectures(platform, architecture, config)
-            if not archs_to_update:
-                continue
-
-            for arch in archs_to_update:
-                total_count += 1
-                task = _prepare_download_task(tool_name, platform, arch, config, force)
-                if task:
-                    download_tasks.append(task)
-
-    return sorted(download_tasks, key=lambda t: t.asset_url), total_count
 
 
 def _determine_architectures(
