@@ -44,11 +44,6 @@ def _initialize(config: Config) -> None:
     print_shell_setup(config)
 
 
-def _show_versions(config: Config) -> None:
-    """Show versions of installed tools."""
-    config.version_store.print()
-
-
 def create_parser() -> argparse.ArgumentParser:
     """Create command-line argument parser."""
     parser = argparse.ArgumentParser(
@@ -172,7 +167,7 @@ def main() -> None:
         elif args.command == "analyze":
             analyze_tool(args.repo, args.name)
         elif args.command == "versions":
-            _show_versions(config)
+            config.version_store.print()
         elif args.command == "version":
             log(f"[yellow]dotbins[/] [bold]v{__version__}[/]")
         else:
