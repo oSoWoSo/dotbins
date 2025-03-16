@@ -269,8 +269,7 @@ def test_make_binaries_executable(temp_dir: Path) -> None:
     # Reset permissions
     bin_file.chmod(0o644)
 
-    # Call the function
-    dotbins.download.make_binaries_executable(config)
+    config.make_binaries_executable()
 
     # Verify the binary is now executable - use platform-independent check
     mode = bin_file.stat().st_mode

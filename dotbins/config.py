@@ -53,6 +53,16 @@ class Config:
         """Load configuration from YAML, or return defaults if no file found."""
         return config_from_file(config_path)
 
+    def make_binaries_executable(self: Config) -> None:
+        """Make all binaries executable."""
+        for platform, architectures in self.platforms.items():
+            for arch in architectures:
+                bin_dir = self.bin_dir(platform, arch)
+                if bin_dir.exists():
+                    for binary in bin_dir.iterdir():
+                        if binary.is_file():
+                            binary.chmod(binary.stat().st_mode | 0o755)
+
 
 @dataclass(frozen=True)
 class ToolConfig:

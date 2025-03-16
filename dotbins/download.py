@@ -184,17 +184,6 @@ def _replace_variables_in_path(path: str, version: str, arch: str) -> str:
     return path
 
 
-def make_binaries_executable(config: Config) -> None:
-    """Make all binaries executable."""
-    for platform, architectures in config.platforms.items():
-        for arch in architectures:
-            bin_dir = config.bin_dir(platform, arch)
-            if bin_dir.exists():
-                for binary in bin_dir.iterdir():
-                    if binary.is_file():
-                        binary.chmod(binary.stat().st_mode | 0o755)
-
-
 class _DownloadTask(NamedTuple):
     """Represents a single download task."""
 

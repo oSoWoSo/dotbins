@@ -11,7 +11,6 @@ from .analyze import analyze_tool
 from .config import Config
 from .download import (
     download_files_in_parallel,
-    make_binaries_executable,
     prepare_download_tasks,
     process_downloaded_files,
 )
@@ -54,7 +53,7 @@ def _update_tools(
     )
     downloaded_tasks = download_files_in_parallel(download_tasks)
     success_count = process_downloaded_files(downloaded_tasks, config.version_store)
-    make_binaries_executable(config)
+    config.make_binaries_executable()
     _print_completion_summary(config, success_count, total_count, shell_setup)
 
 
