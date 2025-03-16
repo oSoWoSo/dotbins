@@ -14,10 +14,6 @@ from dotbins import cli
 from dotbins.config import Config, build_tool_config
 
 
-class TestIntegration:
-    """Integration tests for dotbins."""
-
-
 def test_initialization(
     tmp_path: Path,
 ) -> None:
