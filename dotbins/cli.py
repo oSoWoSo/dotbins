@@ -63,20 +63,15 @@ def _determine_update_targets(
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
     if tools:
-        _validate_tools(tools, config)
+        for tool in tools:
+            if tool not in config.tools:
+                log(f"Unknown tool: {tool}", "error")
+                sys.exit(1)
         tools_to_update = tools
     else:
         tools_to_update = list(config.tools.keys())
     platforms_to_update = [platform] if platform else list(config.platforms.keys())
     return tools_to_update, platforms_to_update
-
-
-def _validate_tools(tools_to_update: list[str], config: Config) -> None:
-    """Validate that all tools exist in the configuration."""
-    for tool in tools_to_update:
-        if tool not in config.tools:
-            log(f"Unknown tool: {tool}", "error")
-            sys.exit(1)
 
 
 def _print_completion_summary(
