@@ -137,7 +137,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     """Main function to parse arguments and execute commands."""
     parser = create_parser()
     args = parser.parse_args()
