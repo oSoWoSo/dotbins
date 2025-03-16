@@ -2,7 +2,9 @@
 
 import os
 import sys
+import tarfile
 import tempfile
+import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -153,7 +155,6 @@ def test_download_file(requests_mock: MockFixture, tmp_path: Path) -> None:
 def test_extract_from_archive_tar(tmp_path: Path) -> None:
     """Test extracting binary from tar.gz archive."""
     # Create a test tarball
-    import tarfile
 
     archive_path = tmp_path / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
@@ -202,7 +203,6 @@ def test_extract_from_archive_tar(tmp_path: Path) -> None:
 def test_extract_from_archive_zip(tmp_path: Path) -> None:
     """Test extracting binary from zip archive."""
     # Create a test zip file
-    import zipfile
 
     archive_path = tmp_path / "test.zip"
     bin_content = b"#!/bin/sh\necho test"
@@ -423,7 +423,6 @@ def test_extract_from_archive_unknown_type(tmp_path: Path) -> None:
 def test_extract_from_archive_missing_binary(tmp_path: Path) -> None:
     """Test extract_from_archive when binary is not in archive."""
     # Create a test tarball without the binary
-    import tarfile
 
     archive_path = tmp_path / "test.tar.gz"
     with tarfile.open(archive_path, "w:gz") as tar:
@@ -465,7 +464,6 @@ def test_extract_from_archive_missing_binary(tmp_path: Path) -> None:
 def test_extract_from_archive_multiple_binaries(tmp_path: Path) -> None:
     """Test extracting multiple binaries from an archive."""
     # Create a test tarball with multiple binaries
-    import tarfile
 
     archive_path = tmp_path / "test.tar.gz"
     bin_content = b"#!/bin/sh\necho test"
