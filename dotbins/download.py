@@ -272,7 +272,7 @@ def _prepare_download_task(
         return None
 
     try:
-        asset = bin_spec.matching_asset
+        asset = bin_spec.matching_asset()
         if not asset:
             return None
         tmp_dir = Path(tempfile.gettempdir())

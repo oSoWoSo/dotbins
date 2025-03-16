@@ -126,13 +126,13 @@ def test_find_asset() -> None:
         assert len(assets) == 3
         bin_spec = tool_config.bin_spec("amd64", "linux")
         assert bin_spec.asset_pattern == "tool-{version}-linux_{arch}.tar.gz"
-        assert bin_spec.search_pattern == "tool-1.0.0-linux_amd64.tar.gz"
-        assert bin_spec.matching_asset == assets[0]
+        assert bin_spec.search_pattern() == "tool-1.0.0-linux_amd64.tar.gz"
+        assert bin_spec.matching_asset() == assets[0]
 
         bin_spec = tool_config.bin_spec("arm64", "linux")
         assert bin_spec.asset_pattern == "tool-{version}-linux_{arch}.tar.gz"
-        assert bin_spec.search_pattern == "tool-1.0.0-linux_arm64.tar.gz"
-        assert bin_spec.matching_asset == assets[1]
+        assert bin_spec.search_pattern() == "tool-1.0.0-linux_arm64.tar.gz"
+        assert bin_spec.matching_asset() == assets[1]
 
 
 def test_download_file(requests_mock: MockFixture, temp_dir: Path) -> None:

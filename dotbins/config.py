@@ -108,7 +108,6 @@ class BinSpec:
         """Get the asset pattern for the tool."""
         return self.tool_config.asset_patterns[self.platform][self.arch]
 
-    @property
     def search_pattern(self) -> str | None:
         """Get the formatted asset pattern for the tool."""
         asset_pattern = self.asset_pattern
@@ -121,10 +120,9 @@ class BinSpec:
             arch=self.tool_arch,
         )
 
-    @property
     def matching_asset(self) -> dict | None:
         """Find a matching asset for the tool."""
-        search_pattern = self.search_pattern
+        search_pattern = self.search_pattern()
         if search_pattern is None:
             return None
         assets = self.tool_config.latest_release["assets"]
