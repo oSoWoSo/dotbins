@@ -42,7 +42,6 @@ def _update_tools(
     if current:
         platform, architecture = current_platform()
         platforms_to_update = [platform]
-    _validate_tools(tools_to_update, config)
     config.tools_dir.mkdir(parents=True, exist_ok=True)
     download_tasks, total_count = prepare_download_tasks(
         tools_to_update,
@@ -63,7 +62,11 @@ def _determine_update_targets(
     platform: str | None,
 ) -> tuple[list[str], list[str]]:
     """Determine which tools and platforms to update."""
-    tools_to_update = tools or list(config.tools.keys())
+    if tools:
+        _validate_tools(tools, config)
+        tools_to_update = tools
+    else:
+        tools_to_update = list(config.tools.keys())
     platforms_to_update = [platform] if platform else list(config.platforms.keys())
     return tools_to_update, platforms_to_update
 
