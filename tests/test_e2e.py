@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 import pytest
 
-from dotbins.cli import _update_tools
 from dotbins.config import Config, _config_from_dict
 from dotbins.utils import log
 
@@ -119,14 +118,11 @@ def run_e2e_test(
         patch("dotbins.download.download_file", side_effect=mock_download_func),
     ):
         # Run the update
-        _update_tools(
-            config=config,
-            tools=filter_tools or [],
+        config.update_tools(
+            tools=filter_tools,
             platform=filter_platform,
             architecture=filter_arch,
-            current=False,
             force=force,
-            shell_setup=True,
         )
 
     return config
@@ -276,7 +272,7 @@ def test_e2e_update_tools(tmp_path: Path, raw_config: dict) -> None:
     - Builds a Config from a dict
     - Mocks out `latest_release_info` to produce predictable asset names
     - Mocks out `download_file` so we skip real network usage
-    - Calls `_update_tools` directly
+    - Calls `config.update_tools` directly
     - Verifies that the binaries are extracted into the correct location.
     """
     config = _config_from_dict(raw_config)
@@ -319,7 +315,7 @@ def test_e2e_update_tools_skip_up_to_date(tmp_path: Path) -> None:
     """Demonstrates a scenario where we have a single tool that is already up-to-date.
 
     - We populate the VersionStore with the exact version returned by mocked GitHub releases.
-    - The `_update_tools` call should skip downloading or extracting anything.
+    - The `config.update_tools` call should skip downloading or extracting anything.
     """
     raw_config = {
         "tools_dir": str(tmp_path),
@@ -456,15 +452,7 @@ def test_e2e_update_tools_partial_skip_and_update(tmp_path: Path) -> None:
         patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
         patch("dotbins.download.download_file", side_effect=mock_download_file),
     ):
-        _update_tools(
-            config=config,
-            tools=[],  # update all tools
-            platform=None,  # all platforms
-            architecture=None,  # all archs
-            current=False,
-            force=False,
-            shell_setup=False,
-        )
+        config.update_tools()
 
     # 'mytool' should remain at version 2.0.0, unchanged
     mytool_info = config.version_store.get_tool_info("mytool", "linux", "amd64")
@@ -533,14 +521,11 @@ def test_e2e_update_tools_force_re_download(tmp_path: Path) -> None:
         patch("dotbins.download.download_file", side_effect=mock_download_file),
     ):
         # Force a re-download, even though we're "up to date"
-        _update_tools(
-            config=config,
+        config.update_tools(
             tools=["mytool"],
             platform="linux",
             architecture="amd64",
-            current=False,
             force=True,  # Key point: forcing
-            shell_setup=False,
         )
 
     # Verify that the download actually happened (1 item in the list)
