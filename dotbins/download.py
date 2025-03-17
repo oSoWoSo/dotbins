@@ -33,7 +33,6 @@ def _extract_from_archive(
             temp_dir,
             bin_spec.tool_config.binary_name,
         )
-        destination_dir.mkdir(parents=True, exist_ok=True)
         _process_binaries(temp_dir, destination_dir, binary_paths, bin_spec)
 
     except Exception as e:
@@ -158,6 +157,7 @@ def _copy_binary_to_destination(
     binary_name: str,
 ) -> None:
     """Copy the binary to its destination and set permissions."""
+    destination_dir.mkdir(parents=True, exist_ok=True)
     dest_path = destination_dir / binary_name
 
     # Copy the binary and set permissions
