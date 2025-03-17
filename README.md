@@ -316,17 +316,14 @@ tools:
   fzf:
     repo: junegunn/fzf
     extract_binary: true
-    binary_name: fzf
 
   bat:
     repo: sharkdp/bat
     extract_binary: true
-    binary_name: bat
 
   eza:
     repo: eza-community/eza
     extract_binary: true
-    binary_name: eza
     arch_map:
       amd64: x86_64
       arm64: aarch64
@@ -337,12 +334,10 @@ tools:
   zoxide:
     repo: ajeetdsouza/zoxide
     extract_binary: true
-    binary_name: zoxide
 
   delta:
     repo: dandavison/delta
     extract_binary: true
-    binary_name: delta
 
   uv:
     repo: astral-sh/uv
@@ -353,7 +348,6 @@ tools:
   micromamba:
     repo: mamba-org/micromamba-releases
     extract_binary: false
-    binary_name: micromamba
     binary_path: bin/micromamba
     arch_map:
       amd64: 64
@@ -365,7 +359,6 @@ tools:
   atuin:
     repo: atuinsh/atuin
     extract_binary: true
-    binary_name: atuin
     arch_map:
       amd64: x86_64
       arm64: aarch64
@@ -376,7 +369,6 @@ tools:
   git-lfs:
     repo: git-lfs/git-lfs
     extract_binary: true
-    binary_name: git-lfs
 
   ripgrep:
     repo: BurntSushi/ripgrep
@@ -386,7 +378,6 @@ tools:
   eget:
     repo: zyedidia/eget
     extract_binary: true
-    binary_name: eget
 ```
 
 <!-- OUTPUT:END -->
