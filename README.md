@@ -370,6 +370,10 @@ tools:
 
   eget:
     repo: zyedidia/eget
+
+  direnv:
+    repo: direnv/direnv
+    extract_binary: false
 ```
 
 <!-- OUTPUT:END -->
