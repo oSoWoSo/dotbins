@@ -12,7 +12,7 @@ from typing import TypedDict, TypeVar
 
 import yaml
 
-from .detect import create_system_detector
+from .detect_asset import create_system_detector
 from .download import download_files_in_parallel, prepare_download_tasks, process_downloaded_files
 from .utils import current_platform, latest_release_info, log
 from .versions import VersionStore

@@ -1,8 +1,8 @@
-"""Tests for the dotbins.detect module."""
+"""Tests for the dotbins.detect_asset module."""
 
 import pytest
 
-from dotbins.detect import (
+from dotbins.detect_asset import (
     ArchAMD64,
     ArchArm,
     ArchArm64,
