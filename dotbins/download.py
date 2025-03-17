@@ -159,8 +159,6 @@ def _copy_binary_to_destination(
     """Copy the binary to its destination and set permissions."""
     destination_dir.mkdir(parents=True, exist_ok=True)
     dest_path = destination_dir / binary_name
-
-    # Copy the binary and set permissions
     shutil.copy2(source_path, dest_path)
     dest_path.chmod(dest_path.stat().st_mode | 0o755)
     log(f"Copied binary to {dest_path}", "success")
