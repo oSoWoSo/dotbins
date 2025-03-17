@@ -187,16 +187,18 @@ tools:
 
 ### Tool Configuration
 
-Each tool must be configured with these fields:
+Each tool must be configured with at least a GitHub repository. Many other fields are optional and can be auto-detected:
 
 ```yaml
 tool-name:
   repo: owner/repo                 # Required: GitHub repository
-  extract_binary: true             # Whether to extract from archive (true) or direct download (false)
-  binary_name: executable-name     # Name of the resulting binary(ies)
-  binary_path: path/to/binary      # Path to the binary within the archive
+  extract_binary: true             # Optional: Whether to extract from archive (true) or direct download (false)
+  binary_name: executable-name     # Optional: Name of the resulting binary(ies) (defaults to tool-name)
+  binary_path: path/to/binary      # Optional: Path to the binary within the archive (auto-detected if not specified)
+
+  # Asset patterns - Optional with auto-detection
   # Option 1: Platform-specific patterns
-  asset_patterns:                  # Required: Asset patterns for each platform
+  asset_patterns:                  # Optional: Asset patterns for each platform
     linux: pattern-for-linux.tar.gz
     macos: pattern-for-macos.tar.gz
   # Option 2: Single pattern for all platforms
@@ -210,6 +212,8 @@ tool-name:
       amd64: pattern-for-macos-amd64.tar.gz
       arm64: pattern-for-macos-arm64.tar.gz
 ```
+
+If you don't specify `binary_path` or `asset_patterns`, `dotbins` will attempt to auto-detect the appropriate values for you. This often works well for standard tool releases.
 
 ### Platform and Architecture Mapping
 
@@ -245,20 +249,24 @@ tool-name:
 
 ### Configuration Examples
 
-#### Standard Tool
-
+#### Minimal Tool Configuration
 ```yaml
 ripgrep:
   repo: BurntSushi/ripgrep
-  extract_binary: true
-  binary_name: rg
-  binary_path: rg
-  asset_patterns:
-    linux: ripgrep-{version}-x86_64-unknown-linux-musl.tar.gz
-    macos: ripgrep-{version}-x86_64-apple-darwin.tar.gz
+  binary_name: rg  # Only specify if different from tool name
+```
+
+#### Standard Tool
+
+```yaml
+atuin:
+  repo: atuinsh/atuin
   arch_map:
     amd64: x86_64
     arm64: aarch64
+  asset_patterns:
+    linux: atuin-{arch}-unknown-linux-gnu.tar.gz
+    macos: atuin-{arch}-apple-darwin.tar.gz
 ```
 
 #### Tool with Multiple Binaries
@@ -266,27 +274,20 @@ ripgrep:
 ```yaml
 uv:
   repo: astral-sh/uv
-  extract_binary: true
   binary_name: [uv, uvx]
   binary_path: [uv-*/uv, uv-*/uvx]
-  asset_patterns:
-    linux: uv-{arch}-unknown-linux-gnu.tar.gz
-    macos: uv-{arch}-apple-darwin.tar.gz
-  arch_map:
-    amd64: x86_64
-    arm64: aarch64
 ```
 
 #### Platform-Specific Tool
 
 ```yaml
-linux-only-tool:
-  repo: owner/linux-tool
-  extract_binary: true
-  binary_name: linux-tool
-  binary_path: bin/linux-tool
+eza:
+  repo: eza-community/eza
+  arch_map:
+    amd64: x86_64
+    arm64: aarch64
   asset_patterns:
-    linux: linux-tool-{version}-{arch}.tar.gz
+    linux: eza_{arch}-unknown-linux-gnu.tar.gz
     macos: null  # No macOS version available
 ```
 
