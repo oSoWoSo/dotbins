@@ -34,12 +34,7 @@ def _extract_from_archive(
             bin_spec.tool_config.binary_name,
         )
         destination_dir.mkdir(parents=True, exist_ok=True)
-        _process_binaries(
-            temp_dir,
-            destination_dir,
-            binary_paths,
-            bin_spec,
-        )
+        _process_binaries(temp_dir, destination_dir, binary_paths, bin_spec)
 
     except Exception as e:
         log(f"Error extracting archive: {e}", "error", print_exception=True)
