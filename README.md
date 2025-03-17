@@ -34,6 +34,7 @@ Whether you work across multiple machines or just want a version-controlled setu
   - [Pattern Variables](#pattern-variables)
   - [Multiple Binaries](#multiple-binaries)
   - [Configuration Examples](#configuration-examples)
+    - [Minimal Tool Configuration](#minimal-tool-configuration)
     - [Standard Tool](#standard-tool)
     - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
     - [Platform-Specific Tool](#platform-specific-tool)
