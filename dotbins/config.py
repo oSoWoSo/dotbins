@@ -408,13 +408,6 @@ def _validate_tool_config(
     if not tool_config.repo:
         log(f"Tool {tool_name} is missing required field 'repo'", "error")
 
-    # If no binary_path, we rely on auto-detection (just an info, not fatal):
-    if not tool_config.binary_path:
-        log(
-            f"Tool {tool_name} has no binary_path specified - will attempt auto-detection",
-            "info",
-        )
-
     # If binary lists differ in length, log an error
     if len(tool_config.binary_name) != len(tool_config.binary_path) and tool_config.binary_path:
         log(
