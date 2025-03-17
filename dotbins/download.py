@@ -33,13 +33,7 @@ def _extract_from_archive(
             temp_dir,
             bin_spec.tool_config.binary_name,
         )
-        destination_dir.mkdir(parents=True, exist_ok=True)
-        _process_binaries(
-            temp_dir,
-            destination_dir,
-            binary_paths,
-            bin_spec,
-        )
+        _process_binaries(temp_dir, destination_dir, binary_paths, bin_spec)
 
     except Exception as e:
         log(f"Error extracting archive: {e}", "error", print_exception=True)
@@ -137,10 +131,8 @@ def _find_binary_in_extracted_files(
     tool_platform: str,
 ) -> Path:
     """Find a specific binary in the extracted files."""
-    # Replace variables in the binary path
     binary_path = _replace_variables_in_path(binary_path, version, tool_arch, tool_platform)
 
-    # Handle glob patterns in binary path
     if "*" in binary_path:
         matches = list(temp_dir.glob(binary_path))
         if not matches:
@@ -148,7 +140,6 @@ def _find_binary_in_extracted_files(
             raise FileNotFoundError(msg)
         return matches[0]
 
-    # Direct path
     source_path = temp_dir / binary_path
     if not source_path.exists():
         msg = f"Binary ({binary_path}) not found at {source_path}"
@@ -163,9 +154,8 @@ def _copy_binary_to_destination(
     binary_name: str,
 ) -> None:
     """Copy the binary to its destination and set permissions."""
+    destination_dir.mkdir(parents=True, exist_ok=True)
     dest_path = destination_dir / binary_name
-
-    # Copy the binary and set permissions
     shutil.copy2(source_path, dest_path)
     dest_path.chmod(dest_path.stat().st_mode | 0o755)
     log(f"Copied binary to {dest_path}", "success")
@@ -240,7 +230,6 @@ def _prepare_download_task(
             destination_dir=config.bin_dir(platform, arch),
             temp_path=temp_path,
         )
-
     except Exception as e:
         log(
             f"Error processing {tool_name} for {platform}/{arch}: {e!s}",

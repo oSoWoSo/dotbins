@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -35,16 +34,17 @@ class VersionStore:
         if not self.version_file.exists():
             return {}
         try:
-            with open(self.version_file) as f:
+            with self.version_file.open() as f:
                 return json.load(f)
         except (OSError, json.JSONDecodeError):
             return {}
 
     def save(self) -> None:
         """Save version data to JSON file."""
-        os.makedirs(self.version_file.parent, exist_ok=True)
-        with open(self.version_file, "w") as f:
-            json.dump(self.versions, f, indent=2)
+        self.version_file.parent.mkdir(parents=True, exist_ok=True)
+        with self.version_file.open("w") as f:
+            sorted_versions = dict(sorted(self.versions.items()))
+            json.dump(sorted_versions, f, indent=2)
 
     def get_tool_info(
         self,
