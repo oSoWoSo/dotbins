@@ -230,7 +230,6 @@ def _prepare_download_task(
             destination_dir=config.bin_dir(platform, arch),
             temp_path=temp_path,
         )
-
     except Exception as e:
         log(
             f"Error processing {tool_name} for {platform}/{arch}: {e!s}",
