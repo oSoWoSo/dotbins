@@ -131,10 +131,8 @@ def _find_binary_in_extracted_files(
     tool_platform: str,
 ) -> Path:
     """Find a specific binary in the extracted files."""
-    # Replace variables in the binary path
     binary_path = _replace_variables_in_path(binary_path, version, tool_arch, tool_platform)
 
-    # Handle glob patterns in binary path
     if "*" in binary_path:
         matches = list(temp_dir.glob(binary_path))
         if not matches:
@@ -142,7 +140,6 @@ def _find_binary_in_extracted_files(
             raise FileNotFoundError(msg)
         return matches[0]
 
-    # Direct path
     source_path = temp_dir / binary_path
     if not source_path.exists():
         msg = f"Binary ({binary_path}) not found at {source_path}"
