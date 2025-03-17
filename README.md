@@ -355,6 +355,12 @@ tools:
     extract_binary: false
     binary_name: micromamba
     binary_path: bin/micromamba
+    arch_map:
+      amd64: 64
+      arm64: aarch64
+    asset_patterns:
+      linux: micromamba-linux-{arch}
+      macos: micromamba-osx-arm64
 
   atuin:
     repo: atuinsh/atuin
