@@ -43,7 +43,7 @@ class VersionStore:
         """Save version data to JSON file."""
         self.version_file.parent.mkdir(parents=True, exist_ok=True)
         with self.version_file.open("w") as f:
-            sorted_versions = sorted(self.versions.items())
+            sorted_versions = dict(sorted(self.versions.items()))
             json.dump(sorted_versions, f, indent=2)
 
     def get_tool_info(
