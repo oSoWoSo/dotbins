@@ -1,6 +1,6 @@
 # dotbins 🧰
 
-![Build](https://github.com/basnijholt/dotbins/actions/workflows/pytest.yml/badge.svg)
+![Build Status](https://github.com/basnijholt/dotbins/actions/workflows/pytest.yml/badge.svg)
 [![Coverage](https://img.shields.io/codecov/c/github/basnijholt/dotbins)](https://codecov.io/gh/basnijholt/dotbins)
 [![GitHub](https://img.shields.io/github/stars/basnijholt/dotbins.svg?style=social)](https://github.com/basnijholt/dotbins/stargazers)
 [![PyPI](https://img.shields.io/pypi/v/dotbins.svg)](https://pypi.python.org/pypi/dotbins)
@@ -8,10 +8,13 @@
 [![Downloads](https://img.shields.io/pypi/dm/dotbins)](https://pypi.python.org/pypi/dotbins)
 ![Open Issues](https://img.shields.io/github/issues-raw/basnijholt/dotbins)
 
-Introducing `dotbins` - a utility for managing CLI tool binaries in your dotfiles repository.
-It downloads and organizes binaries for popular tools across multiple platforms (macOS, Linux, etc.) and architectures (amd64, arm64, etc.), helping you maintain a consistent set of CLI utilities across all your environments.
+**dotbins** manages CLI tool binaries in your dotfiles repository, offering:
 
-Whether you work across multiple machines or just want a version-controlled setup for your essential command-line tools, dotbins makes it easy to keep everything synchronized and updated. 🚀
+- ✅ Cross-platform binary management (macOS, Linux, Windows)
+- ✅ No admin privileges required
+- ✅ Version-controlled CLI tools
+- ✅ Downloads from GitHub releases
+- ✅ Perfect for dotfiles synchronization
 
 No package manager, no sudo, no problem.
 
@@ -20,11 +23,11 @@ No package manager, no sudo, no problem.
 Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager:
 
 ```bash
-# Download and install a tool directly
-uvx dotbins get junegunn/fzf  # Installs to ~/.local/bin
+# Install directly to ~/.local/bin
+uvx dotbins get junegunn/fzf
 
-# Or set up a configuration file for managing multiple tools
-# See examples in the Configuration section
+# Set up multiple tools with a config file
+uvx dotbins update
 ```
 
 **See it in action:**
@@ -63,23 +66,6 @@ uvx dotbins get junegunn/fzf  # Installs to ~/.local/bin
 
 </details>
 
-## :bulb: Why I Created dotbins
-
-As a developer who frequently works across multiple environments, I faced a common frustration: I'd carefully maintain my dotfiles repository with all my preferred configurations, only to find myself unable to use my favorite CLI tools when working on remote systems where I lacked admin permissions.
-
-The scenario was always the same - I'd SSH into a server, clone my dotfiles, and then... hit a wall.
-My aliases and configurations were there, but the actual tools they relied on (`fzf`, `bat`, `delta`, etc.) weren't available, and I couldn't easily install them without sudo access.
-
-`dotbins` was born out of this frustration.
-It allows me to:
-
-1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/.dotbins) (using Git LFS for efficient storage)
-2. Include this repository as a submodule in my dotfiles
-3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
-
-Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity
-No package manager, no sudo, no problem.
-
 
 ## :star2: Features
 
@@ -91,6 +77,22 @@ No package manager, no sudo, no problem.
 * 📂 Organizes tools by platform and architecture for easy access
 * 🔍 Includes a tool to analyze GitHub releases to help configure new tools
 * 🐙 Easy integration with your dotfiles repository for version control
+
+## :bulb: Why I Created dotbins
+
+I frequently works across multiple environments where I clone my dotfiles repository with all my preferred configurations.
+I faced a common frustration: some of my favorite tools (`fzf`, `bat`, `zoxide`, etc.) were not available on the new system and installing them with a package manager is too much work or even not possible.
+`dotbins` was born out of this frustration.
+
+It allows me to:
+
+1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/.dotbins) (using Git LFS for efficient storage)
+2. Include this repository as a submodule in my dotfiles
+3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
+
+Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity.
+
+**_No package manager, no sudo, no problem!_**
 
 ## :books: Usage
 
