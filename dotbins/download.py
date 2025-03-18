@@ -250,7 +250,7 @@ def download_files_in_parallel(
     download_tasks: list[_DownloadTask],
 ) -> list[tuple[_DownloadTask, bool]]:
     """Download files in parallel using ThreadPoolExecutor."""
-    log(f"\nDownloading {len(download_tasks)} tools in parallel...", "info", "🔄")
+    log(f"Downloading {len(download_tasks)} tools in parallel...", "info", "🔄")
     downloaded_tasks = []
     with ThreadPoolExecutor(max_workers=min(8, len(download_tasks) or 1)) as ex:
         future_to_task = {ex.submit(_download_task, task): task for task in download_tasks}
@@ -316,7 +316,7 @@ def process_downloaded_files(
     version_store: VersionStore,
 ) -> int:
     """Process downloaded files and return success count."""
-    log(f"\nProcessing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
+    log(f"Processing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
     for task, download_success in downloaded_tasks:
         if _process_downloaded_task(task, download_success, version_store):
