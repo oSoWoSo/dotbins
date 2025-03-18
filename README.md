@@ -39,8 +39,8 @@ uvx dotbins update
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
 - [:star2: Features](#star2-features)
+- [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
 - [:books: Usage](#books-usage)
   - [Commands](#commands)
   - [Quick Install with `dotbins get`](#quick-install-with-dotbins-get)
