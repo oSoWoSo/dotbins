@@ -441,9 +441,9 @@ _arch=$(uname -m)
 [[ "$_arch" == "x86_64" ]] && _arch="amd64"
 [[ "$_arch" == "aarch64" || "$_arch" == "arm64" ]] && _arch="arm64"
 
-export PATH="$HOME/.dotbins/tools/$_os/$_arch/bin:$PATH"
+export PATH="$HOME/.dotbins/$_os/$_arch/bin:$PATH"
 
-📝 Generated README at /home/runner/.dotbins/tools/README.md
+📝 Generated README at /home/runner/.dotbins/README.md
 📝 Generated README file with shell integration instructions
 ```
 
