@@ -18,7 +18,7 @@ from .readme import generate_readme_content, write_readme_file
 from .utils import current_platform, latest_release_info, log
 from .versions import VersionStore
 
-DEFAULT_TOOLS_DIR = "~/.mydotbins/tools"
+DEFAULT_TOOLS_DIR = "~/.dotbins/tools"
 DEFAULT_PLATFORMS = {
     "linux": ["amd64", "arm64"],
     "macos": ["arm64"],
@@ -400,7 +400,7 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
         home / ".config" / "dotbins" / "config.yaml",
         home / ".config" / "dotbins.yaml",
         home / ".dotbins.yaml",
-        home / ".mydotbins" / "dotbins.yaml",
+        home / ".dotbins" / "dotbins.yaml",
     ]
     for candidate in candidates:
         if candidate.exists():

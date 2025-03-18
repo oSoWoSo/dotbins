@@ -16,7 +16,7 @@ from dotbins.readme import generate_readme_content, write_readme_file
 def mock_config() -> Config:
     """Create a mock Config object for testing."""
     config = MagicMock(spec=Config)
-    config.tools_dir = Path("/home/user/.mydotbins/tools")
+    config.tools_dir = Path("/home/user/.dotbins/tools")
     config.platforms = {"linux": ["amd64", "arm64"], "macos": ["arm64"]}
 
     # Mock tools
