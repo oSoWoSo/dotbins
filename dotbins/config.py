@@ -18,7 +18,7 @@ from .readme import generate_readme_content, write_readme_file
 from .utils import current_platform, latest_release_info, log
 from .versions import VersionStore
 
-DEFAULT_TOOLS_DIR = "~/.dotbins/tools"
+DEFAULT_TOOLS_DIR = "~/.dotbins"
 DEFAULT_PLATFORMS = {
     "linux": ["amd64", "arm64"],
     "macos": ["arm64"],

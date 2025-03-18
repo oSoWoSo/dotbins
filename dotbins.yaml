@@ -1,5 +1,5 @@
 # Configuration
-tools_dir: ~/.dotbins/tools
+tools_dir: ~/.dotbins
 
 platforms:
   linux:
