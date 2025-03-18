@@ -300,7 +300,7 @@ def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     assert config.tools_dir == Path(os.path.expanduser("~/.dotbins"))
     captured = capsys.readouterr()
     assert "Add this to your shell configuration file" in captured.out
-    assert 'export PATH="$HOME/.dotbins/tools/$_os/$_arch/bin:$PATH"' in captured.out
+    assert 'export PATH="$HOME/.dotbins/$_os/$_arch/bin:$PATH"' in captured.out
 
 
 def test_download_tool_already_exists(tmp_path: Path) -> None:
