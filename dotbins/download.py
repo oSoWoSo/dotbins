@@ -13,6 +13,7 @@ from .utils import calculate_sha256, download_file, extract_archive, log
 
 if TYPE_CHECKING:
     from .config import BinSpec, Config, ToolConfig
+    from .summary import UpdateSummary
     from .versions import VersionStore
 
 
@@ -39,6 +40,10 @@ def _extract_from_archive(
         shutil.rmtree(temp_dir)
 
 
+class AutoDetectBinaryPathsError(Exception):
+    """Error raised when auto-detecting binary paths fails."""
+
+
 def _detect_binary_paths(temp_dir: Path, tool_config: ToolConfig) -> list[str]:
     """Auto-detect binary paths if not specified in configuration."""
     if tool_config.binary_path:
@@ -48,7 +53,8 @@ def _detect_binary_paths(temp_dir: Path, tool_config: ToolConfig) -> list[str]:
     binary_paths = auto_detect_binary_paths(temp_dir, binary_names)
     if not binary_paths:
         msg = f"Could not auto-detect binary paths for {', '.join(binary_names)}. Please specify binary_path in config."
-        raise ValueError(msg)
+        log(msg, "error")
+        raise AutoDetectBinaryPathsError(msg)
     log(f"Auto-detected binary paths: {binary_paths}", "success")
     return binary_paths
 
@@ -175,9 +181,23 @@ def _prepare_download_task(
         tool_config = config.tools[tool_name]
         bin_spec = tool_config.bin_spec(arch, platform)
         if bin_spec.skip_download(config, force):
+            config._update_summary.add_skipped_tool(
+                tool_name,
+                platform,
+                arch,
+                version=bin_spec.version,
+                reason="Already up-to-date",
+            )
             return None
         asset = bin_spec.matching_asset()
         if asset is None:
+            config._update_summary.add_failed_tool(
+                tool_name,
+                platform,
+                arch,
+                version=bin_spec.version,
+                reason="No matching asset found",
+            )
             return None
         tmp_dir = Path(tempfile.gettempdir())
         temp_path = tmp_dir / asset["browser_download_url"].split("/")[-1]
@@ -194,15 +214,22 @@ def _prepare_download_task(
             "error",
             print_exception=True,
         )
+        config._update_summary.add_failed_tool(
+            tool_name,
+            platform,
+            arch,
+            version=bin_spec.version,
+            reason=f"Error preparing download: {e!s}",
+        )
         return None
 
 
 def prepare_download_tasks(
     config: Config,
-    tools_to_update: list[str] | None = None,
-    platforms_to_update: list[str] | None = None,
-    architecture: str | None = None,
-    force: bool = False,
+    tools_to_update: list[str] | None,
+    platforms_to_update: list[str] | None,
+    architecture: str | None,
+    force: bool,
 ) -> tuple[list[_DownloadTask], int]:
     """Prepare download tasks for all tools and platforms."""
     download_tasks = []
@@ -215,11 +242,26 @@ def prepare_download_tasks(
     for tool_name in tools_to_update:
         for platform in platforms_to_update:
             if platform not in config.platforms:
+                config._update_summary.add_skipped_tool(
+                    tool_name,
+                    platform,
+                    architecture if architecture else "Unknown",
+                    version="Unknown",
+                    reason="Platform not configured",
+                )
                 log(f"Skipping unknown platform: {platform}", "warning")
                 continue
 
             archs_to_update = _determine_architectures(platform, architecture, config)
             if not archs_to_update:
+                config._update_summary.add_skipped_tool(
+                    tool_name,
+                    platform,
+                    architecture if architecture else "Unknown",
+                    version="Unknown",
+                    reason="No architectures configured",
+                )
+                log(f"Skipping unknown architecture: {architecture}", "warning")
                 continue
 
             for arch in archs_to_update:
@@ -264,10 +306,19 @@ def _process_downloaded_task(
     task: _DownloadTask,
     success: bool,
     version_store: VersionStore,
+    summary: UpdateSummary,
 ) -> bool:
     """Process a downloaded file."""
     if not success:
+        summary.add_failed_tool(
+            task.tool_name,
+            task.platform,
+            task.arch,
+            task.version,
+            reason="Download failed",
+        )
         return False
+
     try:
         # Calculate SHA256 hash before extraction
         sha256_hash = calculate_sha256(task.temp_path)
@@ -283,13 +334,34 @@ def _process_downloaded_task(
                     f"Expected exactly one binary name for {task.tool_name}, got {len(binary_names)}",
                     "error",
                 )
+                summary.add_failed_tool(
+                    task.tool_name,
+                    task.platform,
+                    task.arch,
+                    task.version,
+                    reason="Expected exactly one binary name",
+                )
                 return False
             binary_name = binary_names[0]
+            _copy_binary_to_destination(task.temp_path, task.destination_dir, binary_name)
+    except Exception as e:
+        # Differentiate error types for better reporting
+        error_prefix = "Error processing"
+        if isinstance(e, AutoDetectBinaryPathsError):
+            error_prefix = "Auto-detect binary paths error"
+        elif isinstance(e, FileNotFoundError):
+            error_prefix = "Binary not found"
 
-            shutil.copy2(task.temp_path, task.destination_dir / binary_name)
-            dest_file = task.destination_dir / binary_name
-            dest_file.chmod(dest_file.stat().st_mode | 0o755)
-
+        log(f"Error processing {task.tool_name}: {e!s}", "error", print_exception=True)
+        summary.add_failed_tool(
+            task.tool_name,
+            task.platform,
+            task.arch,
+            task.version,
+            reason=f"{error_prefix}: {e!s}",
+        )
+        return False
+    else:
         version_store.update_tool_info(
             task.tool_name,
             task.platform,
@@ -302,10 +374,14 @@ def _process_downloaded_task(
             f"Successfully processed {task.tool_name} v{task.version} for {task.platform}/{task.arch}",
             "success",
         )
+        summary.add_updated_tool(
+            task.tool_name,
+            task.platform,
+            task.arch,
+            task.version,
+            old_version=task.version,
+        )
         return True
-    except Exception as e:
-        log(f"Error processing {task.tool_name}: {e!s}", "error", print_exception=True)
-        return False
     finally:
         if task.temp_path.exists():
             task.temp_path.unlink()
@@ -314,12 +390,13 @@ def _process_downloaded_task(
 def process_downloaded_files(
     downloaded_tasks: list[tuple[_DownloadTask, bool]],
     version_store: VersionStore,
+    summary: UpdateSummary,
 ) -> int:
     """Process downloaded files and return success count."""
     log(f"Processing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
     for task, download_success in downloaded_tasks:
-        if _process_downloaded_task(task, download_success, version_store):
+        if _process_downloaded_task(task, download_success, version_store, summary):
             success_count += 1
     return success_count
 
