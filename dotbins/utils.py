@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 console = Console()
 
 
+@functools.cache
 def _maybe_github_token_header(quiet: bool = False) -> dict[str, str]:  # pragma: no cover
     """Return a dictionary of headers with GitHub token if it exists."""
     headers = {}
