@@ -566,7 +566,6 @@ def test_extract_from_archive_with_arch_platform_version_in_path(
 
     # Create destination directory
     dest_dir = tmp_path / "bin"
-    dest_dir.mkdir()
 
     # Extract the binary
     dotbins.download._extract_binary_from_archive(
