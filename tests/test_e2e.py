@@ -95,6 +95,7 @@ def run_e2e_test(
         patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
         patch("dotbins.download.download_file", side_effect=mock_download_file),
     ):
+        log("Running update_tools")
         # Run the update
         config.update_tools(
             tools=filter_tools,

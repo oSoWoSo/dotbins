@@ -80,12 +80,9 @@ def _process_binaries(
 
 def _log_extracted_files(temp_dir: Path) -> None:
     """Log the extracted files for debugging."""
-    try:
-        log("Extracted files:", "info", "ℹ️")  # noqa: RUF001
-        for item in temp_dir.glob("**/*"):
-            log(f"  - {item.relative_to(temp_dir)}", "info", "")
-    except Exception:
-        log("Could not list extracted files: {e}")
+    log("Extracted files:", "info", "ℹ️")  # noqa: RUF001
+    for item in temp_dir.glob("**/*"):
+        log(f"  - {item.relative_to(temp_dir)}", "info", "")
 
 
 def _find_binary_in_extracted_files(
