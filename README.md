@@ -464,7 +464,7 @@ dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools
 
 ## :computer: Shell Integration
 
-Add this to your shell configuration file (e.g., .bashrc, .zshrc) to use the platform-specific binaries:
+Add this to your shell configuration file (e.g., `.bashrc`, `.zshrc`) to use the platform-specific binaries:
 
 ```bash
 dotbins init
