@@ -466,6 +466,10 @@ dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools
 
 Add this to your shell configuration file (e.g., .bashrc, .zshrc) to use the platform-specific binaries:
 
+```bash
+dotbins init
+```
+
 <!-- CODE:BASH:START -->
 <!-- echo '```bash' -->
 <!-- dotbins init -->
