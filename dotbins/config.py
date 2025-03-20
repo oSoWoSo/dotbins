@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import TypedDict, TypeVar
+from typing import TypedDict
 
 import requests
 import yaml
@@ -511,13 +511,7 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
     return None
 
 
-T = TypeVar("T")
-
-
-def _ensure_list(value: T | list[T] | None) -> list[T]:
-    """Convert a single value or None into a list, if not already a list."""
-    if value is None:
-        return []
+def _ensure_list(value: str | list[str]) -> list[str]:
     if isinstance(value, list):
         return value
     return [value]
