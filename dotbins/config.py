@@ -530,20 +530,13 @@ def _validate_tool_config(
         )
 
     # Check for unknown platforms/arch in asset_patterns
-    for platform, pattern_map in tool_config.asset_patterns.items():
+    for platform in tool_config.asset_patterns:
         if platform not in platforms:
             log(
                 f"Tool {tool_name}: 'asset_patterns' uses unknown platform '{platform}'",
                 "error",
             )
             continue
-
-        for arch in pattern_map:
-            if arch not in platforms[platform]:
-                log(
-                    f"Tool {tool_name}: 'asset_patterns[{platform}]' uses unknown arch '{arch}'",
-                    "error",
-                )
 
 
 def _maybe_asset_pattern(
