@@ -162,3 +162,19 @@ def test_version_store_update_existing(
     original_time = datetime.fromisoformat(info["updated_at"])
     updated_time = datetime.fromisoformat(updated_info["updated_at"])
     assert updated_time > original_time
+
+
+def test_version_store_print(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Test printing version information."""
+    store = VersionStore(tmp_path)
+    store.print()
+    out, _ = capsys.readouterr()
+    assert "No tool versions recorded yet." in out
+
+    store.update_tool_info("test", "linux", "amd64", "1.0.0")
+    store.print()
+    out, _ = capsys.readouterr()
+    assert "test (linux/amd64): 1.0.0" in out
