@@ -397,7 +397,8 @@ def write_readme_file(
         try:
             with open(readme_path, "w") as f:
                 f.write(readme_content)
-            log(f"Generated README at {readme_path}", "success", "📝")
+            readme_path_str = replace_home_in_path(readme_path, "~")
+            log(f"Generated README at {readme_path_str}", "success", "📝")
         except OSError as e:
             log(f"Failed to write README: {e}", "error", print_exception=verbose)
         except Exception as e:  # pragma: no cover
