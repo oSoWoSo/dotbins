@@ -46,7 +46,7 @@ def _update_tools(
     )
     if generate_shell_scripts:
         config.generate_shell_scripts(print_shell_setup=False)
-        log("To see the shell setup instructions, run `dotbins init`", "info")
+        log("To see the shell setup instructions, run `dotbins init`", "info", "ℹ️")  # noqa: RUF001
 
 
 def _initialize(config: Config) -> None:
