@@ -117,10 +117,18 @@ def create_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # list command
-    _list_parser = subparsers.add_parser("list", help="List available tools")
+    _list_parser = subparsers.add_parser(
+        "list",
+        help="List available tools",
+        formatter_class=RichHelpFormatter,
+    )
 
     # update command
-    update_parser = subparsers.add_parser("update", help="Update tools")
+    update_parser = subparsers.add_parser(
+        "update",
+        help="Update tools",
+        formatter_class=RichHelpFormatter,
+    )
     update_parser.add_argument(
         "tools",
         nargs="*",
@@ -168,21 +176,31 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     # init command
-    _init_parser = subparsers.add_parser("init", help="Initialize directory structure")
+    _init_parser = subparsers.add_parser(
+        "init",
+        help="Initialize directory structure",
+        formatter_class=RichHelpFormatter,
+    )
 
     # version command
-    _version_parser = subparsers.add_parser("version", help="Print version information")
+    _version_parser = subparsers.add_parser(
+        "version",
+        help="Print version information",
+        formatter_class=RichHelpFormatter,
+    )
 
     # versions command
     _versions_parser = subparsers.add_parser(
         "versions",
         help="Show installed tool versions and their last update times",
+        formatter_class=RichHelpFormatter,
     )
 
     # Add readme command
     readme_parser = subparsers.add_parser(
         "readme",
         help="Generate README.md file with tool information",
+        formatter_class=RichHelpFormatter,
     )
     readme_parser.add_argument(
         "--no-print",
@@ -199,6 +217,7 @@ def create_parser() -> argparse.ArgumentParser:
     get_parser = subparsers.add_parser(
         "get",
         help="Download and install a tool directly from GitHub or from a remote configuration",
+        formatter_class=RichHelpFormatter,
     )
     get_parser.add_argument(
         "source",
