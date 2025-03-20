@@ -120,7 +120,6 @@ def create_parser() -> argparse.ArgumentParser:
     _list_parser = subparsers.add_parser(
         "list",
         help="List available tools",
-        formatter_class=RichHelpFormatter,
     )
 
     # update command
@@ -179,21 +178,18 @@ def create_parser() -> argparse.ArgumentParser:
     _init_parser = subparsers.add_parser(
         "init",
         help="Initialize directory structure",
-        formatter_class=RichHelpFormatter,
     )
 
     # version command
     _version_parser = subparsers.add_parser(
         "version",
         help="Print version information",
-        formatter_class=RichHelpFormatter,
     )
 
     # versions command
     _versions_parser = subparsers.add_parser(
         "versions",
         help="Show installed tool versions and their last update times",
-        formatter_class=RichHelpFormatter,
     )
 
     # Add readme command
