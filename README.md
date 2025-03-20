@@ -487,7 +487,7 @@ dotbins init
 👉   Zsh:     source $HOME/.dotbins/shell/zsh.sh
 👉   Fish:    source $HOME/.dotbins/shell/fish.fish
 👉   Nushell: source $HOME/.dotbins/shell/nushell.nu
-📝 Generated README at /home/runner/.dotbins/README.md
+📝 Generated README at ~/.dotbins/README.md
 ```
 
 <!-- OUTPUT:END -->
