@@ -168,13 +168,13 @@ class Config:
             self.generate_readme(verbose=verbose)
         _maybe_copy_config_file(copy_config_file, self.config_path, self.tools_dir)
 
-    def generate_shell_scripts(self: Config) -> None:
+    def generate_shell_scripts(self: Config, print_shell_setup: bool = True) -> None:
         """Generate shell script files for different shells.
 
         Creates shell scripts in the tools_dir/shell directory that users
         can source in their shell configuration files.
         """
-        write_shell_scripts(self.tools_dir)
+        write_shell_scripts(self.tools_dir, print_shell_setup)
 
 
 def _maybe_copy_config_file(

@@ -45,7 +45,8 @@ def _update_tools(
         verbose,
     )
     if generate_shell_scripts:
-        config.generate_shell_scripts()
+        config.generate_shell_scripts(print_shell_setup=False)
+        log("To see the shell setup instructions, run `dotbins init`", "info")
 
 
 def _initialize(config: Config) -> None:

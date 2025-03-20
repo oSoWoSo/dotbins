@@ -178,7 +178,7 @@ def _format_shell_instructions(
     raise ValueError(msg)  # pragma: no cover
 
 
-def write_shell_scripts(tools_dir: Path) -> None:
+def write_shell_scripts(tools_dir: Path, print_shell_setup: bool = False) -> None:
     """Generate shell script files for different shells.
 
     Creates a 'shell' directory in the tools_dir and writes script files
@@ -187,6 +187,7 @@ def write_shell_scripts(tools_dir: Path) -> None:
 
     Args:
         tools_dir: The base directory where tools are installed
+        print_shell_setup: Whether to print the shell setup instructions
 
     """
     # Create shell directory
@@ -214,12 +215,13 @@ def write_shell_scripts(tools_dir: Path) -> None:
         script_path.chmod(script_path.stat().st_mode | 0o755)
     tools_dir1 = replace_home_in_path(tools_dir, "~")
     log(f"Generated shell scripts in {tools_dir1}/shell/", "success", "📝")
-    tools_dir2 = replace_home_in_path(tools_dir, "$HOME")
-    log("Add this to your shell config:", "info")
-    log(f"  Bash:    source {tools_dir2}/shell/bash.sh", "info", "👉")
-    log(f"  Zsh:     source {tools_dir2}/shell/zsh.sh", "info", "👉")
-    log(f"  Fish:    source {tools_dir2}/shell/fish.fish", "info", "👉")
-    log(f"  Nushell: source {tools_dir2}/shell/nushell.nu", "info", "👉")
+    if print_shell_setup:
+        tools_dir2 = replace_home_in_path(tools_dir, "$HOME")
+        log("Add this to your shell config:", "info")
+        log(f"  Bash:    source {tools_dir2}/shell/bash.sh", "info", "👉")
+        log(f"  Zsh:     source {tools_dir2}/shell/zsh.sh", "info", "👉")
+        log(f"  Fish:    source {tools_dir2}/shell/fish.fish", "info", "👉")
+        log(f"  Nushell: source {tools_dir2}/shell/nushell.nu", "info", "👉")
 
 
 def print_shell_setup(tools_dir: Path, shell: Literal["bash", "zsh", "fish", "nushell"]) -> None:
