@@ -53,7 +53,7 @@ def _initialize(config: Config) -> None:
     for platform, architectures in config.platforms.items():
         for arch in architectures:
             config.bin_dir(platform, arch, create=True)
-    tools_dir = replace_home_in_path(config.tools_dir)
+    tools_dir = replace_home_in_path(config.tools_dir, "~")
     log(f"dotbins initialized tools directory structure in `tools_dir={tools_dir}`", "success", "🛠️")
     config.generate_shell_scripts()
     config.generate_readme()

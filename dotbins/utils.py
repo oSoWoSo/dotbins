@@ -120,9 +120,9 @@ def current_platform() -> tuple[str, str]:
     return platform, arch
 
 
-def replace_home_in_path(path: Path) -> str:
+def replace_home_in_path(path: Path, home: str = "$HOME") -> str:
     """Replace ~ with $HOME in a path."""
-    return str(path.absolute()).replace(os.path.expanduser("~"), "$HOME")
+    return str(path.absolute()).replace(os.path.expanduser("~"), home)
 
 
 def _format_shell_instructions(
