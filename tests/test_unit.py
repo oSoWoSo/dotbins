@@ -137,7 +137,7 @@ def test_extract_from_archive_tar(tmp_path: Path, create_dummy_archive: Callable
     dest_dir.mkdir()
 
     # Extract the binary
-    dotbins.download._extract_from_archive(
+    dotbins.download._extract_binary_from_archive(
         archive_path,
         dest_dir,
         BinSpec(tool_config=tool_config, version="1.0.0", arch="amd64", platform="linux"),
@@ -176,7 +176,7 @@ def test_extract_from_archive_zip(tmp_path: Path, create_dummy_archive: Callable
     dest_dir.mkdir()
 
     # Extract the binary
-    dotbins.download._extract_from_archive(
+    dotbins.download._extract_binary_from_archive(
         archive_path,
         dest_dir,
         BinSpec(
@@ -220,7 +220,7 @@ def test_extract_from_archive_nested(tmp_path: Path, create_dummy_archive: Calla
     dest_dir.mkdir()
 
     # Extract the binary
-    dotbins.download._extract_from_archive(
+    dotbins.download._extract_binary_from_archive(
         archive_path,
         dest_dir,
         BinSpec(
@@ -266,7 +266,7 @@ def test_make_binaries_executable(tmp_path: Path) -> None:
 def test_print_shell_setup(capsys: CaptureFixture[str]) -> None:
     """Test printing shell setup instructions."""
     config = Config()
-    dotbins.utils.print_shell_setup(config)
+    dotbins.utils.print_shell_setup(config.tools_dir)
     assert config.tools_dir == Path(os.path.expanduser("~/.dotbins"))
     captured = capsys.readouterr()
     assert "Add this to your shell configuration file" in captured.out
@@ -399,7 +399,7 @@ def test_extract_from_archive_unknown_type(tmp_path: Path) -> None:
 
     # Call the function and check for exception
     with pytest.raises(ValueError, match="Unsupported archive format"):
-        dotbins.download._extract_from_archive(
+        dotbins.download._extract_binary_from_archive(
             archive_path,
             dest_dir,
             BinSpec(
@@ -441,7 +441,7 @@ def test_extract_from_archive_missing_binary(tmp_path: Path) -> None:
 
     # Call the function and check for exception
     with pytest.raises(FileNotFoundError):
-        dotbins.download._extract_from_archive(
+        dotbins.download._extract_binary_from_archive(
             archive_path,
             dest_dir,
             BinSpec(
@@ -482,7 +482,7 @@ def test_extract_from_archive_multiple_binaries(
     dest_dir.mkdir()
 
     # Call the function
-    dotbins.download._extract_from_archive(
+    dotbins.download._extract_binary_from_archive(
         archive_path,
         dest_dir,
         BinSpec(
@@ -505,3 +505,35 @@ def test_extract_from_archive_multiple_binaries(
         with open(dest_dir / bin_name, "rb") as f:
             content = f.read()
         assert content.strip()
+
+
+def test_build_tool_config_skips_unknown_platforms() -> None:
+    """Test that build_tool_config correctly skips unknown platforms in asset_patterns."""
+    # Define a tool config with both valid and unknown platforms in asset_patterns
+    raw_data = {
+        "repo": "test/repo",
+        "binary_name": "tool",
+        "binary_path": "tool",
+        "asset_patterns": {
+            "linux": {  # Valid platform
+                "amd64": "tool-{version}-linux_{arch}.tar.gz",
+                "arm64": "tool-{version}-linux_{arch}.tar.gz",
+            },
+            "windows": {  # Unknown platform (not in default Config.platforms)
+                "amd64": "tool-{version}-windows_{arch}.zip",
+            },
+            "macos": {  # Valid platform
+                "amd64": "tool-{version}-darwin_{arch}.tar.gz",
+            },
+        },
+    }
+
+    # Build the tool config
+    tool_config = build_tool_config(tool_name="tool", raw_data=raw_data)  # type: ignore[arg-type]
+    assert tool_config.asset_patterns == {
+        "linux": {
+            "amd64": "tool-{version}-linux_{arch}.tar.gz",
+            "arm64": "tool-{version}-linux_{arch}.tar.gz",
+        },
+        "macos": {"arm64": None},
+    }
