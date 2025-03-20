@@ -481,7 +481,7 @@ dotbins init
 ```bash
 ✅ Loading configuration from: /home/runner/work/dotbins/dotbins/dotbins.yaml
 🛠️ dotbins initialized tools directory structure in `tools_dir=~/.dotbins`
-📝 Generated shell scripts in $HOME/.dotbins/shell/
+📝 Generated shell scripts in ~/.dotbins/shell/
 🔍 Add this to your shell config:
 👉   Bash:    source $HOME/.dotbins/shell/bash.sh
 👉   Zsh:     source $HOME/.dotbins/shell/zsh.sh
