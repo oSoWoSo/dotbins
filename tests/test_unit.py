@@ -537,3 +537,51 @@ def test_build_tool_config_skips_unknown_platforms() -> None:
         },
         "macos": {"arm64": None},
     }
+
+
+def test_extract_from_archive_with_arch_platform_version_in_path(
+    tmp_path: Path,
+    create_dummy_archive: Callable,
+) -> None:
+    """Test extracting binary from archive with arch, platform and version in path."""
+    # reaches _replace_variables_in_path
+    # Create a test tarball with a nested directory
+    archive_path = tmp_path / "test.tar.gz"
+
+    create_dummy_archive(
+        dest_path=archive_path,
+        binary_names="test-bin",
+        nested_dir="nested-1.0.0-linux-amd64",
+    )
+
+    # Setup tool config
+    tool_config = build_tool_config(
+        tool_name="test-tool",
+        raw_data={
+            "repo": "test/tool",
+            "binary_name": "test-tool",
+            "binary_path": "nested-{version}-{platform}-{arch}/test-bin",
+        },
+    )
+
+    # Create destination directory
+    dest_dir = tmp_path / "bin"
+    dest_dir.mkdir()
+
+    # Extract the binary
+    dotbins.download._extract_binary_from_archive(
+        archive_path,
+        dest_dir,
+        BinSpec(
+            tool_config=tool_config,
+            version="1.0.0",
+            arch="amd64",
+            platform="linux",
+        ),
+        verbose=True,
+    )
+
+    # Verify the binary was extracted and renamed correctly
+    extracted_bin = dest_dir / "test-tool"
+    assert extracted_bin.exists()
+    assert extracted_bin.stat().st_mode & 0o100  # Verify it's executable
