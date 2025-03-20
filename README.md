@@ -18,25 +18,6 @@
 
 No package manager, no sudo, no problem.
 
-## :zap: Quick Start
-
-Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager:
-
-```bash
-# Install directly to ~/.local/bin
-uvx dotbins get junegunn/fzf
-
-# Set up multiple tools with a config file
-uvx dotbins update
-
-# Bootstrap a collection of tools from a remote config
-uvx dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools.yaml
-```
-
-**See it in action:**
-
-[![asciicast](https://asciinema.org/a/707563.svg)](https://asciinema.org/a/707563)
-
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -68,6 +49,24 @@ uvx dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/t
 
 </details>
 
+## :zap: Quick Start
+
+Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager:
+
+```bash
+# Install directly to ~/.local/bin
+uvx dotbins get junegunn/fzf
+
+# Set up multiple tools with a config file
+uvx dotbins update
+
+# Bootstrap a collection of tools from a remote config
+uvx dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools.yaml
+```
+
+**See it in action:**
+
+[![asciicast](https://asciinema.org/a/707563.svg)](https://asciinema.org/a/707563)
 
 ## :star2: Features
 
