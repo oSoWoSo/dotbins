@@ -11,7 +11,7 @@ from rich_argparse import RichHelpFormatter
 from . import __version__
 from .config import Config, build_tool_config
 from .readme import write_readme_file
-from .utils import current_platform, log
+from .utils import current_platform, log, replace_home_in_path
 
 
 def _list_tools(config: Config) -> None:
@@ -53,7 +53,8 @@ def _initialize(config: Config) -> None:
     for platform, architectures in config.platforms.items():
         for arch in architectures:
             config.bin_dir(platform, arch, create=True)
-    log("dotbins initialized tools directory structure", "success", "🛠️")
+    tools_dir = replace_home_in_path(config.tools_dir)
+    log(f"dotbins initialized tools directory structure in `tools_dir={tools_dir}`", "success", "🛠️")
     config.generate_shell_scripts()
     config.generate_readme()
 
