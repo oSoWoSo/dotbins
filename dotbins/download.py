@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from .detect_binary import auto_detect_binary_paths, auto_detect_extract_binary
-from .utils import calculate_sha256, download_file, extract_archive, log
+from .utils import calculate_sha256, download_file, extract_archive, log, replace_home_in_path
 
 if TYPE_CHECKING:
     from .config import BinSpec, Config, ToolConfig
@@ -120,7 +120,7 @@ def _copy_binary_to_destination(
     dest_path = destination_dir / binary_name
     shutil.copy2(source_path, dest_path)
     dest_path.chmod(dest_path.stat().st_mode | 0o755)
-    log(f"Copied binary to {dest_path}", "success")
+    log(f"Copied binary to {replace_home_in_path(dest_path, '~')}", "success")
 
 
 def _replace_variables_in_path(path: str, version: str, arch: str, platform: str) -> str:
@@ -298,6 +298,8 @@ def download_files_in_parallel(
     verbose: bool,
 ) -> list[tuple[_DownloadTask, bool]]:
     """Download files in parallel using ThreadPoolExecutor."""
+    if not download_tasks:
+        return []
     log(f"Downloading {len(download_tasks)} tools in parallel...", "info", "🔄")
     downloaded_tasks = []
     with ThreadPoolExecutor(max_workers=min(16, len(download_tasks) or 1)) as ex:
@@ -417,6 +419,8 @@ def process_downloaded_files(
     verbose: bool,
 ) -> int:
     """Process downloaded files and return success count."""
+    if not downloaded_tasks:
+        return 0
     log(f"Processing {len(downloaded_tasks)} downloaded tools...", "info", "🔄")
     success_count = 0
     for task, download_success in downloaded_tasks:
