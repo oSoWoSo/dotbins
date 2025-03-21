@@ -63,7 +63,7 @@ uvx dotbins get junegunn/fzf
 uvx dotbins update
 
 # Bootstrap a collection of tools from a remote config
-uvx dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools.yaml
+uvx dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
 ```
 
 **See it in action:**
