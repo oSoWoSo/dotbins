@@ -23,6 +23,7 @@ from .utils import (
     fetch_releases_in_parallel,
     github_url_to_raw_url,
     log,
+    replace_home_in_path,
     write_shell_scripts,
 )
 from .versions import VersionStore
@@ -511,7 +512,7 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
     if config_path is not None:
         path = Path(config_path)
         if path.exists():
-            log(f"Loading configuration from: {path}", "success")
+            log(f"Loading configuration from: {replace_home_in_path(path, '~')}", "success")
             return path
         log(f"Config path provided but not found: {path}", "warning")
         return None
@@ -526,7 +527,7 @@ def _find_config_file(config_path: str | Path | None) -> Path | None:
     ]
     for candidate in candidates:
         if candidate.exists():
-            log(f"Loading configuration from: {candidate}", "success")
+            log(f"Loading configuration from: {replace_home_in_path(candidate, '~')}", "success")
             return candidate
 
     log("No configuration file found, using default settings", "warning")
