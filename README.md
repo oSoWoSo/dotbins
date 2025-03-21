@@ -43,7 +43,7 @@ No package manager, no sudo, no problem.
     - [Platform-Specific Tool](#platform-specific-tool)
   - [Full Configuration Example](#full-configuration-example)
 - [:bulb: Examples](#bulb-examples)
-- [:books: Examples with 40+ Tools](#books-examples-with-40-tools)
+- [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
 - [:computer: Shell Integration](#computer-shell-integration)
 - [:heart: Support and Contributions](#heart-support-and-contributions)
 
