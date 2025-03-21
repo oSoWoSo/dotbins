@@ -57,7 +57,7 @@ tools:
   xplr: sayanarijit/xplr          # Hackable, minimal, fast TUI file explorer
   yazi: sxyazi/yazi               # Terminal file manager with image preview
   yq: mikefarah/yq                # YAML/XML/TOML processor similar to jq
-  zellij-org/zellij               # Terminal multiplexer
+  zellij: zellij-org/zellij       # Terminal multiplexer
   zoxide: ajeetdsouza/zoxide      # Smarter cd command with learning
 
 platforms:
