@@ -445,9 +445,9 @@ Install tools from a remote configuration:
 dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/tools.yaml --dest ~/bin
 ```
 
-## :books: Examples with 40+ Tools
+## :books: Examples with 50+ Tools
 
-See the [examples/dotbins.yaml](examples/dotbins.yaml) file for a list of >40 tools that require no configuration.
+See the [examples/dotbins.yaml](examples/dotbins.yaml) file for a list of >50 tools that require no configuration.
 
 <!-- CODE:BASH:START -->
 <!-- echo '```yaml' -->
