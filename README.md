@@ -18,6 +18,8 @@
 
 No package manager, no sudo, no problem.
 
+See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com/basnijholt/.dotbins) completely managed with `dotbins`.
+
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
