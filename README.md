@@ -313,6 +313,12 @@ tool-name:
 ### Configuration Examples
 
 #### Minimal Tool Configuration
+
+```yaml
+direnv:
+  repo: direnv/direnv
+```
+or
 ```yaml
 ripgrep:
   repo: BurntSushi/ripgrep
