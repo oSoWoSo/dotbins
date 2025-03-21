@@ -363,11 +363,40 @@ platforms:
 
 # Tool definitions
 tools:
+  bat:
+    repo: sharkdp/bat
+
+  delta:
+    repo: dandavison/delta
+
+  direnv:
+    repo: direnv/direnv
+    extract_binary: false
+
+  duf:
+    repo: muesli/duf
+
+  fd:
+    repo: sharkdp/fd
+
   fzf:
     repo: junegunn/fzf
 
-  bat:
-    repo: sharkdp/bat
+  git-lfs:
+    repo: git-lfs/git-lfs
+
+  lazygit:
+    repo: jesseduffield/lazygit
+
+  ripgrep:
+    repo: BurntSushi/ripgrep
+    binary_name: rg
+
+  zoxide:
+    repo: ajeetdsouza/zoxide
+
+  yazi:
+    repo: sxyazi/yazi
 
   eza:
     repo: eza-community/eza
@@ -377,12 +406,6 @@ tools:
     asset_patterns:
       linux: eza_{arch}-unknown-linux-gnu.tar.gz
       macos: null  # No macOS binaries available as of now
-
-  zoxide:
-    repo: ajeetdsouza/zoxide
-
-  delta:
-    repo: dandavison/delta
 
   uv:
     repo: astral-sh/uv
@@ -408,29 +431,6 @@ tools:
     asset_patterns:
       linux: atuin-{arch}-unknown-linux-gnu.tar.gz
       macos: atuin-{arch}-apple-darwin.tar.gz
-
-  git-lfs:
-    repo: git-lfs/git-lfs
-
-  ripgrep:
-    repo: BurntSushi/ripgrep
-    binary_name: rg
-
-  direnv:
-    repo: direnv/direnv
-    extract_binary: false
-
-  lazygit:
-    repo: jesseduffield/lazygit
-
-  fd:
-    repo: sharkdp/fd
-
-  duf:
-    repo: muesli/duf
-
-  yazi:
-    repo: sxyazi/yazi
 ```
 
 <!-- OUTPUT:END -->
