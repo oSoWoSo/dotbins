@@ -237,8 +237,21 @@ tools:
 
 ### Tool Configuration
 
-Each tool must be configured with at least a GitHub repository. Many other fields are optional and can be auto-detected:
+Each tool must be configured with at least a GitHub repository.
+Many other fields are optional and can be auto-detected.
 
+The simplest configuration is:
+
+```yaml
+tools:
+  # tool-name: owner/repo
+  zoxide: ajeetdsouza/zoxide
+  fzf: junegunn/fzf
+```
+
+This will download and autodetect the latest release from GitHub and install it in to the specified `tools_dir` (defaults to `~/.dotbins`).
+
+When auto-detect is not possible or you want to be more explicit, you can specify the following fields:
 ```yaml
 tool-name:
   repo: owner/repo                 # Required: GitHub repository
