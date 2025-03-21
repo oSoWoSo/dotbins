@@ -9,6 +9,7 @@ tools:
   btop: aristocratos/btop         # Resource monitor and process viewer
   caddy: caddyserver/caddy        # Web server with automatic HTTPS
   choose: theryangeary/choose     # Cut alternative with a simpler syntax
+  choose: theryangeary/choose     # Cut alternative with a simpler syntax
   croc: schollz/croc              # File transfer tool with end-to-end encryption
   ctop: bcicen/ctop               # Container metrics and monitoring
   curlie: rs/curlie               # Curl wrapper with httpie-like syntax
@@ -24,7 +25,9 @@ tools:
   git-lfs: git-lfs/git-lfs        # Git extension for versioning large files
   glow: charmbracelet/glow        # Markdown renderer for the terminal
   gping: orf/gping                # Ping with a graph
+  grex: pemistahl/grex            # Command-line tool for generating regular expressions from user-provided examples
   gron: tomnomnom/gron            # Make JSON greppable
+  helix: helix-editor/helix       # Modern text editor
   hexyl: sharkdp/hexyl            # Command-line hex viewer
   hyperfine: sharkdp/hyperfine    # Command-line benchmarking tool
   jc: kellyjonbrazil/jc           # JSON CLI output converter
@@ -40,16 +43,21 @@ tools:
   navi: denisidoro/navi           # Interactive cheatsheet tool for the CLI
   neovim: neovim/neovim           # Modern text editor
   nushell: nushell/nushell        # Modern shell for the GitHub era
+  pastel: sharkdp/pastel          # A command-line tool to generate, convert and manipulate colors
   procs: dalance/procs            # Modern replacement for ps
   rg: BurntSushi/ripgrep          # Fast grep alternative
+  rip: MilesCranmer/rip2          # A safe and ergonomic alternative to rm
   sd: chmln/sd                    # Find & replace CLI
+  skim: sk-rs/skim                # Fuzzy finder for the terminal in Rust (similar to fzf)
   starship: starship/starship     # Minimal, fast, customizable prompt for any shell
   tealdeer: tealdeer-rs/tealdeer  # Fast tldr client in Rust
+  topgrade: topgrade-rs/topgrade  # Upgrade all your tools at once
   tre: dduan/tre                  # Tree command with git awareness
   xh: ducaale/xh                  # Friendly and fast tool for sending HTTP requests
   xplr: sayanarijit/xplr          # Hackable, minimal, fast TUI file explorer
   yazi: sxyazi/yazi               # Terminal file manager with image preview
   yq: mikefarah/yq                # YAML/XML/TOML processor similar to jq
+  zellij-org/zellij               # Terminal multiplexer
   zoxide: ajeetdsouza/zoxide      # Smarter cd command with learning
 
 platforms:
