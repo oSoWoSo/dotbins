@@ -68,7 +68,7 @@ uvx dotbins get https://raw.githubusercontent.com/username/dotbins-config/main/t
 
 **See it in action:**
 
-[![asciicast](https://asciinema.org/a/707563.svg)](https://asciinema.org/a/707563)
+[![asciicast](https://asciinema.org/a/709229.svg)](https://asciinema.org/a/709229)
 
 ## :star2: Features
 
