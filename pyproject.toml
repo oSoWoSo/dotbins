@@ -23,12 +23,18 @@ content-type = "text/markdown"
 [project.urls]
 Homepage = "https://github.com/basnijholt/dotbins"
 
-[project.optional-dependencies]
-test = ["pytest", "pre-commit", "coverage", "pytest-cov"]
-docs = []
-
 [project.scripts]
 dotbins = "dotbins.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "requests-mock>=1.12.1",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.9.10",
+    "pre-commit>=4.2.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["dotbins.*", "dotbins"]
@@ -103,12 +109,3 @@ python_version = "3.9"
 method = "git"
 match = ["v*"]
 default-tag = "0.0.0"
-
-[dependency-groups]
-dev = [
-    "pytest-cov>=6.0.0",
-    "pytest>=8.3.5",
-    "requests-mock>=1.12.1",
-    "pytest-mock>=3.14.0",
-    "ruff>=0.9.10",
-]
