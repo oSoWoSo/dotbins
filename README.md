@@ -525,7 +525,7 @@ tools:
   rg: BurntSushi/ripgrep          # Fast grep alternative
   rip: MilesCranmer/rip2          # A safe and ergonomic alternative to rm
   sd: chmln/sd                    # Find & replace CLI
-  skim: sk-rs/skim                # Fuzzy finder for the terminal in Rust (similar to fzf)
+  sk: sk-rs/skim                  # Fuzzy finder for the terminal in Rust (similar to fzf)
   starship: starship/starship     # Minimal, fast, customizable prompt for any shell
   tealdeer: tealdeer-rs/tealdeer  # Fast tldr client in Rust
   topgrade: topgrade-rs/topgrade  # Upgrade all your tools at once
