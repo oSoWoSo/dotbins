@@ -18,7 +18,6 @@ tools:
 
   direnv:
     repo: direnv/direnv
-    extract_binary: false
 
   duf:
     repo: muesli/duf

@@ -241,7 +241,7 @@ Each tool must be configured with at least a GitHub repository. Many other field
 ```yaml
 tool-name:
   repo: owner/repo                 # Required: GitHub repository
-  extract_binary: true             # Optional: Whether to extract from archive (true) or direct download (false)
+  extract_binary: true             # Optional: Whether to extract from archive (true) or direct download (false) (auto-detected if not specified)
   binary_name: executable-name     # Optional: Name of the resulting binary(ies) (defaults to tool-name)
   binary_path: path/to/binary      # Optional: Path to the binary within the archive (auto-detected if not specified)
 
@@ -371,7 +371,6 @@ tools:
 
   direnv:
     repo: direnv/direnv
-    extract_binary: false
 
   duf:
     repo: muesli/duf
