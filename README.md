@@ -499,6 +499,7 @@ tools:
   micro: zyedidia/micro           # Modern and intuitive terminal-based text editor
   navi: denisidoro/navi           # Interactive cheatsheet tool for the CLI
   neovim: neovim/neovim           # Modern text editor
+  nushell: nushell/nushell        # Modern shell for the GitHub era
   procs: dalance/procs            # Modern replacement for ps
   rg: BurntSushi/ripgrep          # Fast grep alternative
   sd: chmln/sd                    # Find & replace CLI
