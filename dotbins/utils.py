@@ -64,7 +64,7 @@ def fetch_releases_in_parallel(
 
 def download_file(url: str, destination: str, github_token: str | None, verbose: bool) -> str:
     """Download a file from a URL to a destination path."""
-    log(f"Downloading from {url}", "info", "📥")
+    log(f"Downloading from [b]{url}[/]", "info", "📥")
     # Already verbose when fetching release info
     headers = _maybe_github_token_header(github_token)
     try:
