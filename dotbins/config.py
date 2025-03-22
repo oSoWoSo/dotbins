@@ -22,6 +22,7 @@ from .utils import (
     current_platform,
     fetch_releases_in_parallel,
     github_url_to_raw_url,
+    humanize_time_ago,
     log,
     replace_home_in_path,
     write_shell_scripts,
@@ -315,9 +316,11 @@ class BinSpec:
             (destination_dir / binary_name).exists() for binary_name in self.tool_config.binary_name
         )
         if tool_info and tool_info["version"] == self.version and all_exist and not force:
+            dt = humanize_time_ago(tool_info["updated_at"])
             log(
-                f"{self.tool_config.tool_name} {self.version} for {self.platform}/{self.arch} is already"
-                f" up to date (installed on {tool_info['updated_at']}) use --force to re-download.",
+                f"[b]{self.tool_config.tool_name} v{self.version}[/] for"
+                f" [b]{self.platform}/{self.arch}[/] is already up to date"
+                f" (installed [b]{dt}[/b] ago) use --force to re-download.",
                 "success",
             )
             return True
