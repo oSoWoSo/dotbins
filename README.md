@@ -484,7 +484,7 @@ tools_dir: ~/.dotbins-examples
 tools:
   bandwhich: imsnif/bandwhich     # Terminal bandwidth utilization tool
   bat: sharkdp/bat                # Cat clone with syntax highlighting and Git integration
-  bottom: ClementTsang/bottom     # Graphical system monitor
+  btm: ClementTsang/bottom        # Graphical system monitor
   btop: aristocratos/btop         # Resource monitor and process viewer
   caddy: caddyserver/caddy        # Web server with automatic HTTPS
   choose: theryangeary/choose     # Cut alternative with a simpler syntax
@@ -493,7 +493,7 @@ tools:
   ctop: bcicen/ctop               # Container metrics and monitoring
   curlie: rs/curlie               # Curl wrapper with httpie-like syntax
   delta: dandavison/delta         # Syntax-highlighting pager for git and diff output
-  difftastic: Wilfred/difftastic  # Structural diff tool that understands syntax
+  difft: Wilfred/difftastic       # Structural diff tool that understands syntax
   direnv: direnv/direnv           # Environment switcher for the shell
   dog: ogham/dog                  # Command-line DNS client like dig
   duf: muesli/duf                 # Disk usage analyzer with pretty output
@@ -506,8 +506,8 @@ tools:
   gping: orf/gping                # Ping with a graph
   grex: pemistahl/grex            # Command-line tool for generating regular expressions from user-provided examples
   gron: tomnomnom/gron            # Make JSON greppable
-  helix: helix-editor/helix       # Modern text editor
   hexyl: sharkdp/hexyl            # Command-line hex viewer
+  hx: helix-editor/helix          # Modern text editor
   hyperfine: sharkdp/hyperfine    # Command-line benchmarking tool
   jc: kellyjonbrazil/jc           # JSON CLI output converter
   jless: PaulJuliusMartinez/jless # Command-line JSON viewer
@@ -521,13 +521,13 @@ tools:
   micro: zyedidia/micro           # Modern and intuitive terminal-based text editor
   navi: denisidoro/navi           # Interactive cheatsheet tool for the CLI
   neovim: neovim/neovim           # Modern text editor
-  nushell: nushell/nushell        # Modern shell for the GitHub era
+  nu: nushell/nushell             # Modern shell for the GitHub era
   pastel: sharkdp/pastel          # A command-line tool to generate, convert and manipulate colors
   procs: dalance/procs            # Modern replacement for ps
   rg: BurntSushi/ripgrep          # Fast grep alternative
   rip: MilesCranmer/rip2          # A safe and ergonomic alternative to rm
   sd: chmln/sd                    # Find & replace CLI
-  sk: sk-rs/skim                  # Fuzzy finder for the terminal in Rust (similar to fzf)
+  sk: skim-rs/skim                # Fuzzy finder for the terminal in Rust (similar to fzf)
   starship: starship/starship     # Minimal, fast, customizable prompt for any shell
   tealdeer: tealdeer-rs/tealdeer  # Fast tldr client in Rust
   topgrade: topgrade-rs/topgrade  # Upgrade all your tools at once
