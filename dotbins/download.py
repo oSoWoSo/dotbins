@@ -275,7 +275,7 @@ def prepare_download_tasks(
                 if task:
                     download_tasks.append(task)
 
-    return sorted(download_tasks, key=lambda t: t.asset_url)
+    return sorted(download_tasks, key=lambda t: (t.tool_name, t.platform, t.arch))
 
 
 def _download_task(
