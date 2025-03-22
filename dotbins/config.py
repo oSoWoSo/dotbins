@@ -569,7 +569,7 @@ def _maybe_asset_pattern(
     """Get the formatted asset pattern for the tool."""
     search_pattern = tool_config.asset_patterns[platform][arch]
     if search_pattern is None:
-        log(f"No asset pattern found for {platform}/{arch}", "warning")
+        log(f"No asset_pattern provided for {platform}/{arch}", "info", "ℹ️")  # noqa: RUF001
         return None
     return (
         search_pattern.format(
