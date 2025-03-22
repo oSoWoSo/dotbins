@@ -572,7 +572,6 @@ def test_get_tool_command(tmp_path: Path, create_dummy_archive: Callable) -> Non
     def mock_latest_release_info(
         repo: str,  # noqa: ARG001
         github_token: str | None,  # noqa: ARG001
-        verbose: bool,  # noqa: ARG001
     ) -> dict:
         return {
             "tag_name": "v1.0.0",
@@ -595,7 +594,7 @@ def test_get_tool_command(tmp_path: Path, create_dummy_archive: Callable) -> Non
 
     with (
         patch("dotbins.download.download_file", side_effect=mock_download_file),
-        patch("dotbins.utils.latest_release_info", side_effect=mock_latest_release_info),
+        patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
     ):
         _get_tool(source="basnijholt/mytool", dest_dir=dest_dir)
 
@@ -649,7 +648,6 @@ def test_get_tool_command_with_remote_config(
     def mock_latest_release_info(
         repo: str,
         github_token: str | None,  # noqa: ARG001
-        verbose: bool,  # noqa: ARG001
     ) -> dict:
         log(f"Getting release info for repo: {repo}", "info")
         tool_name = repo.split("/")[-1]
@@ -678,7 +676,7 @@ def test_get_tool_command_with_remote_config(
     with (
         patch("dotbins.utils.requests.get", side_effect=mock_requests_get),
         patch("dotbins.download.download_file", side_effect=mock_download_file),
-        patch("dotbins.utils.latest_release_info", side_effect=mock_latest_release_info),
+        patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
     ):
         _get_tool(source="https://example.com/config.yaml", dest_dir=dest_dir)
 
@@ -1348,4 +1346,41 @@ def test_failed_to_fetch_release_info(
 
     out = capsys.readouterr().out
     assert "Failed to fetch latest release for" in out
+    assert "limit exceeded" in out
+
+
+def test_failed_to_download_file(
+    tmp_path: Path,
+    requests_mock: Mocker,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Test handling of failed to download file."""
+    raw_config: RawConfigDict = {
+        "tools_dir": str(tmp_path),
+        "platforms": {"linux": ["amd64"]},
+        "tools": {"mytool": {"repo": "fakeuser/mytool"}},
+    }
+    config = _config_from_dict(raw_config)
+    url = "https://example.com/mytool-1.2.3-linux_amd64.tar.gz"
+    requests_mock.get(
+        "https://api.github.com/repos/fakeuser/mytool/releases/latest",
+        json={
+            "tag_name": "v1.2.3",
+            "assets": [
+                {
+                    "name": "mytool-1.2.3-linux_amd64.tar.gz",
+                    "browser_download_url": url,
+                },
+            ],
+        },
+    )
+    requests_mock.get(
+        url=url,
+        status_code=403,
+        reason="rate limit exceeded for url: https://api.github.com/repos/fakeuser/mytool/releases/latest",
+    )
+    config.sync_tools()
+
+    out = capsys.readouterr().out
+    assert "Failed to download" in out
     assert "limit exceeded" in out

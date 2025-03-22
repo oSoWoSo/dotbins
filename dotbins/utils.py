@@ -15,7 +15,6 @@ import textwrap
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Literal, TypeVar
 
@@ -30,11 +29,7 @@ def _maybe_github_token_header(github_token: str | None) -> dict[str, str]:  # p
 
 
 @functools.cache
-def latest_release_info(
-    repo: str,
-    github_token: str | None,
-    verbose: bool = False,
-) -> dict | None:  # pragma: no cover
+def latest_release_info(repo: str, github_token: str | None) -> dict | None:
     """Fetch release information from GitHub for a single repository."""
     url = f"https://api.github.com/repos/{repo}/releases/latest"
     log(f"Fetching latest release from {url}", "info", "🔍")
@@ -45,18 +40,7 @@ def latest_release_info(
         return response.json()
     except requests.RequestException as e:
         msg = f"Failed to fetch latest release for {repo}: {e}"
-        log(msg, "error", print_exception=verbose)
-        return None
-
-
-def fetch_releases_in_parallel(
-    repos: list[str],
-    github_token: str | None = None,
-    verbose: bool = False,
-) -> list[dict | None]:
-    """Fetch release information for multiple repositories in parallel."""
-    func = partial(latest_release_info, github_token=github_token, verbose=verbose)
-    return execute_in_parallel(repos, func, 16)
+        raise RuntimeError(msg) from e
 
 
 def download_file(url: str, destination: str, github_token: str | None, verbose: bool) -> str:
@@ -378,8 +362,6 @@ def execute_in_parallel(
         List of results from process_func applied to each item
 
     """
-    if not items:
-        return []
     with ThreadPoolExecutor(max_workers=min(max_workers, len(items) or 1)) as ex:
         futures = ex.map(process_func, items)
         return list(futures)

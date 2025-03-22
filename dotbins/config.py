@@ -7,7 +7,7 @@ import re
 import shutil
 import sys
 from dataclasses import dataclass, field
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import Path
 from typing import TypedDict
 
@@ -20,9 +20,10 @@ from .readme import write_readme_file
 from .summary import UpdateSummary, display_update_summary
 from .utils import (
     current_platform,
-    fetch_releases_in_parallel,
+    execute_in_parallel,
     github_url_to_raw_url,
     humanize_time_ago,
+    latest_release_info,
     log,
     replace_home_in_path,
     write_shell_scripts,
@@ -94,19 +95,14 @@ class Config:
         """Set the latest releases for all tools."""
         if tools is None:
             tools = list(self.tools)
-        cfgs = [cfg for tool in tools if (cfg := self.tools[tool])._latest_release is None]
-        repos = [cfg.repo for cfg in cfgs]
-        releases = fetch_releases_in_parallel(repos, github_token, verbose)
-        for cfg, release in zip(cfgs, releases):
-            if release is None:
-                self._update_summary.add_failed_tool(
-                    cfg.tool_name,
-                    "Any",
-                    "Any",
-                    version="Unknown",
-                    reason=f"Failed to fetch release for {cfg.repo}",
-                )
-            cfg._latest_release = release
+        tool_configs = [self.tools[tool] for tool in tools]
+        fetch = partial(
+            _fetch_release,
+            update_summary=self._update_summary,
+            verbose=verbose,
+            github_token=github_token,
+        )
+        execute_in_parallel(tool_configs, fetch, max_workers=16)
 
     @cached_property
     def version_store(self) -> VersionStore:
@@ -671,3 +667,26 @@ def _find_matching_asset(
             return asset
     log(f"No asset matching '{asset_pattern}' found in {assets}", "warning")
     return None
+
+
+def _fetch_release(
+    tool_config: ToolConfig,
+    update_summary: UpdateSummary,
+    verbose: bool,
+    github_token: str | None = None,
+) -> None:
+    if tool_config._latest_release is not None:
+        return
+    try:
+        latest_release = latest_release_info(tool_config.repo, github_token)
+        tool_config._latest_release = latest_release
+    except Exception as e:
+        msg = f"Failed to fetch latest release for {tool_config.repo}: {e}"
+        update_summary.add_failed_tool(
+            tool_config.tool_name,
+            "Any",
+            "Any",
+            version="Unknown",
+            reason=msg,
+        )
+        log(msg, "error", print_exception=verbose)
