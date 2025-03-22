@@ -13,9 +13,10 @@ import sys
 import tarfile
 import textwrap
 import zipfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, TypeVar
 
 import requests
 from rich.console import Console
@@ -55,27 +56,10 @@ def fetch_releases_in_parallel(
     repos: list[str],
     github_token: str | None = None,
     verbose: bool = False,
-) -> dict[str, dict | None]:
-    """Fetch release information for multiple repositories in parallel.
-
-    Args:
-        repos: List of repository names in format 'owner/repo'
-        github_token: GitHub token for better rate limiting
-        verbose: Whether to print verbose output
-
-    Returns:
-        Dictionary mapping repository names to their release information
-
-    """
-    results: dict[str, dict | None] = {}
-    with ThreadPoolExecutor(max_workers=min(16, len(repos) or 1)) as ex:
-        future_to_repo = {
-            ex.submit(_try_fetch_release_info, repo, github_token, verbose): repo for repo in repos
-        }
-        for future in as_completed(future_to_repo):
-            repo = future_to_repo[future]
-            results[repo] = future.result()  # type: ignore[assignment]
-    return results
+) -> list[dict | None]:
+    """Fetch release information for multiple repositories in parallel."""
+    func = partial(_try_fetch_release_info, github_token=github_token, verbose=verbose)
+    return execute_in_parallel(repos, func, 16)
 
 
 def download_file(url: str, destination: str, github_token: str | None, verbose: bool) -> str:
@@ -331,7 +315,10 @@ def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
         # Helper function for single-file decompression
         def extract_compressed(open_func: Callable[[Path, str], Any]) -> None:
             output_path = dest_dir / archive_path.stem
-            with open_func(archive_path, "rb") as f_in, open(output_path, "wb") as f_out:
+            with (
+                open_func(archive_path, "rb") as f_in,
+                open(output_path, "wb") as f_out,
+            ):
                 shutil.copyfileobj(f_in, f_out)
             output_path.chmod(output_path.stat().st_mode | 0o755)
 
@@ -372,3 +359,30 @@ def github_url_to_raw_url(repo_url: str) -> str:
         "/blob/",
         "/refs/heads/",
     )
+
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+
+def execute_in_parallel(
+    items: list[T],
+    process_func: Callable[[T], R],
+    max_workers: int = 16,
+) -> list[R]:
+    """Execute a function over a list of items in parallel.
+
+    Args:
+        items: List of items to process
+        process_func: Function to apply to each item
+        max_workers: Maximum number of parallel workers
+
+    Returns:
+        List of results from process_func applied to each item
+
+    """
+    if not items:
+        return []
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(items) or 1)) as ex:
+        futures = ex.map(process_func, items)
+        return list(futures)

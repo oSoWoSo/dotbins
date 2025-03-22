@@ -70,11 +70,11 @@ class Config:
         """Set the latest releases for all tools."""
         if tools is None:
             tools = list(self.tools)
-        repos = [cfg.repo for tool in tools if (cfg := self.tools[tool])._latest_release is None]
+        cfgs = [cfg for tool in tools if (cfg := self.tools[tool])._latest_release is None]
+        repos = [cfg.repo for cfg in cfgs]
         releases = fetch_releases_in_parallel(repos, github_token, verbose)
-        for cfg in self.tools.values():
-            if cfg.repo in releases:
-                cfg._latest_release = releases[cfg.repo]
+        for cfg, release in zip(cfgs, releases):
+            cfg._latest_release = release
 
     @cached_property
     def version_store(self) -> VersionStore:
@@ -160,7 +160,7 @@ class Config:
             architecture,
             current,
         )
-        download_tasks, total_count = prepare_download_tasks(
+        download_tasks = prepare_download_tasks(
             self,
             tools_to_update,
             platforms_to_update,
@@ -168,9 +168,10 @@ class Config:
             force,
             verbose,
         )
-        downloaded_tasks = download_files_in_parallel(download_tasks, github_token, verbose)
-        success_count = process_downloaded_files(
-            downloaded_tasks,
+        download_successes = download_files_in_parallel(download_tasks, github_token, verbose)
+        process_downloaded_files(
+            download_tasks,
+            download_successes,
             self.version_store,
             self._update_summary,
             verbose,
@@ -179,8 +180,6 @@ class Config:
 
         # Display the summary
         display_update_summary(self._update_summary)
-
-        _print_completion_summary(success_count, total_count)
 
         if generate_readme:
             self.generate_readme(verbose=verbose)
@@ -238,13 +237,6 @@ def _tools_to_update(config: Config, tools: list[str] | None) -> list[str] | Non
                 sys.exit(1)
         return tools
     return None
-
-
-def _print_completion_summary(success_count: int, total_count: int) -> None:
-    """Print completion summary and additional instructions."""
-    log(f"Completed: {success_count}/{total_count} tools updated successfully", "info", "🔄")
-    if success_count > 0:
-        log("Don't forget to commit the changes to your dotfiles repository", "success", "💾")
 
 
 @dataclass
@@ -439,9 +431,9 @@ def _config_from_dict(data: RawConfigDict) -> Config:
             tool_data = {"repo": tool_data}  # noqa: PLW2901
         tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
 
-    config_obj = Config(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
-    config_obj.validate()
-    return config_obj
+    config = Config(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
+    config.validate()
+    return config
 
 
 def config_from_url(config_url: str) -> Config:
