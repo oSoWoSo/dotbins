@@ -569,7 +569,11 @@ def _maybe_asset_pattern(
     """Get the formatted asset pattern for the tool."""
     search_pattern = tool_config.asset_patterns[platform][arch]
     if search_pattern is None:
-        log(f"No asset_pattern provided for {platform}/{arch}", "info", "ℹ️")  # noqa: RUF001
+        log(
+            f"No [b]asset_pattern[/] provided for [b]{platform}/{arch}[/b]",
+            "info",
+            "ℹ️",  # noqa: RUF001
+        )
         return None
     return (
         search_pattern.format(
@@ -589,7 +593,7 @@ def _auto_detect_asset(
     assets: list[_AssetDict],
 ) -> _AssetDict | None:
     """Auto-detect an asset for the tool."""
-    log(f"Auto-detecting asset for {platform}/{arch}", "info", "🔍")
+    log(f"Auto-detecting asset for [b]{platform}/{arch}[/b]", "info", "🔍")
     detect_fn = create_system_detector(platform, arch)
     asset_names = [x["name"] for x in assets]
     asset_name, candidates, err = detect_fn(asset_names)

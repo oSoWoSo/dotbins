@@ -897,7 +897,7 @@ def test_non_extract_single_binary_copy(
     captured = capsys.readouterr()
 
     # Verify successful messages in the output
-    assert "Successfully processed single-bin-tool" in captured.out
+    assert "Successfully installed single-bin-tool" in captured.out
 
     # Verify that the binary file was created with the correct name
     bin_dir = config.bin_dir("linux", "amd64")
