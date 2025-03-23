@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 from .detect_binary import auto_detect_binary_paths, auto_detect_extract_binary
 from .utils import (
@@ -141,7 +142,8 @@ def _replace_variables_in_path(path: str, version: str, arch: str, platform: str
     return path
 
 
-class _DownloadTask(NamedTuple):
+@dataclass(frozen=True)
+class _DownloadTask:
     """Represents a single download task."""
 
     bin_spec: BinSpec

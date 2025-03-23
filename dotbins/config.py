@@ -719,9 +719,9 @@ def download_files_in_parallel(
 
 def _download_task(
     task: _DownloadTask,
+    github_token: str | None,
     update_summary: UpdateSummary,
     verbose: bool,
-    github_token: str | None,
 ) -> bool:
     """Download a file for a DownloadTask."""
     try:
