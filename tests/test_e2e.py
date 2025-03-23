@@ -1384,3 +1384,142 @@ def test_failed_to_download_file(
     out = capsys.readouterr().out
     assert "Failed to download" in out
     assert "limit exceeded" in out
+
+
+def test_tool_shell_code_in_shell_scripts(
+    tmp_path: Path,
+    create_dummy_archive: Callable,
+) -> None:
+    """Test that tool shell_code is included in the generated shell scripts.
+
+    It verifies that:
+    1. shell_code is properly included for tools that have it
+    2. tools without shell_code don't have code blocks generated
+    3. syntax is appropriate for different shells (bash, zsh, fish, nushell)
+    4. sync_tools correctly triggers shell script generation
+    """
+    tools_dir = tmp_path / "tools"
+
+    # Create a config with tools that have shell_code and some that don't
+    tool_configs: dict[str, RawToolConfigDict] = {
+        "fzf": {
+            "repo": "junegunn/fzf",
+            "shell_code": "source <(fzf --zsh)",
+        },
+        "bat": {
+            "repo": "sharkdp/bat",  # No shell_code
+        },
+        "zoxide": {
+            "repo": "ajeetdsouza/zoxide",
+            "shell_code": 'eval "$(zoxide init zsh)"',
+        },
+        "eza": {
+            "repo": "eza-community/eza",
+            "shell_code": "alias l='eza -lah --git'",
+        },
+        "starship": {
+            "repo": "starship/starship",
+            "shell_code": {
+                "zsh": 'eval "$(starship init zsh)"',
+                "bash": 'eval "$(starship init bash)"',
+                "fish": "starship init fish | source",
+                "nushell": (
+                    'mkdir ($nu.data-dir | path join "vendor/autoload")'
+                    '\nstarship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")'
+                ),
+            },
+        },
+    }
+
+    config = Config.from_dict(
+        {
+            "tools_dir": str(tools_dir),
+            "platforms": {"linux": ["amd64"]},
+            "tools": tool_configs,  # type: ignore[typeddict-item]
+        },
+    )
+    _set_mock_release_info(config, version="1.2.3")
+
+    # Mock the download_file function
+    def mock_download_file(
+        url: str,
+        destination: str,
+        github_token: str | None,  # noqa: ARG001
+        verbose: bool,  # noqa: ARG001
+    ) -> str:
+        binary_name = url.split("/")[-1].split("-")[0]
+        create_dummy_archive(Path(destination), binary_name)
+        return destination
+
+    # Run sync_tools to generate the shell scripts
+    with patch("dotbins.download.download_file", side_effect=mock_download_file):
+        config.sync_tools()
+
+    # Check that shell scripts were generated for all supported shells
+    shell_files = {
+        "bash": "bash.sh",
+        "zsh": "zsh.sh",
+        "fish": "fish.fish",
+        "nushell": "nushell.nu",
+    }
+
+    for shell, filename in shell_files.items():
+        shell_script_path = tools_dir / "shell" / filename
+        assert shell_script_path.exists(), f"Shell script for {shell} not created"
+
+        # Read the shell script content
+        content = shell_script_path.read_text()
+
+        # Verify shell_code is included with correct syntax for each shell
+        if shell in ("bash", "zsh"):
+            # Check tools with shell_code
+            for tool in ["fzf", "zoxide", "eza", "starship"]:
+                assert f"if command -v {tool} >/dev/null 2>&1; then" in content
+
+            # Verify specific shell code for each tool
+            assert "source <(fzf --zsh)" in content
+            assert 'eval "$(zoxide init zsh)"' in content
+            assert "alias l='eza -lah --git'" in content
+
+            # Check shell-specific starship code
+            if shell == "bash":
+                assert 'eval "$(starship init bash)"' in content
+            elif shell == "zsh":
+                assert 'eval "$(starship init zsh)"' in content
+
+            # Check tool without shell_code has no block
+            assert "if command -v bat >/dev/null 2>&1; then" not in content
+
+        elif shell == "fish":
+            # Check tools with shell_code (fish syntax)
+            for tool in ["fzf", "zoxide", "eza", "starship"]:
+                assert f"if command -v {tool} >/dev/null 2>&1" in content
+
+            # Verify specific shell code
+            assert "source <(fzf --zsh)" in content
+            assert 'eval "$(zoxide init zsh)"' in content
+            assert "alias l='eza -lah --git'" in content
+            assert "starship init fish | source" in content  # Fish-specific starship code
+
+            # Check tool without shell_code has no block
+            assert "if command -v bat >/dev/null 2>&1" not in content
+
+        elif shell == "nushell":
+            # Check tools with shell_code (nushell syntax)
+            for tool in ["fzf", "zoxide", "eza", "starship"]:
+                assert f"if (which {tool}) != null {{" in content
+
+            # Verify specific shell code
+            assert "source <(fzf --zsh)" in content
+            assert 'eval "$(zoxide init zsh)"' in content
+            assert "alias l='eza -lah --git'" in content
+
+            # Nushell-specific starship code
+            assert 'mkdir ($nu.data-dir | path join "vendor/autoload")' in content
+            assert (
+                'starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")'
+                in content
+            )
+
+            # Check tool without shell_code has no block
+            assert "if (which bat) != null {" not in content

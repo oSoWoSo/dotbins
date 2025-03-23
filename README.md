@@ -43,6 +43,7 @@ See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com
     - [Standard Tool](#standard-tool)
     - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
     - [Platform-Specific Tool](#platform-specific-tool)
+    - [Shell-Specific Configuration](#shell-specific-configuration)
   - [Full Configuration Example](#full-configuration-example)
 - [:bulb: Examples](#bulb-examples)
 - [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
@@ -367,6 +368,42 @@ eza:
     macos: null  # No macOS version available
 ```
 
+#### Shell-Specific Configuration
+
+The auto-generated shell scripts that add the binaries to your PATH will include the tool-specific shell code if provided.
+
+For example, see the following configuration:
+
+```yaml
+tools:
+  fzf:
+    repo: junegunn/fzf
+    shell_code: |
+      source <(fzf --zsh)
+
+  zoxide:
+    repo: ajeetdsouza/zoxide
+    shell_code: |
+      eval "$(zoxide init zsh)"
+
+  eza:
+    repo: eza-community/eza
+    shell_code: |
+      alias l="eza -lah --git"
+
+```
+
+If you want to make your config compatible with multiple shells (e.g., zsh, bash, fish), you can use the following syntax:
+
+```yaml
+starship:
+  repo: starship/starship
+  shell_code:
+    zsh: eval "$(starship init zsh)"
+    bash: eval "$(starship init bash)"
+    fish: starship init fish | source
+```
+
 ### Full Configuration Example
 
 This is the author's configuration file:
@@ -390,16 +427,33 @@ platforms:
     - arm64
 
 tools:
-  bat: sharkdp/bat
   delta: dandavison/delta
-  direnv: direnv/direnv
   duf: muesli/duf
   fd: sharkdp/fd
-  fzf: junegunn/fzf
   git-lfs: git-lfs/git-lfs
-  lazygit: jesseduffield/lazygit
   yazi: sxyazi/yazi
-  zoxide: ajeetdsouza/zoxide
+
+  bat:
+    repo: sharkdp/bat
+    shell_code: |
+      alias bat="bat --paging=never"
+      alias cat="bat --plain --paging=never"
+  direnv:
+    repo: direnv/direnv
+    shell_code: |
+      eval "$(direnv hook zsh)"
+  fzf:
+    repo: junegunn/fzf
+    shell_code: |
+      source <(fzf --zsh)
+  lazygit:
+    repo: jesseduffield/lazygit
+    shell_code: |
+      alias lg="lazygit"
+  zoxide:
+    repo: ajeetdsouza/zoxide
+    shell_code: |
+      eval "$(zoxide init zsh)"
 
   ripgrep:
     repo: BurntSushi/ripgrep
@@ -413,6 +467,8 @@ tools:
     asset_patterns:
       linux: atuin-{arch}-unknown-linux-gnu.tar.gz
       macos: atuin-{arch}-apple-darwin.tar.gz
+    shell_code: |
+      source <(atuin init zsh --disable-up-arrow)
 
   eza:
     repo: eza-community/eza
@@ -422,6 +478,8 @@ tools:
     asset_patterns:
       linux: eza_{arch}-unknown-linux-gnu.tar.gz
       macos: null  # No macOS binaries available as of now
+    shell_code: |
+      alias l="eza -lah --git"
 
   micromamba:
     repo: mamba-org/micromamba-releases
@@ -433,11 +491,20 @@ tools:
     asset_patterns:
       linux: micromamba-linux-{arch}
       macos: micromamba-osx-arm64
+    shell_code: |
+      alias mm="micromamba"
 
   uv:
     repo: astral-sh/uv
     binary_name: [uv, uvx]
     binary_path: [uv-*/uv, uv-*/uvx]
+    shell_code: |
+      eval "$(uv generate-shell-completion zsh)"
+
+  starship:
+    repo: starship/starship
+    shell_code: |
+      eval "$(starship init zsh)"
 ```
 
 <!-- OUTPUT:END -->
@@ -571,11 +638,11 @@ platforms:
 
 ## :computer: Shell Integration
 
-Add this to your shell configuration file (e.g., `.bashrc`, `.zshrc`) to use the platform-specific binaries:
+dotbins creates shell scripts that you can source to automatically add the correct binaries to your `PATH`.
 
-```bash
-dotbins init
-```
+After running `dotbins sync` or `dotbins init`, shell integration scripts are created in `~/.dotbins/shell/` for various shells.
+
+Check the output of `dotbins init` to see which shell scripts were created and how to add them to your shell configuration file:
 
 <!-- CODE:BASH:START -->
 <!-- echo '```bash' -->
@@ -596,8 +663,6 @@ dotbins init
 👉   Nushell: source $HOME/.dotbins/shell/nushell.nu
 📝 Generated README at ~/.dotbins/README.md
 ```
-
-<!-- OUTPUT:END -->
 
 ## :heart: Support and Contributions
 
