@@ -135,8 +135,8 @@ def display_update_summary(summary: UpdateSummary) -> None:
     if summary.skipped:
         table = Table(title="⏭️ Skipped Tools")
         table.add_column("Tool", style="cyan")
-        table.add_column("Platform", style="blue")
-        table.add_column("Architecture", style="blue")
+        table.add_column("Platform", style="magenta")
+        table.add_column("Architecture", style="magenta")
         table.add_column("Version", style="green")
         table.add_column("Reason", style="yellow")
 
@@ -156,8 +156,8 @@ def display_update_summary(summary: UpdateSummary) -> None:
     if summary.updated:
         table = Table(title="✅ Updated Tools")
         table.add_column("Tool", style="cyan")
-        table.add_column("Platform", style="blue")
-        table.add_column("Architecture", style="blue")
+        table.add_column("Platform", style="magenta")
+        table.add_column("Architecture", style="magenta")
         table.add_column("Old Version", style="yellow")
         table.add_column("New Version", style="green")
 
@@ -177,8 +177,8 @@ def display_update_summary(summary: UpdateSummary) -> None:
     if summary.failed:
         table = Table(title="❌ Failed Updates")
         table.add_column("Tool", style="cyan")
-        table.add_column("Platform", style="blue")
-        table.add_column("Architecture", style="blue")
+        table.add_column("Platform", style="magenta")
+        table.add_column("Architecture", style="magenta")
         table.add_column("Version", style="yellow")
         table.add_column("Reason", style="red")
 

@@ -118,7 +118,7 @@ class VersionStore:
         table.add_column("Platform", style="green")
         table.add_column("Architecture", style="green")
         table.add_column("Version", style="yellow")
-        table.add_column("Last Updated", style="blue")
+        table.add_column("Last Updated", style="magenta")
         table.add_column("SHA256", style="dim")
 
         installed_tools = _installed_tools(self.versions, platform, architecture)
@@ -184,7 +184,7 @@ class VersionStore:
         table.add_column("Tool", style="cyan")
         table.add_column("Version(s)", style="yellow")
         table.add_column("Platforms", style="green")
-        table.add_column("Last Updated", style="blue")
+        table.add_column("Last Updated", style="magenta")
 
         for tool_name, instances in sorted(tools.items()):
             version_list = sorted({i["version"] for i in instances})
