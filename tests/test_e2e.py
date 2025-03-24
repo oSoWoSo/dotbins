@@ -342,6 +342,7 @@ def test_e2e_sync_tools_skip_up_to_date(
         platform="linux",
         arch="amd64",
         version="1.2.3",
+        sha256="sha256",
     )
     bin_dir = config.bin_dir("linux", "amd64")
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -400,6 +401,7 @@ def test_e2e_sync_tools_partial_skip_and_update(
         platform="linux",
         arch="amd64",
         version="2.0.0",
+        sha256="sha256",
     )
 
     # Mark 'othertool' as older so it gets updated
@@ -408,6 +410,7 @@ def test_e2e_sync_tools_partial_skip_and_update(
         platform="linux",
         arch="amd64",
         version="1.0.0",
+        sha256="sha256",
     )
 
     def mock_download_file(
@@ -463,7 +466,7 @@ def test_e2e_sync_tools_force_re_download(tmp_path: Path, create_dummy_archive: 
     config = Config.from_dict(raw_config)
     _set_mock_release_info(config, version="1.2.3")
     # Mark 'mytool' as installed at 1.2.3
-    config.version_store.update_tool_info("mytool", "linux", "amd64", "1.2.3")
+    config.version_store.update_tool_info("mytool", "linux", "amd64", "1.2.3", "sha256")
     tool_info = config.version_store.get_tool_info("mytool", "linux", "amd64")
     assert tool_info is not None
     original_updated_at = tool_info["updated_at"]

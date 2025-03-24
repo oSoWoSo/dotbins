@@ -79,7 +79,7 @@ class VersionStore:
         platform: str,
         arch: str,
         version: str,
-        sha256: str = "",
+        sha256: str,
     ) -> None:
         """Update version info for a tool.
 
@@ -88,7 +88,7 @@ class VersionStore:
             platform: Platform (e.g., 'linux', 'macos')
             arch: Architecture (e.g., 'amd64', 'arm64')
             version: Version string
-            sha256: SHA256 hash of the downloaded archive (optional)
+            sha256: SHA256 hash of the downloaded archive
 
         """
         key = f"{tool}/{platform}/{arch}"
@@ -131,7 +131,6 @@ class VersionStore:
             assert info is not None
 
             updated_str = humanize_time_ago(info["updated_at"])
-            sha256 = info.get("sha256", "N/A")
 
             table.add_row(
                 spec.name,
@@ -139,7 +138,7 @@ class VersionStore:
                 spec.architecture,
                 info["version"],
                 updated_str,
-                sha256[:8] + "..." if sha256 and sha256 != "N/A" else sha256,
+                info["sha256"][:8],
             )
 
         console.print(table)
