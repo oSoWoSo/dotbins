@@ -328,7 +328,7 @@ def extract_archive(archive_path: str | Path, dest_dir: str | Path) -> None:
         # Handle tar archives
         for ext, mode in tar_formats.items():
             if filename.endswith(ext):
-                with tarfile.open(archive_path, mode=mode) as tar:
+                with tarfile.open(archive_path, mode=mode) as tar:  # type: ignore[call-overload]
                     tar.extractall(path=dest_dir)
                 return
 
