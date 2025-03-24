@@ -730,11 +730,12 @@ def _remove_unused_binaries(config: Config, verbose: bool = False) -> None:
     """Remove unused binaries."""
     unused = _unused_binary_paths(config)
     for path in unused:
-        log(f"Removing unused binary: {path}", "info", "🧹")
+        path_nice = replace_home_in_path(path, "~")
+        log(f"Removing unused binary: {path_nice}", "info", "🧹")
         try:
             path.unlink()
-            log(f"Removed unused binary: {path}", "success")
+            log(f"Removed unused binary: {path_nice}", "success")
         except OSError as e:
-            log(f"Failed to remove {path}: {e}", "error")
+            log(f"Failed to remove {path_nice}: {e}", "error")
             if verbose:
                 log(f"Error details: {e}", "error", print_exception=True)
