@@ -716,7 +716,7 @@ def _expected_binary_paths(
 
 def _actual_binary_paths(config: Config) -> list[Path]:
     """Return a list of actual binary paths that are installed."""
-    return [path.absolute() for path in config.bin_dir("*", "*").glob("*") if path.is_file()]
+    return [path.absolute() for path in config.tools_dir.glob("*/*/bin/*") if path.is_file()]
 
 
 def _unused_binary_paths(config: Config) -> list[Path]:
@@ -732,7 +732,8 @@ def _remove_unused_binaries(config: Config, verbose: bool = False) -> None:
     for path in unused:
         log(f"Removing unused binary: {path}", "info", "🧹")
         try:
-            os.remove(path)
+            path.unlink()
+            log(f"Removed unused binary: {path}", "success")
         except OSError as e:
             log(f"Failed to remove {path}: {e}", "error")
             if verbose:
