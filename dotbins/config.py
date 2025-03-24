@@ -15,6 +15,7 @@ import requests
 import yaml
 
 from .detect_asset import create_system_detector
+from .detect_binary import is_exec
 from .download import download_files_in_parallel, prepare_download_tasks, process_downloaded_files
 from .readme import write_readme_file
 from .summary import UpdateSummary, display_update_summary
@@ -697,26 +698,24 @@ def _fetch_release(
         log(msg, "error", print_exception=verbose)
 
 
-def _expected_binary_paths(
-    config: Config,
-    platform: str | None = None,
-    architecture: str | None = None,
-) -> list[Path]:
+def _expected_binary_paths(config: Config) -> list[Path]:
     """Return a list of binary paths that are expected to be installed."""
     return [
-        (config.bin_dir(_platform, arch) / name).absolute()
+        (config.bin_dir(platform, arch) / name).absolute()
         for tool_config in config.tools.values()
-        for _platform, architectures in config.platforms.items()
+        for platform, architectures in config.platforms.items()
         for arch in architectures
-        if (_platform == platform or platform is None)
-        and (arch == architecture or architecture is None)
         for name in tool_config.binary_name
     ]
 
 
 def _actual_binary_paths(config: Config) -> list[Path]:
     """Return a list of actual binary paths that are installed."""
-    return [path.absolute() for path in config.tools_dir.glob("*/*/bin/*") if path.is_file()]
+    return [
+        path.absolute()
+        for path in config.tools_dir.glob("*/*/bin/*")
+        if path.is_file() and is_exec(path.name, path.stat().st_mode)
+    ]
 
 
 def _unused_binary_paths(config: Config) -> list[Path]:
