@@ -265,8 +265,8 @@ When auto-detection isn't possible or you want more control, you can provide det
 ```yaml
 tool-name:
   repo: owner/repo                 # Required: GitHub repository
-  extract_archive: true            # Optional: Whether to extract from archive (true) or direct download (false) (auto-detected if not specified)
   binary_name: executable-name     # Optional: Name of the resulting binary(ies) (defaults to tool-name)
+  extract_archive: true            # Optional: Whether to extract from archive (true) or direct download (false) (auto-detected if not specified)
   archive_path: path/to/binary     # Optional: Path to the binary within the archive (auto-detected if not specified)
 
   # Asset patterns - Optional with auto-detection
