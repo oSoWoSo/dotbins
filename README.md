@@ -603,11 +603,11 @@ Check the output of `dotbins init` to see which shell scripts were created and h
 
 ## :books: Examples with 50+ Tools
 
-See the [examples/dotbins.yaml](examples/dotbins.yaml) file for a list of >50 tools that require no configuration.
+See the [examples/examples.yaml](examples/examples.yaml) file for a list of >50 tools that require no configuration.
 
 <!-- CODE:BASH:START -->
 <!-- echo '```yaml' -->
-<!-- cat examples/dotbins.yaml -->
+<!-- cat examples/examples.yaml -->
 <!-- echo '```' -->
 <!-- CODE:END -->
 
