@@ -231,7 +231,7 @@ The first valid configuration file found will be used. If no configuration file 
 # Basic settings
 tools_dir: ~/.dotbins
 
-# Target platforms and architectures
+# Target platforms and architectures (optional, current system if omitted)
 platforms:
   linux:
     - amd64
