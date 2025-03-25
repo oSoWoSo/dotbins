@@ -901,14 +901,14 @@ def test_non_extract_single_binary_copy(
     # Verify that the binary file was created with the correct name
     bin_dir = config.bin_dir("linux", "amd64")
     name = "tool-binary.exe" if os.name == "nt" else "tool-binary"
-    path_in_archive = bin_dir / name
-    assert path_in_archive.exists()
+    binary_path = bin_dir / name
+    assert binary_path.exists()
 
     # Verify that the binary is executable
-    assert os.access(path_in_archive, os.X_OK)
+    assert os.access(binary_path, os.X_OK)
 
     # Verify the content was copied correctly
-    assert "Hello from tool-binary" in path_in_archive.read_text()
+    assert "Hello from tool-binary" in binary_path.read_text()
 
     # Verify the version store was updated
     tool_info = config.version_store.get_tool_info("single-bin-tool", "linux", "amd64")

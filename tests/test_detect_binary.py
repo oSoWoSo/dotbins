@@ -34,9 +34,9 @@ def mock_archive_nested(tmp_path: Path) -> Path:
     bin_dir.mkdir()
 
     # Create binary files
-    path_in_archive = bin_dir / "delta"
-    path_in_archive.touch()
-    os.chmod(path_in_archive, 0o755)  # Make executable  # noqa: S103
+    binary_path = bin_dir / "delta"
+    binary_path.touch()
+    os.chmod(binary_path, 0o755)  # Make executable  # noqa: S103
 
     other_path = extract_dir / "delta-backup"
     other_path.touch()
@@ -45,7 +45,7 @@ def mock_archive_nested(tmp_path: Path) -> Path:
     # Create archive (we'll use zipfile directly since we need specific structure)
     archive_path = tmp_path / "nested.zip"
     with zipfile.ZipFile(archive_path, "w") as zipf:
-        zipf.write(path_in_archive, arcname="bin/delta")
+        zipf.write(binary_path, arcname="bin/delta")
         zipf.write(other_path, arcname="delta-backup")
 
     return archive_path
