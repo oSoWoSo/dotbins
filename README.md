@@ -665,7 +665,7 @@ tools:
   sd: chmln/sd                    # Find & replace CLI
   sk: skim-rs/skim                # Fuzzy finder for the terminal in Rust (similar to fzf)
   starship: starship/starship     # Minimal, fast, customizable prompt for any shell
-  tealdeer: tealdeer-rs/tealdeer  # Fast tldr client in Rust
+  tldr: tealdeer-rs/tealdeer      # Fast tldr client in Rust
   topgrade: topgrade-rs/topgrade  # Upgrade all your tools at once
   tre: dduan/tre                  # Tree command with git awareness
   xh: ducaale/xh                  # Friendly and fast tool for sending HTTP requests
