@@ -13,6 +13,7 @@ tools:
   dust: bootandy/dust
   fd: sharkdp/fd
   git-lfs: git-lfs/git-lfs
+  hyperfine: sharkdp/hyperfine
   yazi: sxyazi/yazi
 
   bat:
