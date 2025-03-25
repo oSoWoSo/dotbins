@@ -10,6 +10,7 @@ platforms:
 tools:
   delta: dandavison/delta
   duf: muesli/duf
+  dust: bootandy/dust
   fd: sharkdp/fd
   git-lfs: git-lfs/git-lfs
   yazi: sxyazi/yazi
