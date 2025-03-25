@@ -229,9 +229,9 @@ The first valid configuration file found will be used. If no configuration file 
 
 ```yaml
 # Basic settings
-tools_dir: ~/.dotbins
+tools_dir: ~/.dotbins  # (optional, ~/.dotbins by default)
 
-# Target platforms and architectures (optional, current system if omitted)
+# Target platforms and architectures (optional, current system by default)
 platforms:
   linux:
     - amd64
