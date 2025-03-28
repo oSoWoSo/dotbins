@@ -20,35 +20,45 @@ No package manager, no sudo, no problem.
 
 See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com/basnijholt/.dotbins) completely managed with `dotbins`.
 
+> [!NOTE]
+> 💡 **What makes dotbins different?** Unlike similar tools, dotbins uniquely integrates tool-specific shell configurations
+> (aliases, completions, etc.) directly in your dotfiles workflow, not just binary downloads, and allows a Git workflow for managing binaries.
+
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [:zap: Quick Start](#zap-quick-start)
-- [:star2: Features](#star2-features)
-- [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
-- [:books: Usage](#books-usage)
-  - [Commands](#commands)
-  - [Quick Install with `dotbins get`](#quick-install-with-dotbins-get)
-- [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
-- [:gear: Configuration](#gear-configuration)
-  - [Basic Configuration](#basic-configuration)
-  - [Tool Configuration](#tool-configuration)
-  - [Platform and Architecture Mapping](#platform-and-architecture-mapping)
-  - [Pattern Variables](#pattern-variables)
-  - [Multiple Binaries](#multiple-binaries)
-  - [Configuration Examples](#configuration-examples)
-    - [Minimal Tool Configuration](#minimal-tool-configuration)
-    - [Standard Tool](#standard-tool)
-    - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
-    - [Platform-Specific Tool](#platform-specific-tool)
-    - [Shell-Specific Configuration](#shell-specific-configuration)
-  - [Full Configuration Example](#full-configuration-example)
-- [:bulb: Examples](#bulb-examples)
-- [:computer: Shell Integration](#computer-shell-integration)
-- [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
-- [:heart: Support and Contributions](#heart-support-and-contributions)
+  - [:zap: Quick Start](#zap-quick-start)
+  - [:star2: Features](#star2-features)
+  - [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
+  - [:books: Usage](#books-usage)
+    - [Commands](#commands)
+    - [Quick Install with `dotbins get`](#quick-install-with-dotbins-get)
+  - [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
+  - [:gear: Configuration](#gear-configuration)
+    - [Basic Configuration](#basic-configuration)
+    - [Tool Configuration](#tool-configuration)
+    - [Platform and Architecture Mapping](#platform-and-architecture-mapping)
+    - [Pattern Variables](#pattern-variables)
+    - [Multiple Binaries](#multiple-binaries)
+    - [Configuration Examples](#configuration-examples)
+      - [Minimal Tool Configuration](#minimal-tool-configuration)
+      - [Standard Tool](#standard-tool)
+      - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
+      - [Platform-Specific Tool](#platform-specific-tool)
+      - [Shell-Specific Configuration](#shell-specific-configuration)
+    - [Full Configuration Example](#full-configuration-example)
+  - [:bulb: Examples](#bulb-examples)
+  - [:computer: Shell Integration](#computer-shell-integration)
+  - [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
+- [:thinking: Comparison with Alternatives](#thinking-comparison-with-alternatives)
+  - [Key Alternatives](#key-alternatives)
+    - [Version Managers (e.g., `binenv`, `asdf`)](#version-managers-eg-binenv-asdf)
+    - [Binary Downloaders (e.g., `eget`)](#binary-downloaders-eg-eget)
+    - [System Package Managers (`apt`, `brew`, etc.)](#system-package-managers-apt-brew-etc)
+  - [The `dotbins` Difference](#the-dotbins-difference)
+  - [:heart: Support and Contributions](#heart-support-and-contributions)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -82,6 +92,7 @@ uvx dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
 - 🧩 Extracts binaries from various archive formats (zip, tar.gz)
 - 📂 Organizes tools by platform and architecture for easy access
 - 🐙 Easy integration with your dotfiles repository for version control
+- ⚙️ **Automatic PATH & Shell Code:** Configures `PATH` and applies custom shell snippets (`shell_code`).
 
 ## :bulb: Why I Created dotbins
 
@@ -92,10 +103,10 @@ I faced a common frustration: some of my favorite tools (`fzf`, `bat`, `zoxide`,
 It allows me to:
 
 1. Track pre-compiled binaries in a [separate Git repository](https://github.com/basnijholt/.dotbins) (using Git LFS for efficient storage)
-2. Include this repository as a submodule in my dotfiles
-3. Ensure all my essential tools are immediately available after cloning, regardless of system permissions
+2. Include that repository as a submodule in my dotfiles
+3. Ensure all my essential tools are _immediately_ available after cloning, regardless of system permissions
 
-Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity.
+Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity, **ready to use with their specific aliases and shell initializations automatically configured**.
 
 **_No package manager, no sudo, no problem!_**
 
@@ -304,6 +315,7 @@ tool-name:
 ### Pattern Variables
 
 In asset patterns, you can use these variables:
+
 - `{version}` - Release version (without 'v' prefix)
 - `{platform}` - Platform name (after applying platform_map)
 - `{arch}` - Architecture name (after applying arch_map)
@@ -697,6 +709,64 @@ platforms:
 ```
 
 <!-- OUTPUT:END -->
+
+# :thinking: Comparison with Alternatives
+
+`dotbins` fills a specific niche in the binary management ecosystem. Here's how it compares to key alternatives:
+
+| Tool          | Version Management                 | Shell Integration             | Dotfiles Integration           | Primary Use Case           |
+| ------------- | ---------------------------------- | ----------------------------- | ------------------------------ | -------------------------- |
+| **dotbins**   | Latest only                        | **Built-in via `shell_code`** | **First-class with Git (LFS)** | Complete dotfiles solution |
+| **binenv**    | Multiple versions with constraints | Separate completion scripts   | Not focused on                 | Development environments   |
+| **eget**      | Latest or specific only            | None                          | Not focused on                 | Quick one-off installs     |
+| **asdf/aqua** | Multiple plugins & versions        | Plugin-specific               | Not focused on                 | Development environments   |
+| **apt/brew**  | System packages                    | None                          | Not possible                   | System-wide management     |
+
+## Key Alternatives
+
+### Version Managers (e.g., `binenv`, `asdf`)
+
+- **Pros:** Advanced version management (constraints like `>=1.2.3`), multiple versions side-by-side
+- **Cons vs. `dotbins`:**
+  - Focus on version management rather than dotfiles integration
+  - **Separate configuration needed for shell integration** (aliases, completions)
+  - Often use shims or more complex architecture
+- **When to choose:** For development environments where you need multiple versions of tools
+
+### Binary Downloaders (e.g., `eget`)
+
+- **Pros:** Lightweight, fast for one-off downloads
+- **Cons vs. `dotbins`:**
+  - No configuration for multiple tools
+  - **No shell integration** for aliases or environment setup
+  - No version tracking between sessions
+- **When to choose:** For quick installation of individual tools without configuration needs
+
+### System Package Managers (`apt`, `brew`, etc.)
+
+- **Pros:** System-wide installation, dependency management
+- **Cons vs. `dotbins`:**
+  - Require admin privileges
+  - Not portable across systems
+  - Cannot be version-controlled in dotfiles
+- **When to choose:** For system-wide software needed by multiple users
+
+## The `dotbins` Difference
+
+`dotbins` uniquely combines:
+
+1. **Binary management** - Downloading from GitHub Releases
+2. **Shell configuration** - Defining aliases and shell setup in the same file:
+   ```yaml
+   bat:
+     repo: sharkdp/bat
+     shell_code: |
+       alias cat="bat --plain --paging=never"
+   ```
+3. **Dotfiles integration** - Designed to be version-controlled as a Git repository
+4. **Cross-platform portability** - Works the same across Linux, macOS, Windows
+
+This makes it perfect for users who want to manage their complete shell environment in a version-controlled dotfiles repository that can be easily deployed on any system.
 
 ## :heart: Support and Contributions
 
