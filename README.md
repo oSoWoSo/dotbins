@@ -66,17 +66,17 @@ See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com
 
 ## :zap: Quick Start
 
-Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager:
+Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager (`uv tool install dotbins`):
 
 ```bash
 # Install directly to ~/.local/bin (no configuration needed)
-uvx dotbins get junegunn/fzf
+dotbins get junegunn/fzf
 
 # Set up multiple tools with a config file (creates ~/.dotbins)
-uvx dotbins sync
+dotbins sync
 
 # Bootstrap a collection of tools from a remote config
-uvx dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
+dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
 ```
 
 **See it in action:**
