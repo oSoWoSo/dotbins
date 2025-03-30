@@ -482,25 +482,11 @@ tools:
 
   eza:
     repo: eza-community/eza
-    arch_map:
-      amd64: x86_64
-      arm64: aarch64
-    asset_patterns:
-      linux: eza_{arch}-unknown-linux-gnu.tar.gz
-      macos: null  # No macOS binaries available as of now
     shell_code: |
       alias l="eza -lah --git"
 
   micromamba:
     repo: mamba-org/micromamba-releases
-    extract_archive: false
-    path_in_archive: bin/micromamba
-    arch_map:
-      amd64: 64
-      arm64: aarch64
-    asset_patterns:
-      linux: micromamba-linux-{arch}
-      macos: micromamba-osx-arm64
     shell_code: |
       alias mm="micromamba"
 
@@ -655,6 +641,7 @@ tools:
   duf: muesli/duf                 # Disk usage analyzer with pretty output
   dust: bootandy/dust             # More intuitive version of du (disk usage)
   eget: zyedidia/eget             # Go single file downloader (similar to Dotbins)
+  eza: eza-community/eza          # Modern replacement for ls
   fd: sharkdp/fd                  # Simple, fast alternative to find
   fzf: junegunn/fzf               # Command-line fuzzy finder
   git-lfs: git-lfs/git-lfs        # Git extension for versioning large files
@@ -675,6 +662,7 @@ tools:
   lsd: lsd-rs/lsd                 # Next-gen ls command with icons and colors
   mcfly: cantino/mcfly            # Fly through your shell history
   micro: zyedidia/micro           # Modern and intuitive terminal-based text editor
+  micromamba: mamba-org/micromamba-releases # Conda-like distribution
   navi: denisidoro/navi           # Interactive cheatsheet tool for the CLI
   neovim: neovim/neovim           # Modern text editor
   nu: nushell/nushell             # Modern shell for the GitHub era

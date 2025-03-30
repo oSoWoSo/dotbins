@@ -100,7 +100,20 @@ def _match_os(os_obj: _OS, asset: str) -> bool:
 
 def _match_arch(arch: _Arch, asset: str) -> bool:
     """Returns True if the architecture matches the given string."""
-    return bool(arch.regex.search(asset))
+    # First, try standard pattern matching
+    if bool(arch.regex.search(asset)):
+        return True
+
+    # Then, handle special cases for AMD64 architecture
+    if arch.name == "amd64":
+        basename = os.path.basename(asset.lower())
+
+        # For micromamba-linux-64 and similar formats
+        # Match patterns like [prefix]-linux-64, [prefix]_linux_64, etc.
+        if "linux-64" in basename or "linux_64" in basename:
+            return True
+
+    return False
 
 
 def detect_single_asset(asset: str, anti: bool = False) -> DetectFunc:
