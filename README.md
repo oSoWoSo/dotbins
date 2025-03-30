@@ -477,12 +477,6 @@ tools:
 
   atuin:
     repo: atuinsh/atuin
-    arch_map:
-      amd64: x86_64
-      arm64: aarch64
-    asset_patterns:
-      linux: atuin-{arch}-unknown-linux-gnu.tar.gz
-      macos: atuin-{arch}-apple-darwin.tar.gz
     shell_code: |
       source <(atuin init zsh --disable-up-arrow)
 
@@ -644,6 +638,7 @@ tools_dir: ~/.dotbins-examples
 # List of tools that require no configuration
 
 tools:
+  atuin: atuinsh/atuin            # Shell history and recording tool
   bandwhich: imsnif/bandwhich     # Terminal bandwidth utilization tool
   bat: sharkdp/bat                # Cat clone with syntax highlighting and Git integration
   btm: ClementTsang/bottom        # Graphical system monitor
