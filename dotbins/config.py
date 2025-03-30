@@ -604,7 +604,10 @@ def _validate_tool_config(tool_name: str, tool_config: ToolConfig) -> None:
         log(f"Tool [b]{tool_name}[/] is missing required field [b]'repo'[/]", "error")
 
     # If binary lists differ in length, log an error
-    if len(tool_config.binary_name) != len(tool_config.path_in_archive) and tool_config.path_in_archive:
+    if (
+        len(tool_config.binary_name) != len(tool_config.path_in_archive)
+        and tool_config.path_in_archive
+    ):
         log(
             f"Tool [b]{tool_name}[/]: [b]'binary_name'[/] and [b]'path_in_archive'[/] must have the same length if both are specified as lists.",
             "error",
