@@ -22,10 +22,25 @@ from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar
 import requests
 from rich.console import Console
 
-console = Console()
-
 if TYPE_CHECKING:
     from .config import ToolConfig
+
+console = Console()
+
+SUPPORTED_ARCHIVE_EXTENSIONS = [
+    ".zip",
+    ".tar",
+    ".tar.gz",
+    ".tgz",
+    ".tar.bz2",
+    ".tbz2",
+    ".tar.xz",
+    ".txz",
+    ".gz",
+    ".bz2",
+    ".xz",
+    ".lzma",
+]
 
 
 def _maybe_github_token_header(github_token: str | None) -> dict[str, str]:  # pragma: no cover
