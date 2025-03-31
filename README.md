@@ -315,22 +315,41 @@ tool-name:
 
 ### Asset auto-detection defaults
 
-You can specify defaults for handling multiple assets that work on your architecture.
+When multiple compatible assets are available for your platform and architecture, dotbins uses these settings to determine which one to select:
 
 ```yaml
 # Global defaults for all tools
 defaults:
-  prefer_appimage: true   # Set to true to prefer AppImage when available
-  libc: musl              # Use 'glibc' or 'musl'
+  prefer_appimage: true   # Prioritize AppImage format when available
+  libc: musl              # Prefer musl over glibc on Linux
 ```
 
-These are the actual defaults too.
+These are also the built-in defaults if no custom settings are provided.
 
-**Why musl and AppImage?**
+**Why these defaults?**
 
 - **musl libc**: Statically linked musl binaries offer maximum portability across all Linux distributions regardless of the system's native C library. They eliminate glibc version conflicts (the notorious `GLIBC_X.YZ not found` errors), work on **both** glibc and musl-based distributions (like Alpine Linux), and generally provide a more reliable user experience.
 
 - **AppImage**: AppImage bundles all dependencies in a single, self-contained file that works across different Linux distributions without installation, making it ideal for portable applications, (such as neovim, which requires extra runtime files.)
+
+#### Example: libc selection
+
+When requesting Linux amd64 and both of these assets are available:
+
+- `ripgrep-13.0.0-x86_64-unknown-linux-gnu.tar.gz` (uses glibc)
+- `ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz` (uses musl)
+
+With `libc="musl"`, dotbins selects the musl version.
+With `libc="glibc"`, dotbins selects the gnu version.
+
+#### Example: AppImage preference
+
+When both formats are available:
+
+- `nvim-linux-x86_64.appimage`
+- `nvim-linux-x86_64.tar.gz`
+
+With `prefer_appimage=true`, dotbins selects the AppImage version.
 
 ### Pattern Variables
 
