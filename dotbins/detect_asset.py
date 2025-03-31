@@ -6,7 +6,7 @@ import os.path
 import re
 import sys
 from re import Pattern
-from typing import Callable, NamedTuple, Optional
+from typing import Callable, Literal, NamedTuple, Optional
 
 from .utils import SUPPORTED_ARCHIVE_EXTENSIONS
 
@@ -144,7 +144,11 @@ def detect_single_asset(asset: str, anti: bool = False) -> DetectFunc:
     return detector
 
 
-def _prioritize_assets(assets: Assets, os_name: str) -> Assets:
+def _prioritize_assets(
+    assets: Assets,
+    os_name: str,
+    preference: Literal["musl", "glibc"] = "musl",
+) -> Assets:
     """Prioritize assets based on predefined rules.
 
     Priority order:
@@ -166,9 +170,6 @@ def _prioritize_assets(assets: Assets, os_name: str) -> Assets:
     # Known package formats to deprioritize (lowest priority)
     package_exts = {".deb", ".rpm", ".apk", ".pkg"}
 
-    # Known archive formats to prioritize (high priority)
-    archive_exts = SUPPORTED_ARCHIVE_EXTENSIONS
-
     # These extensions should be ignored when considering if a file is an archive
     ignored_exts = {".sig", ".sha256", ".sha256sum", ".sbom", ".pem"}
 
@@ -187,15 +188,14 @@ def _prioritize_assets(assets: Assets, os_name: str) -> Assets:
 
         # Check if it has no extension
         if "." not in basename or basename.rindex(".") == 0:
-            if basename.endswith(
-                "-update",
-            ):  # from cargo-dist, e.g., atuin-x86_64-unknown-linux-gnu-update
+            if basename.endswith("-update"):
+                # from cargo-dist, e.g., atuin-x86_64-unknown-linux-gnu-update
                 continue
             no_extension.append(asset)
             continue
 
         # Check if it's an archive format (high priority)
-        if any(lower_basename.endswith(ext) for ext in archive_exts):
+        if any(lower_basename.endswith(ext) for ext in SUPPORTED_ARCHIVE_EXTENSIONS):
             archives.append(asset)
             continue
 
@@ -207,35 +207,36 @@ def _prioritize_assets(assets: Assets, os_name: str) -> Assets:
         # Everything else goes here
         others.append(asset)
 
-    # For Linux, prioritize gnu over musl within each category
+    # Return assets in priority order
+    return (
+        _sorted(appimages, os_name, preference)
+        + _sorted(no_extension, os_name, preference)
+        + _sorted(archives, os_name, preference)
+        + _sorted(others, os_name, preference)
+        + _sorted(package_formats, os_name, preference)
+    )
+
+
+def _sorted(assets: Assets, os_name: str, preference: Literal["musl", "glibc"] = "musl") -> Assets:
     # TODO: Improve the gnu/musl decision logic with more sophisticated criteria  # noqa: FIX002, TD002, TD003
     if os_name == "linux":
+        return _musl_or_gnu(assets, preference)
+    return sorted(assets)
 
-        def prioritize_by_gnu(assets_list: Assets) -> Assets:
-            gnu = [a for a in assets_list if "gnu" in os.path.basename(a).lower()]
-            musl = [a for a in assets_list if "musl" in os.path.basename(a).lower()]
-            others = [
-                a
-                for a in assets_list
-                if "gnu" not in os.path.basename(a).lower()
-                and "musl" not in os.path.basename(a).lower()
-            ]
-            return sorted(gnu) + sorted(others) + sorted(musl)
 
-        appimages = prioritize_by_gnu(appimages)
-        no_extension = prioritize_by_gnu(no_extension)
-        archives = prioritize_by_gnu(archives)
-        others = prioritize_by_gnu(others)
-        package_formats = prioritize_by_gnu(package_formats)
+def _musl_or_gnu(assets_list: Assets, preference: Literal["musl", "glibc"] = "musl") -> Assets:
+    gnu = sorted([a for a in assets_list if _is_gnu(a)])
+    musl = sorted([a for a in assets_list if _is_musl(a)])
+    others = sorted([a for a in assets_list if not _is_gnu(a) and not _is_musl(a)])
+    return musl + others + gnu if preference == "musl" else gnu + others + musl
 
-    # Return assets in priority order - package formats have lowest priority
-    return (
-        sorted(appimages)
-        + sorted(no_extension)
-        + sorted(archives)
-        + sorted(others)
-        + sorted(package_formats)
-    )
+
+def _is_musl(asset: str) -> bool:
+    return "musl" in os.path.basename(asset).lower()
+
+
+def _is_gnu(asset: str) -> bool:
+    return "gnu" in os.path.basename(asset).lower()
 
 
 def _detect_system(os_obj: _OS, arch: _Arch) -> DetectFunc:
