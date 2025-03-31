@@ -147,16 +147,18 @@ def detect_single_asset(asset: str, anti: bool = False) -> DetectFunc:
 def _prioritize_assets(
     assets: Assets,
     os_name: str,
-    preference: Literal["musl", "glibc"] = "musl",
+    libc_preference: Literal["musl", "glibc"],
+    prefer_appimage: bool,
 ) -> Assets:
     """Prioritize assets based on predefined rules.
 
     Priority order:
-    1. For Linux: .appimage files
+    1. For Linux: .appimage files (if prefer_appimage is True)
     2. Files with no extension
     3. Archive files (.tar.gz, .tgz, .zip, etc.)
-    4. Others
-    5. Package formats (.deb, .rpm, .apk, etc.) - lowest priority
+    4. For Linux: .AppImage files (if prefer_appimage is False)
+    5. Others
+    6. Package formats (.deb, .rpm, .apk, etc.) - lowest priority
     """
     if not assets:
         return []
@@ -208,27 +210,33 @@ def _prioritize_assets(
         others.append(asset)
 
     # Return assets in priority order
+    appimages = _sorted(appimages, os_name, libc_preference)
+    no_extension = _sorted(no_extension, os_name, libc_preference)
+    archives = _sorted(archives, os_name, libc_preference)
+    others = _sorted(others, os_name, libc_preference)
+    package_formats = _sorted(package_formats, os_name, libc_preference)
     return (
-        _sorted(appimages, os_name, preference)
-        + _sorted(no_extension, os_name, preference)
-        + _sorted(archives, os_name, preference)
-        + _sorted(others, os_name, preference)
-        + _sorted(package_formats, os_name, preference)
+        appimages + no_extension + archives + others + package_formats
+        if prefer_appimage
+        else no_extension + archives + appimages + others + package_formats
     )
 
 
-def _sorted(assets: Assets, os_name: str, preference: Literal["musl", "glibc"] = "musl") -> Assets:
-    # TODO: Improve the gnu/musl decision logic with more sophisticated criteria  # noqa: FIX002, TD002, TD003
+def _sorted(
+    assets: Assets,
+    os_name: str,
+    libc_preference: Literal["musl", "glibc"],
+) -> Assets:
     if os_name == "linux":
-        return _musl_or_gnu(assets, preference)
+        return _musl_or_gnu(assets, libc_preference)
     return sorted(assets)
 
 
-def _musl_or_gnu(assets_list: Assets, preference: Literal["musl", "glibc"] = "musl") -> Assets:
+def _musl_or_gnu(assets_list: Assets, libc_preference: Literal["musl", "glibc"]) -> Assets:
     gnu = sorted([a for a in assets_list if _is_gnu(a)])
     musl = sorted([a for a in assets_list if _is_musl(a)])
     others = sorted([a for a in assets_list if not _is_gnu(a) and not _is_musl(a)])
-    return musl + others + gnu if preference == "musl" else gnu + others + musl
+    return musl + gnu + others if libc_preference == "musl" else gnu + musl + others
 
 
 def _is_musl(asset: str) -> bool:
@@ -239,7 +247,12 @@ def _is_gnu(asset: str) -> bool:
     return "gnu" in os.path.basename(asset).lower()
 
 
-def _detect_system(os_obj: _OS, arch: _Arch) -> DetectFunc:
+def _detect_system(
+    os_obj: _OS,
+    arch: _Arch,
+    libc_preference: Literal["musl", "glibc"],
+    prefer_appimage: bool,
+) -> DetectFunc:
     """Returns a function that detects based on OS and architecture."""
 
     def detector(assets: Assets) -> DetectResult:
@@ -259,9 +272,14 @@ def _detect_system(os_obj: _OS, arch: _Arch) -> DetectFunc:
             all_assets.append(a)
 
         # Apply prioritization (in case multiple matches are found)
-        os_matches = _prioritize_assets(os_matches, os_obj.name)
-        full_matches = _prioritize_assets(full_matches, os_obj.name)
-        all_assets = _prioritize_assets(all_assets, os_obj.name)
+        os_matches = _prioritize_assets(os_matches, os_obj.name, libc_preference, prefer_appimage)
+        full_matches = _prioritize_assets(
+            full_matches,
+            os_obj.name,
+            libc_preference,
+            prefer_appimage,
+        )
+        all_assets = _prioritize_assets(all_assets, os_obj.name, libc_preference, prefer_appimage)
 
         if len(full_matches) == 1:
             return full_matches[0], None, None
@@ -283,6 +301,8 @@ def _detect_system(os_obj: _OS, arch: _Arch) -> DetectFunc:
 def create_system_detector(
     os_name: str,
     arch_name: str,
+    libc_preference: Literal["musl", "glibc"] = "musl",
+    prefer_appimage: bool = True,
 ) -> DetectFunc:
     """Create a OS detector function for a given OS and architecture."""
     if os_name not in os_mapping:
@@ -291,4 +311,9 @@ def create_system_detector(
     if arch_name not in arch_mapping:
         msg = f"unsupported target arch: {arch_name}"
         raise ValueError(msg)
-    return _detect_system(os_mapping[os_name], arch_mapping[arch_name])
+    return _detect_system(
+        os_mapping[os_name],
+        arch_mapping[arch_name],
+        libc_preference,
+        prefer_appimage,
+    )

@@ -40,6 +40,7 @@ See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com
     - [Basic Configuration](#basic-configuration)
     - [Tool Configuration](#tool-configuration)
     - [Platform and Architecture Mapping](#platform-and-architecture-mapping)
+    - [Asset auto-detection defaults](#asset-auto-detection-defaults)
     - [Pattern Variables](#pattern-variables)
     - [Multiple Binaries](#multiple-binaries)
     - [Configuration Examples](#configuration-examples)
@@ -311,6 +312,25 @@ tool-name:
     amd64: x86_64                  # Converts "amd64" to "x86_64" in patterns
     arm64: aarch64                 # Converts "arm64" to "aarch64" in patterns
 ```
+
+### Asset auto-detection defaults
+
+You can specify defaults for handling multiple assets that work on your architecture.
+
+```yaml
+# Global defaults for all tools
+defaults:
+  prefer_appimage: true   # Set to true to prefer AppImage when available
+  libc: musl              # Use 'glibc' or 'musl'
+```
+
+These are the actual defaults too.
+
+**Why musl and AppImage?**
+
+- **musl libc**: Statically linked musl binaries offer maximum portability across all Linux distributions regardless of the system's native C library. They eliminate glibc version conflicts (the notorious `GLIBC_X.YZ not found` errors), work on **both** glibc and musl-based distributions (like Alpine Linux), and generally provide a more reliable user experience.
+
+- **AppImage**: AppImage bundles all dependencies in a single, self-contained file that works across different Linux distributions without installation, making it ideal for portable applications, (such as neovim, which requires extra runtime files.)
 
 ### Pattern Variables
 

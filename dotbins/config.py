@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass, field
 from functools import cached_property, partial
 from pathlib import Path
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 import requests
 import yaml
@@ -36,6 +36,13 @@ else:  # pragma: no cover
     from typing_extensions import Required
 
 DEFAULT_TOOLS_DIR = "~/.dotbins"
+DEFAULT_PREFER_APPIMAGE = True
+DEFAULT_LIBC: Literal["musl"] = "musl"
+
+DEFAULTS: DefaultsDict = {
+    "prefer_appimage": DEFAULT_PREFER_APPIMAGE,
+    "libc": DEFAULT_LIBC,
+}
 
 
 def _default_platforms() -> dict[str, list[str]]:
@@ -59,6 +66,7 @@ class Config:
     tools_dir: Path = field(default=Path(os.path.expanduser(DEFAULT_TOOLS_DIR)))
     platforms: dict[str, list[str]] = field(default_factory=_default_platforms)
     tools: dict[str, ToolConfig] = field(default_factory=dict)
+    defaults: DefaultsDict = field(default_factory=lambda: DEFAULTS.copy())
     config_path: Path | None = field(default=None, init=False)
     _bin_dir: Path | None = field(default=None, init=False)
     _update_summary: UpdateSummary = field(default_factory=UpdateSummary, init=False)
@@ -303,6 +311,7 @@ class ToolConfig:
     platform_map: dict[str, str] = field(default_factory=dict)
     arch_map: dict[str, str] = field(default_factory=dict)
     shell_code: str | dict[str, str] | None = None
+    defaults: DefaultsDict = field(default_factory=lambda: DEFAULTS.copy())
     _latest_release: dict | None = field(default=None, init=False)
 
     def bin_spec(self, arch: str, platform: str) -> BinSpec:
@@ -352,7 +361,7 @@ class BinSpec:
         assert self.tool_config._latest_release is not None
         assets = self.tool_config._latest_release["assets"]
         if asset_pattern is None:
-            return _auto_detect_asset(self.platform, self.arch, assets)
+            return _auto_detect_asset(self.platform, self.arch, assets, self.tool_config.defaults)
         return _find_matching_asset(asset_pattern, assets)
 
     def skip_download(self, config: Config, force: bool) -> bool:
@@ -386,6 +395,13 @@ class RawConfigDict(TypedDict, total=False):
     tools: dict[str, str | RawToolConfigDict]
 
 
+class DefaultsDict(TypedDict, total=False):
+    """TypedDict for defaults."""
+
+    prefer_appimage: bool
+    libc: Literal["glibc", "musl"]
+
+
 class RawToolConfigDict(TypedDict, total=False):
     """TypedDict for raw data passed to build_tool_config."""
 
@@ -410,6 +426,7 @@ def build_tool_config(
     tool_name: str,
     raw_data: RawToolConfigDict,
     platforms: dict[str, list[str]] | None = None,
+    defaults: DefaultsDict | None = None,
 ) -> ToolConfig:
     """Create a ToolConfig object from raw YAML data.
 
@@ -418,6 +435,9 @@ def build_tool_config(
     """
     if not platforms:
         platforms = _default_platforms()
+
+    if not defaults:
+        defaults = DEFAULTS.copy()
 
     # Safely grab data from raw_data (or set default if missing).
     repo = raw_data.get("repo") or ""
@@ -447,6 +467,7 @@ def build_tool_config(
         platform_map=platform_map,
         arch_map=arch_map,
         shell_code=raw_data.get("shell_code"),
+        defaults=defaults,
     )
 
 
@@ -478,6 +499,10 @@ def _config_from_dict(data: RawConfigDict) -> Config:
     tools_dir = data.get("tools_dir", DEFAULT_TOOLS_DIR)
     platforms = data.get("platforms", _default_platforms())
     raw_tools = data.get("tools", {})
+    raw_defaults = data.get("defaults", {})
+
+    defaults: DefaultsDict = DEFAULTS.copy()
+    defaults.update(raw_defaults)  # type: ignore[typeddict-item]
 
     tools_dir_path = Path(os.path.expanduser(tools_dir))
 
@@ -485,9 +510,19 @@ def _config_from_dict(data: RawConfigDict) -> Config:
     for tool_name, tool_data in raw_tools.items():
         if isinstance(tool_data, str):
             tool_data = {"repo": tool_data}  # noqa: PLW2901
-        tool_configs[tool_name] = build_tool_config(tool_name, tool_data, platforms)
+        tool_configs[tool_name] = build_tool_config(
+            tool_name,
+            tool_data,
+            platforms,
+            defaults,
+        )
 
-    config = Config(tools_dir=tools_dir_path, platforms=platforms, tools=tool_configs)
+    config = Config(
+        tools_dir=tools_dir_path,
+        platforms=platforms,
+        tools=tool_configs,
+        defaults=defaults,
+    )
     config.validate()
     return config
 
@@ -647,10 +682,16 @@ def _auto_detect_asset(
     platform: str,
     arch: str,
     assets: list[_AssetDict],
+    defaults: DefaultsDict,
 ) -> _AssetDict | None:
     """Auto-detect an asset for the tool."""
     log(f"Auto-detecting asset for [b]{platform}/{arch}[/]", "info")
-    detect_fn = create_system_detector(platform, arch)
+    detect_fn = create_system_detector(
+        platform,
+        arch,
+        defaults["libc"],
+        defaults["prefer_appimage"],
+    )
     asset_names = [x["name"] for x in assets]
     asset_name, candidates, err = detect_fn(asset_names)
     if err is not None:
