@@ -29,39 +29,48 @@ See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-  - [:zap: Quick Start](#zap-quick-start)
-  - [:star2: Features](#star2-features)
-  - [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
-  - [:books: Usage](#books-usage)
-    - [Commands](#commands)
-    - [Quick Install with `dotbins get`](#quick-install-with-dotbins-get)
-  - [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
-  - [:gear: Configuration](#gear-configuration)
-    - [Basic Configuration](#basic-configuration)
-    - [Tool Configuration](#tool-configuration)
-    - [Platform and Architecture Mapping](#platform-and-architecture-mapping)
-    - [Asset auto-detection defaults](#asset-auto-detection-defaults)
-      - [Example: libc selection](#example-libc-selection)
-      - [Example: AppImage preference](#example-appimage-preference)
-    - [Pattern Variables](#pattern-variables)
-    - [Multiple Binaries](#multiple-binaries)
-    - [Configuration Examples](#configuration-examples)
-      - [Minimal Tool Configuration](#minimal-tool-configuration)
-      - [Standard Tool](#standard-tool)
-      - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
-      - [Platform-Specific Tool](#platform-specific-tool)
-      - [Shell-Specific Configuration](#shell-specific-configuration)
-    - [Full Configuration Example](#full-configuration-example)
-  - [:bulb: Examples](#bulb-examples)
-  - [:computer: Shell Integration](#computer-shell-integration)
-  - [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
+- [:zap: Quick Start](#zap-quick-start)
+- [:star2: Features](#star2-features)
+- [:bulb: Why I Created dotbins](#bulb-why-i-created-dotbins)
+- [:books: Usage](#books-usage)
+  - [Commands](#commands)
+  - [Update Process with `dotbins sync`](#update-process-with-dotbins-sync)
+  - [Quick Install with `dotbins get`](#quick-install-with-dotbins-get)
+- [:hammer_and_wrench: Installation](#hammer_and_wrench-installation)
+- [:gear: Configuration](#gear-configuration)
+  - [Basic Configuration](#basic-configuration)
+  - [Directory Structure](#directory-structure)
+  - [Tool Configuration](#tool-configuration)
+  - [Pattern Variables](#pattern-variables)
+  - [Platform and Architecture Mapping](#platform-and-architecture-mapping)
+  - [Asset auto-detection defaults](#asset-auto-detection-defaults)
+    - [Example: libc selection](#example-libc-selection)
+    - [Example: AppImage preference](#example-appimage-preference)
+  - [Multiple Binaries](#multiple-binaries)
+  - [Configuration Examples](#configuration-examples)
+    - [Minimal Tool Configuration](#minimal-tool-configuration)
+    - [Standard Tool](#standard-tool)
+    - [Tool with Multiple Binaries](#tool-with-multiple-binaries)
+    - [Platform-Specific Tool](#platform-specific-tool)
+    - [Shell-Specific Configuration](#shell-specific-configuration)
+  - [Full Configuration Example](#full-configuration-example)
+- [:bulb: Examples](#bulb-examples)
+- [:computer: Shell Integration](#computer-shell-integration)
+  - [What's in the Shell Scripts?](#whats-in-the-shell-scripts)
+  - [Shell Startup Integration](#shell-startup-integration)
+- [:books: Examples with 50+ Tools](#books-examples-with-50-tools)
+- [:wrench: Troubleshooting](#wrench-troubleshooting)
+  - [Common Issues](#common-issues)
+    - [GitHub API Rate Limits](#github-api-rate-limits)
+    - [Windows-Specific Issues](#windows-specific-issues)
+  - [Getting Help](#getting-help)
 - [:thinking: Comparison with Alternatives](#thinking-comparison-with-alternatives)
   - [Key Alternatives](#key-alternatives)
     - [Version Managers (e.g., `binenv`, `asdf`)](#version-managers-eg-binenv-asdf)
     - [Binary Downloaders (e.g., `eget`)](#binary-downloaders-eg-eget)
     - [System Package Managers (`apt`, `brew`, etc.)](#system-package-managers-apt-brew-etc)
   - [The `dotbins` Difference](#the-dotbins-difference)
-  - [:heart: Support and Contributions](#heart-support-and-contributions)
+- [:heart: Support and Contributions](#heart-support-and-contributions)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -112,6 +121,8 @@ It allows me to:
 Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity, **ready to use with their specific aliases and shell initializations automatically configured**.
 
 **_No package manager, no sudo, no problem!_**
+
+---
 
 ## :books: Usage
 
@@ -177,6 +188,54 @@ Options:
 5. **version** - Print version information
 6. **status** - Show detailed information about available and installed tool versions
 
+### Update Process with `dotbins sync`
+
+The `sync` command is the core of dotbins, keeping your tools up-to-date across platforms.
+Here's what happens during `dotbins sync`:
+
+1. **Version Detection**:
+
+   - Checks each tool's current version in `versions.json`
+   - Queries GitHub API for the latest release of each tool
+
+2. **Smart Updates**:
+
+   - Only downloads tools with newer versions available
+   - Skips up-to-date tools (unless `--force` is used)
+   - Reports which tools were updated, skipped, or failed
+
+3. **Multi-Platform Management**:
+
+   - Processes each platform/architecture combination configured
+   - Can be filtered to specific platforms: `dotbins sync -p linux`
+   - Can be limited to current system only: `dotbins sync -c`
+
+4. **File Generation**:
+   - Updates `versions.json` with new version information
+   - Regenerates shell integration scripts with PATH and tool configurations
+   - Creates a README in the tools directory with installation status
+
+Example update workflow:
+
+```bash
+# Update all tools for all configured platforms
+dotbins sync
+
+# Update only specific tools
+dotbins sync fzf bat
+
+# Update tools only for current platform
+dotbins sync --current
+
+# Force reinstall everything, even if up to date
+dotbins sync --force
+
+# See what would be updated without making changes
+dotbins status
+```
+
+After updating, a summary is displayed showing what was installed, skipped, or had errors.
+
 ### Quick Install with `dotbins get`
 
 The `get` command allows you to quickly download and install tools directly from GitHub or from a remote configuration file:
@@ -205,9 +264,11 @@ This is perfect for:
 The `get` command automatically detects whether you're providing a GitHub repository or a configuration URL/path.
 When using a URL/path, it will download all tools defined in the configuration for your current platform and architecture.
 
+---
+
 ## :hammer_and_wrench: Installation
 
-We highly recommend to use [`uv`](https://docs.astral.sh/uv/) to run `dotbins`:
+We highly recommend to use [`uv`](https://docs.astral.sh/uv/) to install/run `dotbins`:
 
 ```bash
 uvx dotbins
@@ -226,6 +287,8 @@ pip install dotbins
 ```
 
 You'll also need to create or update your `dotbins.yaml` configuration file either in the same directory as the script or at a custom location specified with `--tools-dir`.
+
+---
 
 ## :gear: Configuration
 
@@ -259,6 +322,39 @@ tools:
   # Tool configuration entries
 ```
 
+### Directory Structure
+
+When you run `dotbins sync`, it creates a directory structure that organizes binaries by platform and architecture, and generates shell integration scripts.
+
+Here's what gets created:
+
+```bash
+~/.dotbins/                # Root tools directory (configurable)
+├── README.md              # Auto-generated documentation
+├── dotbins.yaml           # Your configuration file (if copied)
+├── linux/                 # Platform-specific directories
+│   ├── amd64/bin/         # Architecture-specific binaries
+│   │   ├── bat
+│   │   ├── fzf
+│   │   └── ...
+│   └── arm64/bin/
+│       ├── bat
+│       ├── fzf
+│       └── ...
+├── macos/
+│   └── arm64/bin/
+│       ├── bat
+│       ├── fzf
+│       └── ...
+├── shell/                 # Shell integration scripts
+│   ├── bash.sh
+│   ├── fish.fish
+│   ├── nushell.nu
+│   ├── powershell.ps1
+│   └── zsh.sh
+└── versions.json          # Version tracking information
+```
+
 ### Tool Configuration
 
 Each tool must be configured with at least a GitHub repository.
@@ -274,6 +370,10 @@ tools:
 ```
 
 dotbins will auto-detect the latest release, choose the appropriate asset for your platform, and install binaries to the specified `tools_dir` (defaults to `~/.dotbins`).
+
+> [!NOTE]
+> dotbins excels at auto-detecting the correct assets and binary paths for many tools.
+> Always try the minimal configuration first!
 
 When auto-detection isn't possible or you want more control, you can provide detailed configuration:
 
@@ -300,6 +400,57 @@ tool-name:
       amd64: pattern-for-macos-amd64.tar.gz
       arm64: pattern-for-macos-arm64.tar.gz
 ```
+
+Asset patterns support variables like `{version}`, `{platform}`, and `{arch}` that are automatically replaced with the appropriate values (see Pattern Variables section for details).
+
+### Pattern Variables
+
+In asset patterns, you can use special variables that get replaced with actual values when dotbins searches for the correct asset to download:
+
+- `{version}` - Release version (without 'v' prefix)
+- `{platform}` - Platform name (after applying platform_map)
+- `{arch}` - Architecture name (after applying arch_map)
+
+For example, if a tool release has version `v2.4.0` and you're on `linux/amd64`:
+
+```yaml
+mytool:
+  repo: owner/mytool
+  asset_patterns: mytool-{version}-{platform}_{arch}.tar.gz
+```
+
+This would search for an asset named: `mytool-2.4.0-linux_amd64.tar.gz`
+
+With platform and architecture mapping:
+
+```yaml
+mytool:
+  repo: owner/mytool
+  platform_map:
+    macos: darwin # Convert "macos" to "darwin" in patterns
+  arch_map:
+    amd64: x86_64 # Convert "amd64" to "x86_64" in patterns
+  asset_patterns: mytool-{version}-{platform}_{arch}.tar.gz
+```
+
+For macOS/amd64, this would search for: `mytool-2.4.0-darwin_x86_64.tar.gz`
+
+**Real-world example:**
+
+```yaml
+ripgrep:
+  repo: BurntSushi/ripgrep
+  binary_name: rg
+  arch_map:
+    amd64: x86_64
+    arm64: aarch64
+  asset_patterns:
+    linux: ripgrep-{version}-{arch}-unknown-linux-musl.tar.gz
+    macos: ripgrep-{version}-{arch}-apple-darwin.tar.gz
+```
+
+For Linux/amd64, this would search for: `ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz`
+For macOS/arm64, this would search for: `ripgrep-14.1.1-aarch64-apple-darwin.tar.gz`
 
 ### Platform and Architecture Mapping
 
@@ -352,14 +503,6 @@ When both formats are available:
 - `nvim-linux-x86_64.tar.gz`
 
 With `prefer_appimage=true`, dotbins selects the AppImage version.
-
-### Pattern Variables
-
-In asset patterns, you can use these variables:
-
-- `{version}` - Release version (without 'v' prefix)
-- `{platform}` - Platform name (after applying platform_map)
-- `{arch}` - Architecture name (after applying arch_map)
 
 ### Multiple Binaries
 
@@ -461,7 +604,9 @@ starship:
 
 ### Full Configuration Example
 
-This is the author's configuration file:
+This is the author's configuration file (and resulting [`basnijholt/.dotbins`](https://github.com/basnijholt/.dotbins) repo):
+
+<details><summary>Click to view author's full dotbins.yaml</summary>
 
 <!-- CODE:BASH:START -->
 <!-- echo '```yaml' -->
@@ -539,6 +684,10 @@ tools:
 
 <!-- OUTPUT:END -->
 
+</details>
+
+---
+
 ## :bulb: Examples
 
 List all available tools in your configuration:
@@ -565,7 +714,7 @@ Install or update tools for a specific platform/architecture:
 dotbins sync -p macos -a arm64
 ```
 
-Install tools only for your current system:
+Install or update tools only for the current system's platform and architecture, skipping others defined in the config:
 
 ```bash
 dotbins sync -c
@@ -608,37 +757,82 @@ dotbins status --platform macos
 dotbins status --architecture arm64
 ```
 
+---
+
 ## :computer: Shell Integration
 
-dotbins creates shell scripts that you can source to automatically add the correct binaries to your `PATH`.
+dotbins creates shell scripts that add binaries to your `PATH` and apply your custom tool configurations.
 
-After running `dotbins sync` or `dotbins init`, shell integration scripts are created in `~/.dotbins/shell/` for various shells.
+After running `dotbins sync` or `dotbins init`, shell integration scripts are created in `~/.dotbins/shell/` for various shells (Bash, Zsh, Fish, Nushell, and PowerShell)
 
-Check the output of `dotbins init` to see which shell scripts were created and how to add them to your shell configuration file:
+### What's in the Shell Scripts?
 
-<!-- CODE:BASH:START -->
-<!-- echo '```bash' -->
-<!-- dotbins init -->
-<!-- echo '```' -->
-<!-- CODE:END -->
+The generated shell scripts do two main things:
 
-<!-- OUTPUT:START -->
-<!-- ⚠️ This content is auto-generated by `markdown-code-runner`. -->
-```bash
-✅ Loading configuration from: ~/work/dotbins/dotbins/dotbins.yaml
-🛠️ dotbins initialized tools directory structure in `tools_dir=~/.dotbins`
-📝 Generated shell scripts in ~/.dotbins/shell/
-🔍 Add this to your shell config:
-👉   Bash:       source $HOME/.dotbins/shell/bash.sh
-👉   Zsh:        source $HOME/.dotbins/shell/zsh.sh
-👉   Fish:       source $HOME/.dotbins/shell/fish.fish
-👉   Nushell:    source $HOME/.dotbins/shell/nushell.nu
-👉   PowerShell: . $HOME/.dotbins/shell/powershell.ps1
-ℹ️ To see the shell setup instructions, run `dotbins init`
-📝 Generated README at ~/.dotbins/README.md
+1. **Add binaries to PATH** - Makes tool binaries available for your platform/architecture
+2. **Apply your tool-specific shell_code** - Sets up aliases, completions, and initializations
+
+For example, with this configuration:
+
+```yaml
+fzf:
+  repo: junegunn/fzf
+  shell_code: |
+    source <(fzf --zsh)
+
+bat:
+  repo: sharkdp/bat
+  shell_code: |
+    alias bat="bat --paging=never"
+    alias cat="bat --plain --paging=never"
 ```
 
-<!-- OUTPUT:END -->
+The generated `zsh.sh` will include:
+
+```bash
+#!/usr/bin/env zsh
+# dotbins - Add platform-specific binaries to PATH
+_os=$(uname -s | tr '[:upper:]' '[:lower:]')
+[[ "$_os" == "darwin" ]] && _os="macos"
+
+_arch=$(uname -m)
+[[ "$_arch" == "x86_64" ]] && _arch="amd64"
+[[ "$_arch" == "aarch64" || "$_arch" == "arm64" ]] && _arch="arm64"
+
+export PATH="$HOME/.dotbins/$_os/$_arch/bin:$PATH"
+
+# Tool-specific configurations
+# Configuration for fzf
+if command -v fzf >/dev/null 2>&1; then
+    source <(fzf --zsh)
+fi
+
+# Configuration for bat
+if command -v bat >/dev/null 2>&1; then
+    alias bat="bat --paging=never"
+    alias cat="bat --plain --paging=never"
+fi
+```
+
+### Shell Startup Integration
+
+Add this line to your shell's startup file to integrate dotbins:
+
+```bash
+# For Zsh (~/.zshrc)
+source "$HOME/.dotbins/shell/zsh.sh"
+
+# For Bash (~/.bashrc)
+source "$HOME/.dotbins/shell/bash.sh"
+
+# For Fish (~/.config/fish/config.fish)
+source "$HOME/.dotbins/shell/fish.fish"
+
+# For Nushell
+source $env.HOME/.dotbins/shell/nushell.nu
+```
+
+---
 
 ## :books: Examples with 50+ Tools
 
@@ -727,7 +921,39 @@ platforms:
 
 <!-- OUTPUT:END -->
 
-# :thinking: Comparison with Alternatives
+---
+
+## :wrench: Troubleshooting
+
+### Common Issues
+
+#### GitHub API Rate Limits
+
+**Issue**: `Failed to fetch latest release: rate limit exceeded`
+**Solution**:
+
+- Create a GitHub token with `public_repo` scope
+- Use the token with: `dotbins sync --github-token YOUR_TOKEN`
+- Or set the environment variable: `GITHUB_TOKEN=YOUR_TOKEN dotbins sync`
+- **Tip:** Use `GITHUB_TOKEN=$(gh auth token) dotbins sync` to use your existing GitHub CLI token
+
+#### Windows-Specific Issues
+
+**Issue**: PowerShell execution policy preventing script execution
+**Solution**:
+
+- Run PowerShell as administrator
+- Execute: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+### Getting Help
+
+- Enable verbose logging with `-v` flag: `dotbins sync -v`
+- Check all installed tool versions with: `dotbins status`
+- Join GitHub Discussions for help: https://github.com/basnijholt/dotbins/discussions
+
+---
+
+## :thinking: Comparison with Alternatives
 
 `dotbins` fills a specific niche in the binary management ecosystem. Here's how it compares to key alternatives:
 
@@ -739,9 +965,11 @@ platforms:
 | **asdf/aqua** | Multiple plugins & versions        | Plugin-specific               | Not focused on                 | Development environments   |
 | **apt/brew**  | System packages                    | None                          | Not possible                   | System-wide management     |
 
-## Key Alternatives
+---
 
-### Version Managers (e.g., `binenv`, `asdf`)
+### Key Alternatives
+
+#### Version Managers (e.g., `binenv`, `asdf`)
 
 - **Pros:** Advanced version management (constraints like `>=1.2.3`), multiple versions side-by-side
 - **Cons vs. `dotbins`:**
@@ -750,7 +978,7 @@ platforms:
   - Often use shims or more complex architecture
 - **When to choose:** For development environments where you need multiple versions of tools
 
-### Binary Downloaders (e.g., `eget`)
+#### Binary Downloaders (e.g., `eget`)
 
 - **Pros:** Lightweight, fast for one-off downloads
 - **Cons vs. `dotbins`:**
@@ -759,7 +987,7 @@ platforms:
   - No version tracking between sessions
 - **When to choose:** For quick installation of individual tools without configuration needs
 
-### System Package Managers (`apt`, `brew`, etc.)
+#### System Package Managers (`apt`, `brew`, etc.)
 
 - **Pros:** System-wide installation, dependency management
 - **Cons vs. `dotbins`:**
@@ -768,7 +996,7 @@ platforms:
   - Cannot be version-controlled in dotfiles
 - **When to choose:** For system-wide software needed by multiple users
 
-## The `dotbins` Difference
+### The `dotbins` Difference
 
 `dotbins` uniquely combines:
 
@@ -784,6 +1012,8 @@ platforms:
 4. **Cross-platform portability** - Works the same across Linux, macOS, Windows
 
 This makes it perfect for users who want to manage their complete shell environment in a version-controlled dotfiles repository that can be easily deployed on any system.
+
+---
 
 ## :heart: Support and Contributions
 
