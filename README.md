@@ -72,13 +72,13 @@ See this example `.dotbins` repository: [basnijholt/.dotbins](https://github.com
 Using the amazing [`uv`](https://docs.astral.sh/uv/) package manager (`uv tool install dotbins`):
 
 ```bash
-# Install directly to ~/.local/bin (no configuration needed)
-dotbins get junegunn/fzf
-
-# Set up multiple tools with a config file (creates ~/.dotbins)
+# Install/update tools using a config file (to tools_dir, e.g., ~/.dotbins)
 dotbins sync
 
-# Bootstrap a collection of tools from a remote config
+# Install a single tool (defaults to ~/.local/bin) - No config needed!
+dotbins get junegunn/fzf
+
+# Install tools from a remote config (defaults to ~/.local/bin)
 dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
 ```
 
