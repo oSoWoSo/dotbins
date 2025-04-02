@@ -776,9 +776,6 @@ tools:
     repo: astral-sh/uv
     binary_name: [uv, uvx]
     path_in_archive: [uv-*/uv, uv-*/uvx]
-    shell_code:
-      zsh: |
-        eval "$(uv generate-shell-completion zsh)"
 ```
 
 <!-- OUTPUT:END -->
