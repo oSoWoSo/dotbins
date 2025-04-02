@@ -74,7 +74,7 @@ os_mapping: dict[str, _OS] = {
 
 # Define Arch constants
 ArchAMD64 = _Arch(name="amd64", regex=re.compile(r"(?i)(x64|amd64|x86(-|_)?64)"))
-ArchI386 = _Arch(name="386", regex=re.compile(r"(?i)(x32|amd32|x86(-|_)?32|i?386)"))
+ArchI386 = _Arch(name="386", regex=re.compile(r"(?i)(x32|amd32|x86(-|_)?32|i?[3-6]86)"))
 ArchArm = _Arch(name="arm", regex=re.compile(r"(?i)(arm32|armv6|arm\b)"))
 ArchArm64 = _Arch(name="arm64", regex=re.compile(r"(?i)(arm64|armv8|aarch64)"))
 ArchRiscv64 = _Arch(name="riscv64", regex=re.compile(r"(?i)(riscv64)"))
@@ -83,6 +83,7 @@ ArchRiscv64 = _Arch(name="riscv64", regex=re.compile(r"(?i)(riscv64)"))
 arch_mapping: dict[str, _Arch] = {
     "amd64": ArchAMD64,  # 64-bit (2000s-now)
     "386": ArchI386,  # 32-bit (1980s-2000s)
+    "i686": ArchI386,  # alias for 386
     "arm": ArchArm,  # 32-bit (1990s-2010s)
     "arm64": ArchArm64,  # 64-bit (2010s-now)
     "aarch64": ArchArm64,  # alias for arm64 (2010s-now)
@@ -234,21 +235,37 @@ def _sorted(
         return _musl_or_gnu(assets, libc_preference)
     if os_name == "windows":
         return _msvc_or_gnu(assets, windows_abi)
-    return sorted(assets)
+    return _sort_arch(assets)
 
 
 def _musl_or_gnu(assets_list: Assets, libc_preference: Literal["musl", "glibc"]) -> Assets:
-    gnu = sorted([a for a in assets_list if _is_gnu(a)])
-    musl = sorted([a for a in assets_list if _is_musl(a)])
-    others = sorted([a for a in assets_list if not _is_gnu(a) and not _is_musl(a)])
+    gnu = _sort_arch([a for a in assets_list if _is_gnu(a)])
+    musl = _sort_arch([a for a in assets_list if _is_musl(a)])
+    others = _sort_arch([a for a in assets_list if not _is_gnu(a) and not _is_musl(a)])
     return musl + gnu + others if libc_preference == "musl" else gnu + musl + others
 
 
 def _msvc_or_gnu(assets_list: Assets, windows_abi: Literal["msvc", "gnu"]) -> Assets:
-    msvc = sorted([a for a in assets_list if _is_msvc(a)])
-    gnu = sorted([a for a in assets_list if _is_gnu(a)])
-    others = sorted([a for a in assets_list if not _is_msvc(a) and not _is_gnu(a)])
+    msvc = _sort_arch([a for a in assets_list if _is_msvc(a)])
+    gnu = _sort_arch([a for a in assets_list if _is_gnu(a)])
+    others = _sort_arch([a for a in assets_list if not _is_msvc(a) and not _is_gnu(a)])
     return msvc + gnu + others if windows_abi == "msvc" else gnu + msvc + others
+
+
+def _sort_arch(assets_list: Assets) -> Assets:
+    def arch_priority(asset: str) -> tuple[int, str]:
+        # Prefer i686 (newer) over i386 (older)
+        if "i686" in asset.lower():
+            return 0, asset
+        if "i586" in asset.lower():
+            return 1, asset
+        if "i486" in asset.lower():
+            return 2, asset
+        if "i386" in asset.lower():
+            return 3, asset
+        return 100, asset  # Other architectures, don't change their order
+
+    return sorted(assets_list, key=arch_priority)
 
 
 def _is_msvc(asset: str) -> bool:
