@@ -745,7 +745,7 @@ tools:
     repo: eza-community/eza
     shell_code:
       zsh: |
-        alias l="eza -lah --git"
+        alias l="eza -lah --git --icons"
   fzf:
     repo: junegunn/fzf
     shell_code:
