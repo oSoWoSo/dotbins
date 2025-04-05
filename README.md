@@ -8,6 +8,8 @@
 [![Downloads](https://img.shields.io/pypi/dm/dotbins)](https://pypi.python.org/pypi/dotbins)
 ![Open Issues](https://img.shields.io/github/issues-raw/basnijholt/dotbins)
 
+<img src="https://github.com/user-attachments/assets/cf1b44aa-ca39-4967-a4c9-52258c9d9021" align="right" style="width: 350px;" />
+
 **dotbins** manages CLI tool binaries in your dotfiles repository, offering:
 
 - ✅ Cross-platform binary management (macOS, Linux, Windows)
