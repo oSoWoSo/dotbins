@@ -21,9 +21,9 @@ from .summary import UpdateSummary, display_update_summary
 from .utils import (
     current_platform,
     execute_in_parallel,
+    fetch_release_info,
     github_url_to_raw_url,
     humanize_time_ago,
-    latest_release_info,
     log,
     replace_home_in_path,
     write_shell_scripts,
@@ -306,6 +306,7 @@ class ToolConfig:
 
     tool_name: str
     repo: str
+    tag: str | None = None
     binary_name: list[str] = field(default_factory=list)
     path_in_archive: list[Path] = field(default_factory=list)
     extract_archive: bool | None = None
@@ -314,7 +315,7 @@ class ToolConfig:
     arch_map: dict[str, str] = field(default_factory=dict)
     shell_code: str | dict[str, str] | None = None
     defaults: DefaultsDict = field(default_factory=lambda: DEFAULTS.copy())
-    _latest_release: dict | None = field(default=None, init=False)
+    _release_info: dict | None = field(default=None, init=False)
 
     def bin_spec(self, arch: str, platform: str) -> BinSpec:
         """Get a BinSpec object for the tool."""
@@ -323,8 +324,8 @@ class ToolConfig:
     @property
     def latest_version(self) -> str:
         """Get the latest version for the tool."""
-        assert self._latest_release is not None
-        return self._latest_release["tag_name"].lstrip("v")
+        assert self._release_info is not None
+        return self._release_info["tag_name"].lstrip("v")
 
 
 @dataclass(frozen=True)
@@ -360,8 +361,8 @@ class BinSpec:
     def matching_asset(self) -> _AssetDict | None:
         """Find a matching asset for the tool."""
         asset_pattern = self.asset_pattern()
-        assert self.tool_config._latest_release is not None
-        assets = self.tool_config._latest_release["assets"]
+        assert self.tool_config._release_info is not None
+        assets = self.tool_config._release_info["assets"]
         if asset_pattern is None:
             return _auto_detect_asset(self.platform, self.arch, assets, self.tool_config.defaults)
         return _find_matching_asset(asset_pattern, assets)
@@ -451,6 +452,8 @@ def build_tool_config(
     raw_binary_name = raw_data.get("binary_name", tool_name)
     raw_path_in_archive = raw_data.get("path_in_archive", [])
 
+    tag: str | None = raw_data.get("tag")  # type: ignore[assignment]
+
     # Convert to lists
     binary_name: list[str] = _ensure_list(raw_binary_name)
     path_in_archive: list[Path] = [Path(p) for p in _ensure_list(raw_path_in_archive)]
@@ -463,6 +466,7 @@ def build_tool_config(
     return ToolConfig(
         tool_name=tool_name,
         repo=repo,
+        tag=tag,
         binary_name=binary_name,
         path_in_archive=path_in_archive,
         extract_archive=extract_archive,
@@ -733,11 +737,11 @@ def _fetch_release(
     verbose: bool,
     github_token: str | None = None,
 ) -> None:
-    if tool_config._latest_release is not None:
+    if tool_config._release_info is not None:
         return
     try:
-        latest_release = latest_release_info(tool_config.repo, github_token)
-        tool_config._latest_release = latest_release
+        release_info = fetch_release_info(tool_config.repo, tool_config.tag, github_token)
+        tool_config._release_info = release_info
     except Exception as e:
         msg = f"Failed to fetch latest release for {tool_config.repo}: {e}"
         update_summary.add_failed_tool(

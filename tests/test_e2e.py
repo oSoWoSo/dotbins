@@ -45,7 +45,7 @@ def _set_mock_release_info(
 ) -> None:
     """Set the mock release info for the given config."""
     for tool_name, tool_config in config.tools.items():
-        tool_config._latest_release = _create_mock_release_info(
+        tool_config._release_info = _create_mock_release_info(
             tool_name,
             version,
             config.platforms,
@@ -577,9 +577,10 @@ def test_get_tool_command(tmp_path: Path, create_dummy_archive: Callable) -> Non
     dest_dir.mkdir(parents=True, exist_ok=True)
     platform, arch = current_platform()
 
-    def mock_latest_release_info(
+    def mock_fetch_release_info(
         repo: str,  # noqa: ARG001
-        github_token: str | None,  # noqa: ARG001
+        version: str | None = None,  # noqa: ARG001
+        github_token: str | None = None,  # noqa: ARG001
     ) -> dict:
         return {
             "tag_name": "v1.0.0",
@@ -602,7 +603,7 @@ def test_get_tool_command(tmp_path: Path, create_dummy_archive: Callable) -> Non
 
     with (
         patch("dotbins.download.download_file", side_effect=mock_download_file),
-        patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
+        patch("dotbins.config.fetch_release_info", side_effect=mock_fetch_release_info),
     ):
         _get_tool(source="basnijholt/mytool", dest_dir=dest_dir)
 
@@ -653,9 +654,10 @@ def test_get_tool_command_with_remote_config(
         log(f"Mock HTTP GET for URL: {url}", "info")
         return MockResponse(yaml_content.encode("utf-8"))
 
-    def mock_latest_release_info(
+    def mock_fetch_release_info(
         repo: str,
-        github_token: str | None,  # noqa: ARG001
+        version: str | None = None,  # noqa: ARG001
+        github_token: str | None = None,  # noqa: ARG001
     ) -> dict:
         log(f"Getting release info for repo: {repo}", "info")
         tool_name = repo.split("/")[-1]
@@ -684,7 +686,7 @@ def test_get_tool_command_with_remote_config(
     with (
         patch("dotbins.utils.requests.get", side_effect=mock_requests_get),
         patch("dotbins.download.download_file", side_effect=mock_download_file),
-        patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
+        patch("dotbins.config.fetch_release_info", side_effect=mock_fetch_release_info),
     ):
         _get_tool(source="https://example.com/config.yaml", dest_dir=dest_dir)
 
@@ -721,9 +723,10 @@ def test_get_tool_command_with_local_config(
     cfg_path = tmp_path / "dotbins.yaml"
     cfg_path.write_text(yaml_content)
 
-    def mock_latest_release_info(
+    def mock_fetch_release_info(
         repo: str,
-        github_token: str | None,  # noqa: ARG001
+        version: str | None = None,  # noqa: ARG001
+        github_token: str | None = None,  # noqa: ARG001
     ) -> dict:
         log(f"Getting release info for repo: {repo}", "info")
         tool_name = repo.split("/")[-1]
@@ -751,7 +754,7 @@ def test_get_tool_command_with_local_config(
 
     with (
         patch("dotbins.download.download_file", side_effect=mock_download_file),
-        patch("dotbins.config.latest_release_info", side_effect=mock_latest_release_info),
+        patch("dotbins.config.fetch_release_info", side_effect=mock_fetch_release_info),
     ):
         _get_tool(source=str(cfg_path), dest_dir=dest_dir)
 
@@ -1006,7 +1009,7 @@ def test_error_preparing_download(
             },
         },
     )
-    config.tools["error-tool"]._latest_release = {"tag_name": "v1.0.0", "assets": []}
+    config.tools["error-tool"]._release_info = {"tag_name": "v1.0.0", "assets": []}
 
     # Create a BinSpec.matching_asset method that raises an exception
     def mock_matching_asset(self) -> NoReturn:  # noqa: ANN001, ARG001
@@ -1273,7 +1276,7 @@ def test_no_matching_asset(
             },
         },
     )
-    config.tools["mytool"]._latest_release = {"tag_name": "v1.0.0", "assets": []}
+    config.tools["mytool"]._release_info = {"tag_name": "v1.0.0", "assets": []}
 
     config.sync_tools()
 
@@ -1306,7 +1309,7 @@ def test_auto_detect_asset_multiple_perfect_matches(
     }
     config = Config.from_dict(raw_config)
 
-    config.tools["mytool"]._latest_release = {
+    config.tools["mytool"]._release_info = {
         "tag_name": "v1.2.3",
         "assets": [
             {
@@ -1355,7 +1358,7 @@ def test_auto_detect_asset_no_matches(
     }
     config = Config.from_dict(raw_config)
 
-    config.tools["mytool"]._latest_release = _create_mock_release_info(
+    config.tools["mytool"]._release_info = _create_mock_release_info(
         "mytool",
         "1.2.3",
         {"linux": ["amd64", "i386"]},  # Different arch
@@ -1511,7 +1514,7 @@ def test_sync_tool_match_path_in_archive_with_glob(
         },
     )
     tool_config = config.tools["test-tool"]
-    tool_config._latest_release = {
+    tool_config._release_info = {
         "tag_name": "v1.0.0",
         "assets": [
             {
@@ -1720,7 +1723,7 @@ def test_eza_arch_detection(
         },
     )
 
-    config.tools["eza"]._latest_release = {
+    config.tools["eza"]._release_info = {
         "tag_name": "0.12.1",
         "assets": [
             {
@@ -1745,3 +1748,68 @@ def test_eza_arch_detection(
 
     with patch("dotbins.download.download_file", side_effect=mock_download_file):
         config.sync_tools()
+
+
+def test_tool_with_custom_tag(
+    tmp_path: Path,
+    requests_mock: Mocker,
+    create_dummy_archive: Callable,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Test that a tool with a custom tag is synced correctly."""
+    config_path = tmp_path / "dotbins.yaml"
+    config_path.write_text(
+        textwrap.dedent(
+            f"""\
+            tools_dir: {tmp_path!s}
+            platforms:
+                linux: ["amd64"]
+            tools:
+                tool:
+                    repo: owner/tool
+                    tag: v1.0.0
+            """,
+        ),
+    )
+    config = Config.from_file(config_path)
+    requests_mock.get(
+        "https://api.github.com/repos/owner/tool/releases/tags/v1.0.0",
+        json={
+            "tag_name": "v1.0.0",
+            "assets": [
+                {
+                    "name": "tool-v1.0.0-linux-amd64.tar.gz",
+                    "browser_download_url": "https://example.com/tool-v1.0.0-linux-amd64.tar.gz",
+                },
+            ],
+        },
+    )
+
+    def mock_download_file(
+        url: str,  # noqa: ARG001
+        destination: str,
+        github_token: str | None,  # noqa: ARG001
+        verbose: bool,  # noqa: ARG001
+    ) -> str:
+        # Create a dummy binary file with executable content
+        create_dummy_archive(Path(destination), binary_names="tool")
+        return destination
+
+    with patch("dotbins.download.download_file", side_effect=mock_download_file):
+        # Run the update which should succeed for the single binary tool
+        config.sync_tools()
+
+    # Capture the output
+    out = capsys.readouterr().out
+
+    # Verify successful messages in the output
+    assert "Successfully installed tool" in out
+
+    # Verify that the binary file was created with the correct name
+    bin_dir = config.bin_dir("linux", "amd64")
+    binary_path = bin_dir / "tool"
+    assert binary_path.exists(), out
+    # Verify the version store was updated
+    tool_info = config.version_store.get_tool_info("tool", "linux", "amd64")
+    assert tool_info is not None
+    assert tool_info["version"] == "1.0.0"
