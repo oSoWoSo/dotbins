@@ -117,7 +117,7 @@ dotbins get https://github.com/basnijholt/.dotbins/blob/main/dotbins.yaml
 
 ## :bulb: Why I Created dotbins
 
-I frequently works across multiple environments where I clone my dotfiles repository with all my preferred configurations.
+I frequently works across multiple environments where I clone [my dotfiles repository](https://github.com/basnijholt/dotfiles) with all my preferred configurations.
 I faced a common frustration: some of my favorite tools (`fzf`, `bat`, `zoxide`, etc.) were not available on the new system and installing them with a package manager is too much work or even not possible.
 `dotbins` was born out of this frustration.
 
@@ -127,7 +127,7 @@ It allows me to:
 2. Include that repository as a submodule in my dotfiles
 3. Ensure all my essential tools are _immediately_ available after cloning, regardless of system permissions
 
-Now when I clone my dotfiles on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity, **ready to use with their specific aliases and shell initializations automatically configured**.
+Now when I clone [my dotfiles](https://github.com/basnijholt/dotfiles) on any new system, I get not just my configurations but also all the CLI tools I depend on for productivity, **ready to use with their specific aliases and shell initializations automatically configured**.
 
 **_No package manager, no sudo, no problem!_**
 
