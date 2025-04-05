@@ -741,11 +741,6 @@ tools:
   rg: BurntSushi/ripgrep
   yazi: sxyazi/yazi
 
-  atuin:
-    repo: atuinsh/atuin
-    shell_code:
-      bash,zsh: |
-        eval "$(atuin init __DOTBINS_SHELL__ --disable-up-arrow)"
   bat:
     repo: sharkdp/bat
     shell_code:
@@ -789,6 +784,11 @@ tools:
     shell_code:
       bash,zsh: |
         eval "$(zoxide init __DOTBINS_SHELL__)"
+  atuin:
+    repo: atuinsh/atuin
+    shell_code:
+      bash,zsh: |
+        eval "$(atuin init __DOTBINS_SHELL__ --disable-up-arrow)"
 
   uv:
     repo: astral-sh/uv
