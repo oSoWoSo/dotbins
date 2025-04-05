@@ -10,7 +10,7 @@
 
 <img src="https://github.com/user-attachments/assets/cf1b44aa-ca39-4967-a4c9-52258c9d9021" align="right" style="width: 350px;" />
 
-**dotbins** manages CLI tool binaries in your dotfiles repository, offering:
+**dotbins** manages CLI tool binaries in your [dotfiles](https://github.com/basnijholt/dotfiles) repository, offering:
 
 - ✅ Cross-platform binary management (macOS, Linux, Windows)
 - ✅ No admin privileges required
