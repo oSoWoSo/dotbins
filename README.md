@@ -790,6 +790,11 @@ tools:
       bash,zsh: |
         eval "$(atuin init __DOTBINS_SHELL__ --disable-up-arrow)"
 
+  keychain:
+    repo: funtoo/keychain
+    tag: 2.9.0_alpha1
+    asset_patterns: keychain
+
   uv:
     repo: astral-sh/uv
     binary_name: [uv, uvx]
