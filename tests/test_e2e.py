@@ -1425,7 +1425,7 @@ def test_e2e_auto_detect_no_candidates(
     # Set release info with an EMPTY assets list
     config.tools["no-candidate-tool"]._release_info = {
         "tag_name": "v1.0.0",
-        "assets": [],  # <--- Key change: empty list
+        "assets": [],  # Empty list (key to trigger the error)
     }
 
     # Mock download_file - it shouldn't be called if no asset is found
