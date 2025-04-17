@@ -11,7 +11,7 @@ from rich.markdown import Markdown
 
 from dotbins import __version__
 
-from .utils import current_platform, log, replace_home_in_path
+from .utils import current_platform, log, replace_home_in_path, tag_to_version
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -70,8 +70,6 @@ def _gather_tool_data(config: Config) -> _ToolData:
         - counted_archs: Set of (tool, platform, arch) tuples already counted
 
     """
-    version_store = config.version_store
-    platforms = config.platforms
     tools = sorted(config.tools.keys())
 
     total_tools = 0
@@ -91,14 +89,14 @@ def _gather_tool_data(config: Config) -> _ToolData:
             tool_data[tool_name] = {"repo": repo, "repo_url": repo_url, "platforms": {}}
 
         # Add data for each platform/architecture combination
-        for platform, architectures in platforms.items():
+        for platform, architectures in config.platforms.items():
             if platform not in tool_data[tool_name]["platforms"]:
                 tool_data[tool_name]["platforms"][platform] = {}
 
             for arch in architectures:
-                tool_info = version_store.get_tool_info(tool_name, platform, arch)
+                tool_info = config.manifest.get_tool_info(tool_name, platform, arch)
                 if tool_info:
-                    version = tool_info.get("version", "Unknown")
+                    tag = tool_info.get("tag", "Unknown")
                     updated_at = tool_info.get("updated_at", "Unknown")
                     updated_at = _format_timestamp(updated_at)
 
@@ -107,7 +105,7 @@ def _gather_tool_data(config: Config) -> _ToolData:
                     current_marker = " ***(current)***" if is_current else ""
 
                     tool_data[tool_name]["platforms"][platform][arch] = {
-                        "version": version,
+                        "tag": tag,
                         "updated_at": updated_at,
                         "is_current": is_current,
                         "current_marker": current_marker,
@@ -166,14 +164,14 @@ def _generate_tool_table(tool_data: dict[str, dict[str, Any]]) -> list[str]:
             if arch_info:
                 architectures_by_platform[platform] = ", ".join(arch_info)
 
-        version = "Not installed"
+        tag = "Not installed"
         updated_at = "N/A"
         for archs in data["platforms"].values():
             for info in archs.values():
-                version = info["version"]
+                tag = info["tag"]
                 updated_at = info["updated_at"]
                 break
-            if version != "Not installed":
+            if tag != "Not installed":
                 break
 
         platform_arch_list: list[str] = []
@@ -183,6 +181,7 @@ def _generate_tool_table(tool_data: dict[str, dict[str, Any]]) -> list[str]:
         platforms_str = " • ".join(platform_arch_list)
 
         if platforms_str:
+            version = tag_to_version(tag)
             content.append(
                 f"| [{tool_name}]({repo_url}) | {repo} | {version} | {updated_at} | {platforms_str} |",
             )

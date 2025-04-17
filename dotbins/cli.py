@@ -346,10 +346,7 @@ def main() -> None:  # pragma: no cover
                 generate_shell_scripts=not args.no_shell_scripts,
             )
         elif args.command == "readme":
-            config.generate_readme(
-                not args.no_file,
-                args.verbose,
-            )
+            config.generate_readme(not args.no_file, args.verbose)
         elif args.command == "status":
             platform = args.platform
             arch = args.architecture
@@ -358,7 +355,7 @@ def main() -> None:  # pragma: no cover
                 platform, arch = current_platform()
 
             # If both --compact and --full are specified, --compact takes precedence
-            config.version_store.print(
+            config.manifest.print(
                 config,
                 compact=not args.full,
                 platform=platform,
