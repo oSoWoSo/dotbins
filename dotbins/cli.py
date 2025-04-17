@@ -214,6 +214,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Only install or update for the current platform and architecture (convenient shorthand)",
     )
     sync_parser.add_argument(
+        "--pin-to-manifest",
+        action="store_true",
+        help="Use the tags from the `manifest.json` file instead of the latest release"
+        " or the tag specified in the config file",
+    )
+    sync_parser.add_argument(
         "--no-shell-scripts",
         action="store_true",
         help="Skip generating shell scripts that add the tools to your PATH",
@@ -344,6 +350,7 @@ def main() -> None:  # pragma: no cover
                 github_token=args.github_token,
                 verbose=args.verbose,
                 generate_shell_scripts=not args.no_shell_scripts,
+                pin_to_manifest=args.pin_to_manifest,
             )
         elif args.command == "readme":
             config.generate_readme(not args.no_file, args.verbose)

@@ -74,7 +74,6 @@ class Config:
     config_path: Path | None = field(default=None, init=False)
     _bin_dir: Path | None = field(default=None, init=False)
     _update_summary: UpdateSummary = field(default_factory=UpdateSummary, init=False)
-    _latest_releases: dict | None = field(default=None, init=False)
 
     def bin_dir(self, platform: str, arch: str, *, create: bool = False) -> Path:
         """Return the bin directory path for a specific platform and architecture.
@@ -177,6 +176,7 @@ class Config:
         github_token: str | None = None,
         verbose: bool = False,
         generate_shell_scripts: bool = True,
+        pin_to_manifest: bool = False,
     ) -> None:
         """Install and update tools to their latest versions.
 
@@ -203,6 +203,7 @@ class Config:
             github_token: GitHub API token for authentication (helps with rate limits)
             verbose: If True, show detailed logs during the process
             generate_shell_scripts: If True, generate shell scripts for the tools
+            pin_to_manifest: If True, use the tag from the `manifest.json` file
 
         """
         if not self.tools:
@@ -212,6 +213,17 @@ class Config:
         if github_token is None and "GITHUB_TOKEN" in os.environ:  # pragma: no cover
             log("Using GitHub token for authentication", "info", "🔑")
             github_token = os.environ["GITHUB_TOKEN"]
+
+        if pin_to_manifest:
+            tool_to_tag_mapping = self.manifest.tool_to_tag_mapping()
+            for tool, tool_config in self.tools.items():
+                tag = tool_to_tag_mapping.get(tool)
+                log(
+                    f"Using tag [b]{tag}[/] for tool [b]{tool}[/] from [b]manifest.json[/]",
+                    "info",
+                    "🔒",
+                )
+                tool_config.tag = tag
 
         tools_to_sync = _tools_to_sync(self, tools)
         self.set_latest_releases(tools_to_sync, github_token, verbose)
