@@ -237,6 +237,7 @@ class Config:
             tools_to_sync,
             platforms_to_sync,
             architecture,
+            current,
             force,
             verbose,
         )
@@ -728,7 +729,8 @@ def _maybe_asset_pattern(
     tool_arch: str,
 ) -> str | None:
     """Get the formatted asset pattern for the tool."""
-    search_pattern = tool_config.asset_patterns[platform][arch]
+    # asset_pattern might not contain an entry if `--current` is used
+    search_pattern = tool_config.asset_patterns.get(platform, {}).get(arch)
     if search_pattern is None:
         log(
             f"No [b]asset_pattern[/] provided for [b]{platform}/{arch}[/]",
