@@ -800,7 +800,7 @@ tools:
 
   keychain:
     repo: funtoo/keychain
-    tag: 2.9.0_alpha1
+    tag: 2.9.0_beta4
     asset_patterns: keychain
 
   uv:
@@ -1039,7 +1039,7 @@ tools:
   zoxide: ajeetdsouza/zoxide      # Smarter cd command with learning
   keychain:                       # Keychain manager
     repo: funtoo/keychain
-    tag: 2.9.0_alpha1  # TODO: Remove this once the tool is released
+    tag: 2.9.0_beta4  # TODO: Remove this once the tool is released
 
 platforms:
   linux:
