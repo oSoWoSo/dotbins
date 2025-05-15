@@ -1087,6 +1087,9 @@ platforms:
 | Tool          | Version Management                 | Shell Integration             | Dotfiles Integration           | Primary Use Case           |
 | ------------- | ---------------------------------- | ----------------------------- | ------------------------------ | -------------------------- |
 | **dotbins**   | Latest only                        | **Built-in via `shell_code`** | **First-class with Git (LFS)** | Complete dotfiles solution |
+| **dotbot**    | Multiple versions                  | **Built-in**                  | **First-class**                | Dotfiles bootstrap         |
+| **soar**      | Multiple versions                  | None                          | Not focused on                 | User space package manager |
+| **mise**      |                                    |                               | Not focused on                 | Development environments   |
 | **binenv**    | Multiple versions with constraints | Separate completion scripts   | Not focused on                 | Development environments   |
 | **eget**      | Latest or specific only            | None                          | Not focused on                 | Quick one-off installs     |
 | **asdf/aqua** | Multiple plugins & versions        | Plugin-specific               | Not focused on                 | Development environments   |
